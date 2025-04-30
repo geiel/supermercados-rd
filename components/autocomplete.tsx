@@ -11,35 +11,35 @@ import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 
 import { Skeleton } from "./ui/skeleton";
 
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-export type Option = Record<"value" | "label", string> & Record<string, string>;
+import { productsSelect } from "@/db/schema";
+import { Badge } from "./ui/badge";
 
 type AutoCompleteProps = {
-  options: Option[];
+  products: productsSelect[];
   emptyMessage: string;
-  value?: Option;
-  onValueChange?: (value: Option) => void;
+  value?: productsSelect;
+  onValueChange?: (value: productsSelect) => void;
+  onInputChange?: (value: string) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
 };
 
 export const AutoComplete = ({
-  options,
+  products,
   placeholder,
   emptyMessage,
   value,
   onValueChange,
+  onInputChange,
   disabled,
   isLoading = false,
 }: AutoCompleteProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [isOpen, setOpen] = useState(false);
-  const [selected, setSelected] = useState<Option>(value as Option);
-  const [inputValue, setInputValue] = useState<string>(value?.label || "");
+  const [inputValue, setInputValue] = useState<string>(value?.name || "");
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -55,11 +55,11 @@ export const AutoComplete = ({
 
       // This is not a default behaviour of the <input /> field
       if (event.key === "Enter" && input.value !== "") {
-        const optionToSelect = options.find(
-          (option) => option.label === input.value
+        const optionToSelect = products.find(
+          (product) => product.name === input.value
         );
+
         if (optionToSelect) {
-          setSelected(optionToSelect);
           onValueChange?.(optionToSelect);
         }
       }
@@ -68,20 +68,15 @@ export const AutoComplete = ({
         input.blur();
       }
     },
-    [isOpen, options, onValueChange]
+    [isOpen, products, onValueChange]
   );
 
-  const handleBlur = useCallback(() => {
-    setOpen(false);
-    setInputValue(selected?.label);
-  }, [selected]);
-
-  const handleSelectOption = useCallback(
-    (selectedOption: Option) => {
-      setInputValue(selectedOption.label);
-
-      setSelected(selectedOption);
-      onValueChange?.(selectedOption);
+  const handleSelectProduct = useCallback(
+    (selectedProduct: productsSelect) => {
+      if (inputValue === selectedProduct.name) {
+        setInputValue(selectedProduct.name);
+        onValueChange?.(selectedProduct);
+      }
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -89,8 +84,13 @@ export const AutoComplete = ({
         inputRef?.current?.blur();
       }, 0);
     },
-    [onValueChange]
+    [onValueChange, inputValue]
   );
+
+  const handlerInputChange = (value: string) => {
+    setInputValue(value);
+    onInputChange?.(value);
+  };
 
   return (
     <CommandPrimitive onKeyDown={handleKeyDown}>
@@ -98,8 +98,8 @@ export const AutoComplete = ({
         <CommandInput
           ref={inputRef}
           value={inputValue}
-          onValueChange={isLoading ? undefined : setInputValue}
-          onBlur={handleBlur}
+          onValueChange={isLoading ? undefined : handlerInputChange}
+          onBlur={() => setOpen(false)}
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
@@ -121,26 +121,24 @@ export const AutoComplete = ({
                 </div>
               </CommandPrimitive.Loading>
             ) : null}
-            {options.length > 0 && !isLoading ? (
-              <CommandGroup>
-                {options.map((option) => {
-                  const isSelected = selected?.value === option.value;
+
+            {products.length > 0 && !isLoading ? (
+              <CommandGroup heading="Productos">
+                <CommandItem value={inputValue} className="hidden" />
+                {products.map((product) => {
                   return (
                     <CommandItem
-                      key={option.value}
-                      value={option.label}
+                      key={product.id}
+                      value={product.name + product.unit}
                       onMouseDown={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
                       }}
-                      onSelect={() => handleSelectOption(option)}
-                      className={cn(
-                        "flex w-full items-center gap-2",
-                        !isSelected ? "pl-8" : null
-                      )}
+                      onSelect={() => handleSelectProduct(product)}
+                      className={cn("flex w-full items-center gap-2")}
                     >
-                      {isSelected ? <Check className="w-4" /> : null}
-                      {option.label}
+                      {product.name}
+                      <Badge variant="secondary">{product.unit}</Badge>
                     </CommandItem>
                   );
                 })}

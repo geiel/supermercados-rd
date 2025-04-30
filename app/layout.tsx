@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AutoComplete } from "@/components/autocomplete";
+import { SearchBar } from "@/components/searchbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,11 +33,7 @@ export default function RootLayout({
             <div className="flex h-14 items-center justify-between gap-2 md:gap-4">
               <div>SupermercadosRD</div>
               <div className="w-full max-w-6xl">
-                <AutoComplete
-                  options={[{ value: "s", label: "manzana" }]}
-                  placeholder="Buscar..."
-                  emptyMessage="No encontrado."
-                />
+                <SearchBar />
               </div>
               <div />
             </div>
