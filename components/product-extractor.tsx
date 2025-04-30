@@ -1,0 +1,83 @@
+"use client";
+
+import { Combobox } from "@/components/combobox";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { productsCategoriesSelect, shopsSelect } from "@/db/schema";
+import { getProductList } from "@/lib/scrappers/sirena-extractor";
+// import { sirenaExtractor } from "@/lib/scrappers/sirena-extractor";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+
+export function ProductExtractor({
+  shops,
+  categories,
+}: {
+  shops: shopsSelect[];
+  categories: productsCategoriesSelect[];
+}) {
+  const [shopId, setShopId] = useState<string>("");
+  const [cateogoryId, setCategoryId] = useState<string>("");
+  const [url, setUrl] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  async function processSupermarket() {
+    if (!shopId || !cateogoryId || !url) return;
+
+    setLoading(true);
+
+    switch (shopId) {
+      case "1":
+        await getProductList(Number(cateogoryId), url);
+    }
+
+    setLoading(false);
+  }
+
+  return (
+    <div className="flex flex-1 flex-col gap-4">
+      <Select onValueChange={setShopId}>
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Supermercado" />
+        </SelectTrigger>
+        <SelectContent>
+          {shops.map((shop) => (
+            <SelectItem key={shop.id} value={shop.id.toString()}>
+              {shop.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Combobox
+        options={categories.map((c) => ({
+          value: c.id.toString(),
+          label: c.name,
+        }))}
+        emptyMessage="Categoría no encontrada"
+        placeholder="Categoría"
+        onValueChange={(option) => setCategoryId(option.value)}
+      />
+
+      <Textarea
+        placeholder="URL..."
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+      />
+
+      <div>
+        <Button onClick={processSupermarket} disabled={loading}>
+          {loading ? <Loader2 className="animate-spin" /> : null}
+          Procesar
+        </Button>
+      </div>
+    </div>
+  );
+}

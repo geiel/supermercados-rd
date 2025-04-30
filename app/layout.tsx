@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AutoComplete } from "@/components/autocomplete";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="px-4 py-2">
+            <div className="flex h-14 items-center justify-between gap-2 md:gap-4">
+              <div>SupermercadosRD</div>
+              <div className="w-full max-w-6xl">
+                <AutoComplete
+                  options={[{ value: "s", label: "manzana" }]}
+                  placeholder="Buscar..."
+                  emptyMessage="No encontrado."
+                />
+              </div>
+              <div />
+            </div>
+          </div>
+        </header>
         {children}
       </body>
     </html>
