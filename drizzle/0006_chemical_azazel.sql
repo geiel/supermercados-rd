@@ -1,0 +1,1 @@
+ALTER TABLE "products_shops_prices" ADD COLUMN "regularPrice" numeric;

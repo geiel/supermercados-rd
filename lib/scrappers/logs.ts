@@ -22,3 +22,15 @@ export function processErrorLog(
     `ERROR ${scrapper} url=${product.url} product=${product.productId} shopId=${product.shopId} error at parsing`
   );
 }
+
+export function doneProcessLog(scrapper: string, product: productsShopsPrices) {
+  console.log(
+    `DONE process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId} currentPrice=${product.currentPrice}`
+  );
+}
+
+export function ignoreLog(scrapper: string, product: productsShopsPrices) {
+  console.log(
+    `IGNORE process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId}`
+  );
+}

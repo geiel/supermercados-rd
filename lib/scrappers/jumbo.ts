@@ -6,6 +6,7 @@ import {
 import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
 import { initProcessLog, processErrorLog } from "./logs";
+import { isLessThan12HoursAgo } from "./utils";
 
 async function getHtml(url: string) {
   try {
@@ -25,6 +26,13 @@ async function getHtml(url: string) {
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices
 ) {
+  if (
+    productShopPrice.updateAt &&
+    isLessThan12HoursAgo(productShopPrice.updateAt)
+  ) {
+    return;
+  }
+
   initProcessLog("Jumbo", productShopPrice);
   const html = await getHtml(productShopPrice.url);
 

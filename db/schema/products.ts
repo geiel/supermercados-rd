@@ -73,6 +73,7 @@ export const productsShopsPrices = pgTable(
     url: text().notNull(),
     api: text(),
     currentPrice: numeric(),
+    regularPrice: numeric(),
     updateAt: timestamp({ withTimezone: true }),
   },
   (table) => [primaryKey({ columns: [table.productId, table.shopId] })]

@@ -43,6 +43,13 @@
       "when": 1745986845559,
       "tag": "0005_conscious_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1746068063239,
+      "tag": "0006_chemical_azazel",
+      "breakpoints": true
     }
   ]
 }

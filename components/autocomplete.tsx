@@ -21,6 +21,7 @@ type AutoCompleteProps = {
   value?: productsSelect;
   onValueChange?: (value: productsSelect) => void;
   onInputChange?: (value: string) => void;
+  onSearch: (inputValue: string) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -33,6 +34,7 @@ export const AutoComplete = ({
   value,
   onValueChange,
   onInputChange,
+  onSearch,
   disabled,
   isLoading = false,
 }: AutoCompleteProps) => {
@@ -62,13 +64,15 @@ export const AutoComplete = ({
         if (optionToSelect) {
           onValueChange?.(optionToSelect);
         }
+
+        onSearch(input.value);
       }
 
       if (event.key === "Escape") {
         input.blur();
       }
     },
-    [isOpen, products, onValueChange]
+    [isOpen, products, onValueChange, onSearch]
   );
 
   const handleSelectProduct = useCallback(

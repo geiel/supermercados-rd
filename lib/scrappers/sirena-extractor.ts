@@ -83,14 +83,12 @@ export async function getProductList(categoryId: number, url: string) {
   );
 
   await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
-  await db.transaction(async (tx) => {
-    for (const product of dbProducts) {
-      const insertedProduct = await tx
-        .insert(products)
-        .values(product)
-        .returning({ id: products.id });
-      product.price.productId = insertedProduct[0].id;
-      await tx.insert(productsShopsPrices).values(product.price);
-    }
-  });
+  for (const product of dbProducts) {
+    const insertedProduct = await db
+      .insert(products)
+      .values(product)
+      .returning({ id: products.id });
+    product.price.productId = insertedProduct[0].id;
+    await db.insert(productsShopsPrices).values(product.price);
+  }
 }

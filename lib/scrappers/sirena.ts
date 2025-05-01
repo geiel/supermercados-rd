@@ -3,9 +3,17 @@ import {
   productsShopsPrices,
 } from "@/db/schema/products";
 import { z } from "zod";
-import { initProcessLog, processErrorLog } from "./logs";
+import {
+  doneProcessLog,
+  ignoreLog,
+  initProcessLog,
+  processErrorLog,
+} from "./logs";
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
+import { isLessThan12HoursAgo } from "./utils";
+
+const scrapper = "La Sirena";
 
 async function getProductInfo(api: string | null, shopId: number) {
   if (!api) {
@@ -41,6 +49,7 @@ async function getProductInfo(api: string | null, shopId: number) {
         thumbs: z.string(),
         category: z.string(),
         price: z.string(),
+        regular_price: z.string(),
       }),
     })
     .safeParse(jsonResponse);
@@ -56,24 +65,39 @@ async function getProductInfo(api: string | null, shopId: number) {
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices
 ) {
-  initProcessLog("La Sirena", productShopPrice);
+  if (
+    productShopPrice.updateAt &&
+    isLessThan12HoursAgo(productShopPrice.updateAt)
+  ) {
+    return;
+  }
+
+  initProcessLog(scrapper, productShopPrice);
   const productInfo = await getProductInfo(
     productShopPrice.api,
     productShopPrice.shopId
   );
 
   if (!productInfo) {
-    processErrorLog("La Sirena", productShopPrice);
+    processErrorLog(scrapper, productShopPrice);
     return;
   }
 
-  if (productShopPrice.currentPrice === productInfo.product.price) {
+  if (
+    productShopPrice.currentPrice &&
+    Number(productShopPrice.currentPrice) === Number(productInfo.product.price)
+  ) {
+    ignoreLog(scrapper, productShopPrice);
     return;
   }
 
   await db
     .update(productsShopsPrices)
-    .set({ currentPrice: productInfo.product.price, updateAt: new Date() })
+    .set({
+      currentPrice: productInfo.product.price,
+      regularPrice: productInfo.product.regular_price,
+      updateAt: new Date(),
+    })
     .where(
       and(
         eq(productsShopsPrices.productId, productShopPrice.productId),
@@ -86,6 +110,8 @@ async function processByProductShopPrice(
     price: productInfo.product.price,
     createdAt: new Date(),
   });
+
+  doneProcessLog(scrapper, productShopPrice);
 }
 
 export const sirena = { processByProductShopPrice };
