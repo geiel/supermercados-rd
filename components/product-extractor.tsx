@@ -12,9 +12,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { productsCategoriesSelect, shopsSelect } from "@/db/schema";
 import { getProductList } from "@/lib/scrappers/sirena-extractor";
-// import { sirenaExtractor } from "@/lib/scrappers/sirena-extractor";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { TypographyH3 } from "./typography-h3";
 
 export function ProductExtractor({
   shops,
@@ -43,6 +43,7 @@ export function ProductExtractor({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
+      <TypographyH3>Products Extractor</TypographyH3>
       <Select onValueChange={setShopId}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Supermercado" />

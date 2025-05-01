@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
+import { toSlug } from "@/lib/utils";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -29,6 +30,7 @@ export default async function Page({ params }: Props) {
     where: sql`unaccent(${products.name}) ~* unaccent(${regex})`,
     with: {
       shopCurrentPrices: true,
+      brand: true,
     },
     limit: 30,
   });
@@ -61,7 +63,12 @@ export default async function Page({ params }: Props) {
                   ) : null}
                 </div>
                 <Badge>{product.unit}</Badge>
-                {product.name}
+                <div>
+                  {product.brand ? (
+                    <div className="font-bold">{product.brand.name}</div>
+                  ) : null}
+                  {product.name}
+                </div>
                 <ShopExclusive shopPrices={product.shopCurrentPrices} />
                 <Price
                   shopPrices={product.shopCurrentPrices}
@@ -139,14 +146,4 @@ async function ShopExclusive({
       alt="logo tienda"
     />
   );
-}
-
-function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD") // Remove accents
-    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-    .replace(/[^a-z0-9\s-]/g, "") // Remove invalid chars
-    .trim()
-    .replace(/\s+/g, "-"); // Replace spaces with hyphens
 }

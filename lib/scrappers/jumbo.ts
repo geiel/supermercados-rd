@@ -5,7 +5,7 @@ import {
 } from "@/db/schema/products";
 import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
-import { initProcessLog, processErrorLog } from "./logs";
+import { ignoreLog, initProcessLog, processErrorLog } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
 
 async function getHtml(url: string) {
@@ -61,6 +61,16 @@ async function processByProductShopPrice(
   }
 
   if (productShopPrice.currentPrice === productPrice) {
+    ignoreLog("Jumbo", productShopPrice);
+    await db
+      .update(productsShopsPrices)
+      .set({ updateAt: new Date() })
+      .where(
+        and(
+          eq(productsShopsPrices.productId, productShopPrice.productId),
+          eq(productsShopsPrices.shopId, productShopPrice.shopId)
+        )
+      );
     return;
   }
 

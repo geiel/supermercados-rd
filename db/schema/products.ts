@@ -19,6 +19,7 @@ export const products = pgTable(
     name: text().notNull(),
     image: text(),
     unit: text().notNull(),
+    brandId: integer().references(() => productsBrands.id),
   },
   (table) => ({
     uniqueProduct: unique("unique_product").on(table.name, table.unit),
@@ -32,7 +33,23 @@ export const productsRelations = relations(products, ({ many, one }) => ({
     fields: [products.categoryId],
     references: [productsCategories.id],
   }),
+  brand: one(productsBrands, {
+    fields: [products.brandId],
+    references: [productsBrands.id],
+  }),
 }));
+
+export const productsBrands = pgTable("products_brands", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull().unique(),
+});
+
+export const productsBrandsRelations = relations(
+  productsBrands,
+  ({ many }) => ({
+    products: many(products),
+  })
+);
 
 export const unitTracker = pgTable("unit_tracker", {
   unit: text().primaryKey().notNull(),

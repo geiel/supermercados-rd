@@ -50,6 +50,13 @@
       "when": 1746068063239,
       "tag": "0006_chemical_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1746113628279,
+      "tag": "0007_steady_slipstream",
+      "breakpoints": true
     }
   ]
 }

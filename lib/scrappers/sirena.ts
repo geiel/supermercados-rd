@@ -88,6 +88,17 @@ async function processByProductShopPrice(
     Number(productShopPrice.currentPrice) === Number(productInfo.product.price)
   ) {
     ignoreLog(scrapper, productShopPrice);
+
+    await db
+      .update(productsShopsPrices)
+      .set({ updateAt: new Date() })
+      .where(
+        and(
+          eq(productsShopsPrices.productId, productShopPrice.productId),
+          eq(productsShopsPrices.shopId, productShopPrice.shopId)
+        )
+      );
+
     return;
   }
 
