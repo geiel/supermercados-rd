@@ -63,9 +63,10 @@ export const AutoComplete = ({
 
         if (optionToSelect) {
           onValueChange?.(optionToSelect);
+          onSearch(optionToSelect.name);
+        } else {
+          onSearch(input.value);
         }
-
-        onSearch(input.value);
       }
 
       if (event.key === "Escape") {
@@ -77,10 +78,8 @@ export const AutoComplete = ({
 
   const handleSelectProduct = useCallback(
     (selectedProduct: productsSelect) => {
-      if (inputValue === selectedProduct.name) {
-        setInputValue(selectedProduct.name);
-        onValueChange?.(selectedProduct);
-      }
+      setInputValue(selectedProduct.name);
+      onValueChange?.(selectedProduct);
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -88,12 +87,16 @@ export const AutoComplete = ({
         inputRef?.current?.blur();
       }, 0);
     },
-    [onValueChange, inputValue]
+    [onValueChange]
   );
 
   const handlerInputChange = (value: string) => {
     setInputValue(value);
     onInputChange?.(value);
+  };
+
+  const onFocus = () => {
+    setOpen(true);
   };
 
   return (
@@ -104,7 +107,7 @@ export const AutoComplete = ({
           value={inputValue}
           onValueChange={isLoading ? undefined : handlerInputChange}
           onBlur={() => setOpen(false)}
-          onFocus={() => setOpen(true)}
+          onFocus={onFocus}
           placeholder={placeholder}
           disabled={disabled}
           className="text-base"

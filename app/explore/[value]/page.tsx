@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { products, productsShopsPrices } from "@/db/schema";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -14,20 +14,26 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { value } = await params;
   return {
-    title: value,
+    title: decodeURIComponent(value),
   };
 }
 
 export default async function Page({ params }: Props) {
   const { value } = await params;
 
-  const words = value.split(/\s+/);
-  const regex = `\\y(${words
-    .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|")})\\y`;
+  const query = sql`
+    SELECT id FROM search_products_by_name_prefix(${decodeURIComponent(
+      value
+    ).replace(/\s+/g, "+")}) search
+    LIMIT 30
+  `;
+  const result = await db.execute(query);
 
   const productsWithShopPrices = await db.query.products.findMany({
-    where: sql`unaccent(${products.name}) ~* unaccent(${regex})`,
+    where: inArray(
+      products.id,
+      result.map(({ id }) => Number(id))
+    ),
     with: {
       shopCurrentPrices: true,
       brand: true,

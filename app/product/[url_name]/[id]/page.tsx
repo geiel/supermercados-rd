@@ -88,9 +88,9 @@ async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
     where: (priceTable, { isNotNull, eq, and }) =>
       and(
         isNotNull(priceTable.currentPrice),
-        eq(priceTable.productId, shopPrice.productId)
+        eq(priceTable.productId, shopPrice.productId),
+        eq(priceTable.shopId, shopPrice.shopId)
       ),
-    orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
   });
 
   return (
