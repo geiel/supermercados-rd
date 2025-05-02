@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
         "https://assets-sirenago.s3-us-west-1.amazonaws.com/product/original/**"
       ),
       new URL("https://jumbo.com.do/pub/media/catalog/**"),
+      new URL("https://supermercadosnacional.com/media/catalog/**"),
     ],
   },
   experimental: {

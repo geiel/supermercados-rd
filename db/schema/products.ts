@@ -19,10 +19,16 @@ export const products = pgTable(
     name: text().notNull(),
     image: text(),
     unit: text().notNull(),
-    brandId: integer().references(() => productsBrands.id),
+    brandId: integer()
+      .notNull()
+      .references(() => productsBrands.id),
   },
   (table) => ({
-    uniqueProduct: unique("unique_product").on(table.name, table.unit),
+    uniqueProduct: unique("unique_product").on(
+      table.name,
+      table.unit,
+      table.brandId
+    ),
   })
 );
 
@@ -143,3 +149,4 @@ export type productsShopsPricesInsert = typeof productsShopsPrices.$inferInsert;
 export type shopsSelect = typeof shops.$inferSelect;
 export type productsCategoriesSelect = typeof productsCategories.$inferSelect;
 export type unitTrackerInsert = typeof unitTracker.$inferInsert;
+export type productsBrandsInsert = typeof productsBrands.$inferInsert;

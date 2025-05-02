@@ -7,6 +7,7 @@ import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
 import { toSlug } from "@/lib/utils";
 import { jumbo } from "@/lib/scrappers/jumbo";
+import { nacional } from "@/lib/scrappers/nacional";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -108,6 +109,9 @@ async function Price({
     switch (shopPrice.shopId) {
       case 1:
         await sirena.processByProductShopPrice(shopPrice);
+        break;
+      case 2:
+        await nacional.processByProductShopPrice(shopPrice);
         break;
       case 3:
         await jumbo.processByProductShopPrice(shopPrice);

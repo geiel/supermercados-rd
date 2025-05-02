@@ -38,6 +38,7 @@ export async function getProductList(categoryId: number, url: string) {
     })
     .parse(jsonResponse);
 
+  console.log("[Sirena Processor[ Start getting products");
   const dbProducts = productsSirena.data.map(
     (p): productsInsert & { price: productsShopsPricesInsert } => {
       let unitSlice = -1;
@@ -71,6 +72,7 @@ export async function getProductList(categoryId: number, url: string) {
         unit: unit,
         image: `https://assets-sirenago.s3-us-west-1.amazonaws.com/product/original/${p.thumbs}`,
         categoryId,
+        brandId: 30, //Sirena
         price: {
           shopId: 1,
           productId: 0,
@@ -83,12 +85,18 @@ export async function getProductList(categoryId: number, url: string) {
     }
   );
 
-  await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
+  console.log(
+    "[Sirena Processor] Products obtained length=" + dbProducts.length
+  );
   for (const product of dbProducts) {
+    console.log(
+      `[INFO] start process product=${product.name} ${product.unit} url=${product.price.url}`
+    );
     const exist = await db.query.products.findFirst({
       where: and(
         eq(products.name, product.name),
-        eq(products.unit, product.unit)
+        eq(products.unit, product.unit),
+        eq(products.brandId, product.brandId)
       ),
       with: {
         shopCurrentPrices: true,
@@ -102,7 +110,8 @@ export async function getProductList(categoryId: number, url: string) {
         .returning({ id: products.id });
       product.price.productId = insertedProduct[0].id;
       await db.insert(productsShopsPrices).values(product.price);
-      return;
+      console.log(`[INFO] product don't exist inserted`);
+      continue;
     }
 
     product.price.productId = exist.id;
@@ -110,5 +119,8 @@ export async function getProductList(categoryId: number, url: string) {
       .insert(productsShopsPrices)
       .values(product.price)
       .onConflictDoNothing();
+    console.log(`[INFO] product 'exist' updated`);
   }
+
+  await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
 }

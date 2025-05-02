@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
 import { jumbo } from "@/lib/scrappers/jumbo";
+import { nacional } from "@/lib/scrappers/nacional";
 import { sirena } from "@/lib/scrappers/sirena";
 import Image from "next/image";
 
@@ -65,7 +66,11 @@ export default async function Page({ params }: Props) {
               />
               <ShopPrice shopPrice={shopPrice} />
               <div>
-                <Button>Buscar</Button>
+                <Button asChild>
+                  <a href={shopPrice.url} target="_blank">
+                    Buscar
+                  </a>
+                </Button>
               </div>
             </div>
           ))}
@@ -79,6 +84,9 @@ async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
   switch (shopPrice.shopId) {
     case 1:
       await sirena.processByProductShopPrice(shopPrice);
+      break;
+    case 2:
+      await nacional.processByProductShopPrice(shopPrice);
       break;
     case 3:
       await jumbo.processByProductShopPrice(shopPrice);

@@ -67,6 +67,7 @@ export async function getProductListJumbo(categoryId: number, url: string) {
         name: productName,
         unit,
         categoryId,
+        brandId: 19, //Jumbo
         price: {
           shopId: 3,
           productId: 0,
@@ -76,8 +77,13 @@ export async function getProductListJumbo(categoryId: number, url: string) {
     }
   });
 
-  await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
+  console.log(
+    "[Jumbo Processor] Products obtained length=" + dbProducts.length
+  );
   for (const product of dbProducts) {
+    console.log(
+      `[INFO] start process product=${product.name} ${product.unit} url=${product.price.url}`
+    );
     const exist = await db.query.products.findFirst({
       where: and(
         eq(products.name, product.name),
@@ -96,7 +102,8 @@ export async function getProductListJumbo(categoryId: number, url: string) {
         .returning();
       product.price.productId = insertedProduct[0].id;
       await db.insert(productsShopsPrices).values(product.price);
-      return;
+      console.log(`[INFO] product don't exist inserted`);
+      continue;
     }
 
     product.price.productId = exist.id;
@@ -104,7 +111,10 @@ export async function getProductListJumbo(categoryId: number, url: string) {
       .insert(productsShopsPrices)
       .values(product.price)
       .onConflictDoNothing();
+    console.log(`[INFO] product 'exist' updated`);
   }
+
+  await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
 }
 
 async function getImageUrl(url: string) {
