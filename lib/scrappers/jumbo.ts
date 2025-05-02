@@ -5,7 +5,12 @@ import {
 } from "@/db/schema/products";
 import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
-import { ignoreLog, initProcessLog, processErrorLog } from "./logs";
+import {
+  doneProcessLog,
+  ignoreLog,
+  initProcessLog,
+  processErrorLog,
+} from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
 
 async function getHtml(url: string) {
@@ -42,25 +47,28 @@ async function processByProductShopPrice(
   }
 
   const $ = cheerio.load(html);
-
-  const prices = $("div.price-box.price-final_price")
-    .text()
-    .trim()
-    .match(/RD\$\d+(\.\d+)?/g);
+  const prices = $(".price-final_price").text().trim().split(/\s+/);
 
   if (!prices || prices.length === 0) {
     processErrorLog("Jumbo", productShopPrice);
     return;
   }
 
-  let productPrice = "";
+  let currentPrice = "";
+  let regularPrice: string | null = null;
   if (prices.length > 1) {
-    productPrice = prices[1].replace("RD$", "");
+    currentPrice = prices[1].replace("RD$", "");
+    regularPrice = prices[0].replace("RD$", "");
   } else {
-    productPrice = prices[0].replace("RD$", "");
+    currentPrice = prices[0].replace("RD$", "");
   }
 
-  if (productShopPrice.currentPrice === productPrice) {
+  if (!currentPrice) {
+    processErrorLog("Jumbo", productShopPrice);
+    return;
+  }
+
+  if (Number(productShopPrice.currentPrice) === Number(currentPrice)) {
     ignoreLog("Jumbo", productShopPrice);
     await db
       .update(productsShopsPrices)
@@ -76,7 +84,7 @@ async function processByProductShopPrice(
 
   await db
     .update(productsShopsPrices)
-    .set({ currentPrice: productPrice, updateAt: new Date() })
+    .set({ currentPrice, regularPrice, updateAt: new Date() })
     .where(
       and(
         eq(productsShopsPrices.productId, productShopPrice.productId),
@@ -86,9 +94,11 @@ async function processByProductShopPrice(
 
   await db.insert(productsPricesHistory).values({
     ...productShopPrice,
-    price: productPrice,
+    price: currentPrice,
     createdAt: new Date(),
   });
+
+  doneProcessLog("Jumbo", productShopPrice);
 }
 
 export const jumbo = { processByProductShopPrice };

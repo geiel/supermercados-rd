@@ -15,6 +15,7 @@ import { getProductList } from "@/lib/scrappers/sirena-extractor";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { TypographyH3 } from "./typography-h3";
+import { getProductListJumbo } from "@/lib/scrappers/jumbo-extractor";
 
 export function ProductExtractor({
   shops,
@@ -36,6 +37,10 @@ export function ProductExtractor({
     switch (shopId) {
       case "1":
         await getProductList(Number(cateogoryId), url);
+        break;
+      case "3":
+        await getProductListJumbo(Number(cateogoryId), url);
+        break;
     }
 
     setLoading(false);

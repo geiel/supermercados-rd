@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
 import { toSlug } from "@/lib/utils";
+import { jumbo } from "@/lib/scrappers/jumbo";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -21,13 +22,20 @@ export async function generateMetadata({ params }: Props) {
 export default async function Page({ params }: Props) {
   const { value } = await params;
 
-  const query = sql`
-    SELECT id FROM search_products_by_name_prefix(${decodeURIComponent(
-      value
-    ).replace(/\s+/g, "+")}) search
-    LIMIT 30
+  const q = sql`
+    select
+      *
+    from
+      products
+    where
+      to_tsvector(unaccent(name))
+      @@ 
+      to_tsquery(unaccent(${decodeURIComponent(value).replace(
+        /\s+/g,
+        "+"
+      )}) || ':*');
   `;
-  const result = await db.execute(query);
+  const result = await db.execute(q);
 
   const productsWithShopPrices = await db.query.products.findMany({
     where: inArray(
@@ -100,6 +108,10 @@ async function Price({
     switch (shopPrice.shopId) {
       case 1:
         await sirena.processByProductShopPrice(shopPrice);
+        break;
+      case 3:
+        await jumbo.processByProductShopPrice(shopPrice);
+        break;
     }
   }
 

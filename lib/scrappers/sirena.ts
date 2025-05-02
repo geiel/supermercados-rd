@@ -88,7 +88,6 @@ async function processByProductShopPrice(
     Number(productShopPrice.currentPrice) === Number(productInfo.product.price)
   ) {
     ignoreLog(scrapper, productShopPrice);
-
     await db
       .update(productsShopsPrices)
       .set({ updateAt: new Date() })
@@ -98,7 +97,6 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
-
     return;
   }
 

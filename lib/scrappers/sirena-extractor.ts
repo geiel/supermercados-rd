@@ -9,6 +9,7 @@ import {
   products,
   productsShopsPrices,
 } from "@/db/schema/products";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 export async function getProductList(categoryId: number, url: string) {
@@ -84,11 +85,30 @@ export async function getProductList(categoryId: number, url: string) {
 
   await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
   for (const product of dbProducts) {
-    const insertedProduct = await db
-      .insert(products)
-      .values(product)
-      .returning({ id: products.id });
-    product.price.productId = insertedProduct[0].id;
-    await db.insert(productsShopsPrices).values(product.price);
+    const exist = await db.query.products.findFirst({
+      where: and(
+        eq(products.name, product.name),
+        eq(products.unit, product.unit)
+      ),
+      with: {
+        shopCurrentPrices: true,
+      },
+    });
+
+    if (!exist) {
+      const insertedProduct = await db
+        .insert(products)
+        .values(product)
+        .returning({ id: products.id });
+      product.price.productId = insertedProduct[0].id;
+      await db.insert(productsShopsPrices).values(product.price);
+      return;
+    }
+
+    product.price.productId = exist.id;
+    await db
+      .insert(productsShopsPrices)
+      .values(product.price)
+      .onConflictDoNothing();
   }
 }

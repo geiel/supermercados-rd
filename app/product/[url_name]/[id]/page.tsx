@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
+import { jumbo } from "@/lib/scrappers/jumbo";
 import { sirena } from "@/lib/scrappers/sirena";
 import Image from "next/image";
 
@@ -78,6 +79,10 @@ async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
   switch (shopPrice.shopId) {
     case 1:
       await sirena.processByProductShopPrice(shopPrice);
+      break;
+    case 3:
+      await jumbo.processByProductShopPrice(shopPrice);
+      break;
   }
 
   const lowerPrice = await db.query.productsShopsPrices.findFirst({
@@ -95,7 +100,7 @@ async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
 
   return (
     <div className="flex gap-1 col-span-2 ">
-      <div className="font-bold text-lg">RD${shopPrice.currentPrice}</div>
+      <div className="font-bold text-lg">RD${lowerPrice?.currentPrice}</div>
       {Number(lowerPrice?.currentPrice) < Number(lowerPrice?.regularPrice) ? (
         <div>RD${lowerPrice?.regularPrice}</div>
       ) : null}
