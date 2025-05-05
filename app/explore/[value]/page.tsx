@@ -8,6 +8,7 @@ import Link from "next/link";
 import { toSlug } from "@/lib/utils";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
+import { plazaLama } from "@/lib/scrappers/plaza-lama";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -47,7 +48,7 @@ export default async function Page({ params }: Props) {
       shopCurrentPrices: true,
       brand: true,
     },
-    limit: 30,
+    // limit: 30,
   });
 
   if (productsWithShopPrices.length === 0) {
@@ -115,6 +116,9 @@ async function Price({
         break;
       case 3:
         await jumbo.processByProductShopPrice(shopPrice);
+        break;
+      case 4:
+        await plazaLama.processByProductShopPrice(shopPrice);
         break;
     }
   }

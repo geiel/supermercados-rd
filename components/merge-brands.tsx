@@ -11,6 +11,8 @@ import Link from "next/link";
 import { toSlug } from "@/lib/utils";
 import Image from "next/image";
 import { Badge } from "./ui/badge";
+import { Input } from "./ui/input";
+import { adminMergeProduct } from "@/lib/scrappers/admin-functions";
 
 export default function MergeProducts({
   brands,
@@ -20,11 +22,20 @@ export default function MergeProducts({
   const [brandId, setBrandId] = useState(0);
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<productsSelect[]>([]);
+  const [parentProductId, setParentProductId] = useState("");
+  const [childProductId, setChildProductId] = useState("");
+  const [loadingProcess, setLoadingProcess] = useState(false);
 
   async function searchProducts() {
     setLoading(true);
     setProducts(await getProductsByBrand(brandId));
     setLoading(false);
+  }
+
+  async function mergeProduct() {
+    setLoadingProcess(true);
+    await adminMergeProduct(Number(parentProductId), Number(childProductId));
+    setLoadingProcess(false);
   }
 
   return (
@@ -47,12 +58,32 @@ export default function MergeProducts({
         </Button>
       </div>
 
+      <div className="flex gap-2">
+        <Input
+          type="number"
+          value={parentProductId}
+          onChange={(e) => setParentProductId(e.target.value)}
+          placeholder="ID Padre"
+        />
+        <Input
+          type="number"
+          value={childProductId}
+          onChange={(e) => setChildProductId(e.target.value)}
+          placeholder="ID Hijo"
+        />
+        <Button onClick={mergeProduct} disabled={loadingProcess}>
+          {loadingProcess ? <Loader2 className="animate-spin" /> : null}
+          Procesar
+        </Button>
+      </div>
+
       <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
         {products.map((product) => (
           <div
             key={product.id}
             className="aspect-square p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
           >
+            <div className="font-semibold">{product.id}</div>
             <Link
               href={`/product/${toSlug(product.name)}/${product.id}`}
               className="flex flex-col gap-2"

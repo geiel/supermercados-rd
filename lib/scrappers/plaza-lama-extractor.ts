@@ -1,10 +1,15 @@
 "use server";
 
+import { db } from "@/db";
 import {
+  products,
   productsInsert,
+  productsShopsPrices,
   productsShopsPricesInsert,
+  unitTracker,
   unitTrackerInsert,
 } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 const raw = JSON.stringify([
@@ -28,7 +33,7 @@ const raw = JSON.stringify([
         clientId: "PLAZA_LAMA",
         storeReference: "PL08-D",
         currentPage: 1,
-        pageSize: 100,
+        pageSize: 180,
         filters: {
           categories: ["Frutas y Vegetales"],
         },
@@ -75,12 +80,12 @@ async function getProductList() {
 }
 
 export async function getProductListPlazaLama(categoryId: number) {
-  const products = (await getProductList()).data.getProductsByCategory.category
-    .products;
+  const productsPlazaLama = (await getProductList()).data.getProductsByCategory
+    .category.products;
 
   const unitTrackers: unitTrackerInsert[] = [];
   console.log("[Plaza Lama Processor[ Start getting products");
-  const dbProducts = products.map(
+  const dbProducts = productsPlazaLama.map(
     (p): productsInsert & { price: productsShopsPricesInsert } => {
       let unitSlice = -1;
 
@@ -124,5 +129,42 @@ export async function getProductListPlazaLama(categoryId: number) {
     }
   );
 
-  console.log(dbProducts.length);
+  console.log(
+    "[Plaza Lama Processor] Products obtained length=" + dbProducts.length
+  );
+  for (const product of dbProducts) {
+    console.log(
+      `[INFO] start process product=${product.name} ${product.unit} url=${product.price.url}`
+    );
+    const exist = await db.query.products.findFirst({
+      where: and(
+        eq(products.name, product.name),
+        eq(products.unit, product.unit),
+        eq(products.brandId, product.brandId)
+      ),
+      with: {
+        shopCurrentPrices: true,
+      },
+    });
+
+    if (!exist) {
+      const insertedProduct = await db
+        .insert(products)
+        .values(product)
+        .returning({ id: products.id });
+      product.price.productId = insertedProduct[0].id;
+      await db.insert(productsShopsPrices).values(product.price);
+      console.log(`[INFO] product don't exist inserted`);
+      continue;
+    }
+
+    product.price.productId = exist.id;
+    await db
+      .insert(productsShopsPrices)
+      .values(product.price)
+      .onConflictDoNothing();
+    console.log(`[INFO] product 'exist' updated`);
+  }
+
+  await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
 }

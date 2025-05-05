@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
+import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { sirena } from "@/lib/scrappers/sirena";
 import Image from "next/image";
 
@@ -90,6 +91,9 @@ async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
       break;
     case 3:
       await jumbo.processByProductShopPrice(shopPrice);
+      break;
+    case 4:
+      await plazaLama.processByProductShopPrice(shopPrice);
       break;
   }
 

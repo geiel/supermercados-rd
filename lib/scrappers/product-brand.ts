@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { products, productsBrands } from "@/db/schema";
-import { and, eq, ilike } from "drizzle-orm";
+import { and, eq, ilike, inArray } from "drizzle-orm";
 
 export async function setProductBrand(brandName: string, categoryId: number) {
   let brandId = 0;
@@ -29,7 +29,8 @@ export async function setProductBrand(brandName: string, categoryId: number) {
     .where(
       and(
         eq(products.categoryId, categoryId),
-        ilike(products.name, `%${brandName}%`)
+        ilike(products.name, `%${brandName}%`),
+        inArray(products.brandId, [30, 53, 19, 69])
       )
     )
     .returning();
