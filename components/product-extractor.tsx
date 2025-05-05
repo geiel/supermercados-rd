@@ -17,6 +17,7 @@ import { useState } from "react";
 import { TypographyH3 } from "./typography-h3";
 import { getProductListJumbo } from "@/lib/scrappers/jumbo-extractor";
 import { getProductListSirena } from "@/lib/scrappers/nacional-extractor";
+import { getProductListPlazaLama } from "@/lib/scrappers/plaza-lama-extractor";
 
 export function ProductExtractor({
   shops,
@@ -45,6 +46,9 @@ export function ProductExtractor({
           break;
         case "3":
           await getProductListJumbo(Number(cateogoryId), url);
+          break;
+        case "4":
+          await getProductListPlazaLama(Number(cateogoryId), url);
           break;
       }
     } catch (err) {

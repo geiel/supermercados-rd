@@ -136,7 +136,7 @@ export const AutoComplete = ({
                   return (
                     <CommandItem
                       key={product.id}
-                      value={product.name + product.unit}
+                      value={product.name + product.unit + product.brandId}
                       onMouseDown={(event) => {
                         event.preventDefault();
                         event.stopPropagation();

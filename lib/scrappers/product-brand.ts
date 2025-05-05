@@ -34,3 +34,9 @@ export async function setProductBrand(brandName: string, categoryId: number) {
     )
     .returning();
 }
+
+export async function getProductsByBrand(brandId: number) {
+  return await db.query.products.findMany({
+    where: (products, { eq }) => eq(products.brandId, brandId),
+  });
+}

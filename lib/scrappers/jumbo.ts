@@ -47,28 +47,19 @@ async function processByProductShopPrice(
   }
 
   const $ = cheerio.load(html);
-  const prices = $(".price-final_price").text().trim().split(/\s+/);
+  const finalPrice = $('span[data-price-type="finalPrice"]').attr(
+    "data-price-amount"
+  );
+  const oldPrice = $('span[data-price-type="oldPrice"]').attr(
+    "data-price-amount"
+  );
 
-  if (!prices || prices.length === 0) {
+  if (!finalPrice) {
     processErrorLog("Jumbo", productShopPrice);
     return;
   }
 
-  let currentPrice = "";
-  let regularPrice: string | null = null;
-  if (prices.length > 1) {
-    currentPrice = prices[1].replace("RD$", "");
-    regularPrice = prices[0].replace("RD$", "");
-  } else {
-    currentPrice = prices[0].replace("RD$", "");
-  }
-
-  if (!currentPrice) {
-    processErrorLog("Jumbo", productShopPrice);
-    return;
-  }
-
-  if (Number(productShopPrice.currentPrice) === Number(currentPrice)) {
+  if (Number(productShopPrice.currentPrice) === Number(finalPrice)) {
     ignoreLog("Jumbo", productShopPrice);
     await db
       .update(productsShopsPrices)
@@ -84,7 +75,11 @@ async function processByProductShopPrice(
 
   await db
     .update(productsShopsPrices)
-    .set({ currentPrice, regularPrice, updateAt: new Date() })
+    .set({
+      currentPrice: finalPrice,
+      regularPrice: oldPrice,
+      updateAt: new Date(),
+    })
     .where(
       and(
         eq(productsShopsPrices.productId, productShopPrice.productId),
@@ -94,7 +89,7 @@ async function processByProductShopPrice(
 
   await db.insert(productsPricesHistory).values({
     ...productShopPrice,
-    price: currentPrice,
+    price: finalPrice,
     createdAt: new Date(),
   });
 
