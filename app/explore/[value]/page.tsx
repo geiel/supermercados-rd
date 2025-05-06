@@ -10,6 +10,7 @@ import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
+import { bravo } from "@/lib/scrappers/bravo";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -56,28 +57,48 @@ export default async function Page({ params }: Props) {
     return <div>Productos no encontrados.</div>;
   }
 
+  // <div className="flex justify-center">
+  //                 <div className="aspect-square p-2">
+  //                   <div className="h-full w-full flex items-center">
+  //                     {product.image ? (
+  //                       <Image
+  //                         src={product.image}
+  //                         width={220}
+  //                         height={220}
+  //                         alt={product.name + product.unit}
+  //                       />
+  //                     ) : null}
+  //                   </div>
+  //                 </div>
+  //               </div>
+
   return (
     <div className="container mx-auto">
-      <div className="flex flex-1 flex-col gap-4 p-4">
+      <div className="flex flex-1 flex-col gap-4 p-2">
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
           {productsWithShopPrices.map((product) => (
             <div
               key={product.id}
-              className="aspect-square p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
+              className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
             >
               <Link
                 href={`/product/${toSlug(product.name)}/${product.id}`}
                 className="flex flex-col gap-2"
               >
                 <div className="flex justify-center">
-                  {product.image ? (
-                    <Image
-                      src={product.image}
-                      width={200}
-                      height={200}
-                      alt={product.name + product.unit}
-                    />
-                  ) : null}
+                  <div className="h-[220px] w-[220px] relative">
+                    {product.image ? (
+                      <Image
+                        src={product.image}
+                        fill
+                        alt={product.name + product.unit}
+                        sizes="220px"
+                        style={{
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : null}
+                  </div>
                 </div>
                 <Badge>{product.unit}</Badge>
                 <div>
@@ -124,6 +145,8 @@ async function Price({
       case 5:
         await pricesmart.processByProductShopPrice(shopPrice);
         break;
+      case 6:
+        await bravo.processByProductShopPrice(shopPrice);
     }
   }
 

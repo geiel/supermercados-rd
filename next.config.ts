@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       new URL("https://supermercadosnacional.com/media/catalog/**"),
       new URL("https://img.plazalama.com.do/**"),
       new URL("https://d31f1ehqijlcua.cloudfront.net/**"),
+      {
+        hostname: "bravova-resources.superbravo.com.do",
+      },
     ],
   },
   experimental: {

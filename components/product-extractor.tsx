@@ -19,6 +19,7 @@ import { getProductListJumbo } from "@/lib/scrappers/jumbo-extractor";
 import { getProductListSirena } from "@/lib/scrappers/nacional-extractor";
 import { getProductListPlazaLama } from "@/lib/scrappers/plaza-lama-extractor";
 import { getProductListPricesmart } from "@/lib/scrappers/pricesmart-extractor";
+import { getProductListBravo } from "@/lib/scrappers/bravo-extractor";
 
 export function ProductExtractor({
   shops,
@@ -53,6 +54,9 @@ export function ProductExtractor({
           break;
         case "5":
           await getProductListPricesmart(Number(cateogoryId));
+          break;
+        case "6":
+          await getProductListBravo(Number(cateogoryId), url);
           break;
       }
     } catch (err) {
