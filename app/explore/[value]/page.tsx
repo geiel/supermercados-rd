@@ -9,6 +9,7 @@ import { toSlug } from "@/lib/utils";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
+import { pricesmart } from "@/lib/scrappers/pricesmart";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -119,6 +120,9 @@ async function Price({
         break;
       case 4:
         await plazaLama.processByProductShopPrice(shopPrice);
+        break;
+      case 5:
+        await pricesmart.processByProductShopPrice(shopPrice);
         break;
     }
   }
