@@ -34,7 +34,6 @@ export async function getProductListBravo(categoryId: number, url: string) {
             nombreArticulo: z.string(),
             idArticulo: z.number(),
             idexternoArticulo: z.string(),
-            nimgArticulo: z.number(),
             imageCatalogVersion: z.string(),
           })
         ),
@@ -74,7 +73,7 @@ export async function getProductListBravo(categoryId: number, url: string) {
       return {
         name: productName,
         unit: unit,
-        image: `https://bravova-resources.superbravo.com.do/images/catalogo/big/${p.idexternoArticulo}_${p.nimgArticulo}.png?v=${p.imageCatalogVersion}`,
+        image: `https://bravova-resources.superbravo.com.do/images/catalogo/big/${p.idexternoArticulo}_1.png?v=${p.imageCatalogVersion}`,
         categoryId,
         brandId: 80, //Bravo
         price: {

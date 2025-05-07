@@ -68,17 +68,42 @@ export default async function Page({ params }: Props) {
               />
               <ShopPrice shopPrice={shopPrice} />
               <div>
-                <Button asChild>
-                  <a href={shopPrice.url} target="_blank">
-                    Buscar
-                  </a>
-                </Button>
+                <SearchProductButton shopPrice={shopPrice} />
               </div>
             </div>
           ))}
         </section>
       </div>
     </div>
+  );
+}
+
+function SearchProductButton({
+  shopPrice,
+}: {
+  shopPrice: productsShopsPrices;
+}) {
+  if (shopPrice.shopId === 6) {
+    const productId = shopPrice.api?.replace(
+      "https://bravova-api.superbravo.com.do/public/articulo/get?idArticulo=",
+      ""
+    );
+
+    return (
+      <Button asChild>
+        <a href={`${shopPrice.url}/articulos/${productId}`} target="_blank">
+          Buscar
+        </a>
+      </Button>
+    );
+  }
+
+  return (
+    <Button asChild>
+      <a href={shopPrice.url} target="_blank">
+        Buscar
+      </a>
+    </Button>
   );
 }
 
