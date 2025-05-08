@@ -30,7 +30,7 @@ export async function setProductBrand(brandName: string, categoryId: number) {
       and(
         eq(products.categoryId, categoryId),
         ilike(products.name, `%${brandName}%`),
-        inArray(products.brandId, [30, 53, 19, 69])
+        inArray(products.brandId, [30, 53, 19, 69, 80])
       )
     )
     .returning();
