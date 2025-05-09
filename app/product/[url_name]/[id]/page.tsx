@@ -59,7 +59,11 @@ export default async function Page({ params }: Props) {
         <section className="flex flex-col gap-2">
           <div className="font-bold text-2xl">Donde comprar</div>
           {product.shopCurrentPrices.map((shopPrice, i) => (
-            <div key={i} className="grid grid-cols-4 items-center py-4">
+            <div
+              key={i}
+              className="grid grid-cols-4 items-center py-4"
+              hidden={Boolean(shopPrice.hidden)}
+            >
               <Image
                 src={`/supermarket-logo/${shopPrice.shop.logo}`}
                 width={60}

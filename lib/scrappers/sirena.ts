@@ -12,11 +12,12 @@ import {
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
 import { isLessThan12HoursAgo } from "./utils";
+import { hideProductPrice, showProductPrice } from "../db-utils";
 
 const scrapper = "La Sirena";
 
-async function getProductInfo(api: string | null, shopId: number) {
-  if (!api) {
+async function getProductInfo(productShopPrice: productsShopsPrices) {
+  if (!productShopPrice.api) {
     return null;
   }
 
@@ -26,7 +27,8 @@ async function getProductInfo(api: string | null, shopId: number) {
   };
 
   const scrapperHeaders = await db.query.scrapperHeaders.findMany({
-    where: (scrapperHeaders, { eq }) => eq(scrapperHeaders.shopId, shopId),
+    where: (scrapperHeaders, { eq }) =>
+      eq(scrapperHeaders.shopId, productShopPrice.shopId),
   });
 
   scrapperHeaders.forEach((h) => {
@@ -36,7 +38,7 @@ async function getProductInfo(api: string | null, shopId: number) {
   let jsonResponse: unknown;
 
   try {
-    const response = await fetch(api, { headers });
+    const response = await fetch(productShopPrice.api, { headers });
     jsonResponse = await response.json();
   } catch (err) {
     console.log(err);
@@ -56,6 +58,8 @@ async function getProductInfo(api: string | null, shopId: number) {
 
   if (productInfo.error) {
     console.log(productInfo.error);
+    console.log(jsonResponse);
+    await hideProductPrice(productShopPrice);
     return null;
   }
 
@@ -73,16 +77,14 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice);
-  const productInfo = await getProductInfo(
-    productShopPrice.api,
-    productShopPrice.shopId
-  );
+  const productInfo = await getProductInfo(productShopPrice);
 
   if (!productInfo) {
     processErrorLog(scrapper, productShopPrice);
     return;
   }
 
+  showProductPrice(productShopPrice);
   if (
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) === Number(productInfo.product.price)

@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   integer,
   numeric,
   pgTable,
@@ -98,6 +99,7 @@ export const productsShopsPrices = pgTable(
     currentPrice: numeric(),
     regularPrice: numeric(),
     updateAt: timestamp({ withTimezone: true }),
+    hidden: boolean(),
   },
   (table) => [primaryKey({ columns: [table.productId, table.shopId] })]
 );

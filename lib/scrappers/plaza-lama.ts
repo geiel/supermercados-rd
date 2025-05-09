@@ -9,6 +9,7 @@ import {
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { hideProductPrice, showProductPrice } from "../db-utils";
 
 const scrapper = "Plaza Lama";
 
@@ -105,6 +106,14 @@ async function processByProductShopPrice(
     return;
   }
 
+  if (productInfo.data.getProductsBySKU.length === 0) {
+    console.log(productInfo);
+    processErrorLog(scrapper, productShopPrice);
+    await hideProductPrice(productShopPrice);
+    return;
+  }
+
+  showProductPrice(productShopPrice);
   const productPrice = productInfo.data.getProductsBySKU[0].promotion
     ? productInfo.data.getProductsBySKU[0].promotion.conditions[0].price
     : productInfo.data.getProductsBySKU[0].price;

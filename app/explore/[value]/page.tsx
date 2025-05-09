@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { inArray, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { products, productsShopsPrices } from "@/db/schema";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -26,57 +26,42 @@ export async function generateMetadata({ params }: Props) {
 export default async function Page({ params }: Props) {
   const { value } = await params;
 
-  const q = sql`
-    select
-      *
-    from
-      products
-    where
-      to_tsvector(unaccent(name))
-      @@ 
-      to_tsquery(unaccent(${decodeURIComponent(value).replace(
-        /\s+/g,
-        "+"
-      )}) || ':*');
-  `;
-  const result = await db.execute(q);
-
   const productsWithShopPrices = await db.query.products.findMany({
-    where: inArray(
-      products.id,
-      result.map(({ id }) => Number(id))
-    ),
+    extras: {
+      sml: sql<number>`similarity(unaccent(lower(${
+        products.name
+      })), unaccent(lower(${decodeURIComponent(value)})))`.as("sml"),
+    },
+    where: sql`similarity(unaccent(lower(${
+      products.name
+    })), unaccent(lower(${decodeURIComponent(value)}))) > 0.2`,
     with: {
-      shopCurrentPrices: true,
+      shopCurrentPrices: {
+        where: (shopCurrentPrices, { eq, or, isNull }) =>
+          or(
+            isNull(shopCurrentPrices.hidden),
+            eq(shopCurrentPrices.hidden, false)
+          ),
+      },
       brand: true,
     },
-    // limit: 30,
+    orderBy: sql`sml desc`,
+    limit: 15,
   });
 
-  if (productsWithShopPrices.length === 0) {
+  const filteredProducts = productsWithShopPrices.filter(
+    (product) => product.shopCurrentPrices.length > 0
+  );
+
+  if (filteredProducts.length === 0) {
     return <div>Productos no encontrados.</div>;
   }
-
-  // <div className="flex justify-center">
-  //                 <div className="aspect-square p-2">
-  //                   <div className="h-full w-full flex items-center">
-  //                     {product.image ? (
-  //                       <Image
-  //                         src={product.image}
-  //                         width={220}
-  //                         height={220}
-  //                         alt={product.name + product.unit}
-  //                       />
-  //                     ) : null}
-  //                   </div>
-  //                 </div>
-  //               </div>
 
   return (
     <div className="container mx-auto">
       <div className="flex flex-1 flex-col gap-4 p-2">
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
-          {productsWithShopPrices.map((product) => (
+          {filteredProducts.map((product) => (
             <div
               key={product.id}
               className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
@@ -102,9 +87,7 @@ export default async function Page({ params }: Props) {
                 </div>
                 <Badge>{product.unit}</Badge>
                 <div>
-                  {product.brand ? (
-                    <div className="font-bold">{product.brand.name}</div>
-                  ) : null}
+                  <div className="font-bold">{product.brand.name}</div>
                   {product.name}
                 </div>
                 <ShopExclusive shopPrices={product.shopCurrentPrices} />

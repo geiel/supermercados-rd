@@ -9,6 +9,7 @@ import {
 import { isLessThan12HoursAgo } from "./utils";
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
+import { hideProductPrice, showProductPrice } from "../db-utils";
 
 const scrapper = "Pricesmart";
 type Price = {
@@ -16,12 +17,14 @@ type Price = {
   regularPrice?: string;
 };
 
-async function getProductInfo(api: string | null): Promise<Price | null> {
+async function getProductInfo(
+  productShopPrice: productsShopsPrices
+): Promise<Price | null> {
   const price: Price = {
     currentPrice: "",
     regularPrice: "",
   };
-  if (!api) {
+  if (!productShopPrice.api) {
     return price;
   }
 
@@ -34,7 +37,7 @@ async function getProductInfo(api: string | null): Promise<Price | null> {
         method: "POST",
         body: JSON.stringify([
           {
-            skus: [api],
+            skus: [productShopPrice.api],
           },
           {
             products: "getProductBySKU",
@@ -86,6 +89,13 @@ async function getProductInfo(api: string | null): Promise<Price | null> {
     return price;
   }
 
+  if (productInfo.data.data.products.results.length === 0) {
+    console.log("[ERROR] The result in pricesmart not found", productInfo);
+    await hideProductPrice(productShopPrice);
+    return price;
+  }
+
+  showProductPrice(productShopPrice);
   const priceString =
     productInfo.data.data.products.results[0].masterData.current.allVariants[0].attributesRaw.find(
       (d) => d.name === "unit_price"
@@ -97,7 +107,9 @@ async function getProductInfo(api: string | null): Promise<Price | null> {
     );
 
   if (!priceString || !priceString.value) {
-    console.log("[ERROR] unit_price not found for this api=" + api);
+    console.log(
+      "[ERROR] unit_price not found for this api=" + productShopPrice.api
+    );
     return price;
   }
 
@@ -152,7 +164,7 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice);
-  const price = await getProductInfo(productShopPrice.api);
+  const price = await getProductInfo(productShopPrice);
 
   if (!price) {
     processErrorLog(scrapper, productShopPrice);
