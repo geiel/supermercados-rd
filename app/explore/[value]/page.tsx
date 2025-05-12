@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { count, sql } from "drizzle-orm";
 import { products, productsShopsPrices } from "@/db/schema";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,11 @@ import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
+import { BottomPagination } from "@/components/bottom-pagination";
 
 type Props = {
   params: Promise<{ value: string }>;
+  searchParams: Promise<{ page: string | undefined }>;
 };
 
 export async function generateMetadata({ params }: Props) {
@@ -23,8 +25,26 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default async function Page({ params }: Props) {
+function getOffset(page: string | undefined): number {
+  if (!page) {
+    return 0;
+  }
+
+  const pageNumber = Number(page);
+  if (isNaN(pageNumber)) {
+    return 0;
+  }
+
+  if (!pageNumber) {
+    return 0;
+  }
+
+  return (Number(page) - 1) * 15;
+}
+
+export default async function Page({ params, searchParams }: Props) {
   const { value } = await params;
+  const { page } = await searchParams;
 
   const productsWithShopPrices = await db.query.products.findMany({
     extras: {
@@ -47,7 +67,17 @@ export default async function Page({ params }: Props) {
     },
     orderBy: sql`sml desc`,
     limit: 15,
+    offset: getOffset(page),
   });
+
+  const total = await db
+    .select({ amount: count() })
+    .from(products)
+    .where(
+      sql`similarity(unaccent(lower(${
+        products.name
+      })), unaccent(lower(${decodeURIComponent(value)}))) > 0.2`
+    );
 
   const filteredProducts = productsWithShopPrices.filter(
     (product) => product.shopCurrentPrices.length > 0
@@ -99,6 +129,7 @@ export default async function Page({ params }: Props) {
             </div>
           ))}
         </div>
+        <BottomPagination items={total[0].amount} />
       </div>
     </div>
   );
