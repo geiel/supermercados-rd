@@ -1,3 +1,4 @@
+import { ProductImage } from "@/components/product-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
@@ -46,11 +47,13 @@ export default async function Page({ params }: Props) {
         </Badge>
         <div className="px-4 py-8">
           {product.image ? (
-            <Image
+            <ProductImage
               src={product.image}
               width={450}
               height={200}
               alt={product.name + product.unit}
+              placeholder="blur"
+              blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
             />
           ) : null}
         </div>

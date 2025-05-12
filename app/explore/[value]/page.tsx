@@ -12,6 +12,7 @@ import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
 import { BottomPagination } from "@/components/bottom-pagination";
+import { ProductImage } from "@/components/product-image";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -45,16 +46,20 @@ function getOffset(page: string | undefined): number {
 export default async function Page({ params, searchParams }: Props) {
   const { value } = await params;
   const { page } = await searchParams;
+  const decodedValue = decodeURIComponent(value);
+  let similarityPercentage = "0.2";
+
+  if (decodedValue.split(" ").length >= 3) {
+    similarityPercentage = "0.3";
+  }
 
   const productsWithShopPrices = await db.query.products.findMany({
     extras: {
-      sml: sql<number>`similarity(unaccent(lower(${
-        products.name
-      })), unaccent(lower(${decodeURIComponent(value)})))`.as("sml"),
+      sml: sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${decodedValue})))`.as(
+        "sml"
+      ),
     },
-    where: sql`similarity(unaccent(lower(${
-      products.name
-    })), unaccent(lower(${decodeURIComponent(value)}))) > 0.2`,
+    where: sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${decodedValue}))) > ${similarityPercentage}`,
     with: {
       shopCurrentPrices: {
         where: (shopCurrentPrices, { eq, or, isNull }) =>
@@ -76,7 +81,9 @@ export default async function Page({ params, searchParams }: Props) {
     .where(
       sql`similarity(unaccent(lower(${
         products.name
-      })), unaccent(lower(${decodeURIComponent(value)}))) > 0.2`
+      })), unaccent(lower(${decodeURIComponent(
+        value
+      )}))) > ${similarityPercentage}`
     );
 
   const filteredProducts = productsWithShopPrices.filter(
@@ -86,6 +93,30 @@ export default async function Page({ params, searchParams }: Props) {
   if (filteredProducts.length === 0) {
     return <div>Productos no encontrados.</div>;
   }
+
+  const allShopPrices = filteredProducts.flatMap(
+    (product) => product.shopCurrentPrices
+  );
+  await Promise.all(
+    allShopPrices.map((shopPrice) => {
+      switch (shopPrice.shopId) {
+        case 1:
+          return sirena.processByProductShopPrice(shopPrice);
+        case 2:
+          return nacional.processByProductShopPrice(shopPrice);
+        case 3:
+          return jumbo.processByProductShopPrice(shopPrice);
+        case 4:
+          return plazaLama.processByProductShopPrice(shopPrice);
+        case 5:
+          return pricesmart.processByProductShopPrice(shopPrice);
+        case 6:
+          return bravo.processByProductShopPrice(shopPrice);
+        default:
+          return Promise.resolve(); // skip unknown shopId
+      }
+    })
+  );
 
   return (
     <div className="container mx-auto">
@@ -103,7 +134,7 @@ export default async function Page({ params, searchParams }: Props) {
                 <div className="flex justify-center">
                   <div className="h-[220px] w-[220px] relative">
                     {product.image ? (
-                      <Image
+                      <ProductImage
                         src={product.image}
                         fill
                         alt={product.name + product.unit}
@@ -111,6 +142,8 @@ export default async function Page({ params, searchParams }: Props) {
                         style={{
                           objectFit: "contain",
                         }}
+                        placeholder="blur"
+                        blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
                       />
                     ) : null}
                   </div>
@@ -121,10 +154,7 @@ export default async function Page({ params, searchParams }: Props) {
                   {product.name}
                 </div>
                 <ShopExclusive shopPrices={product.shopCurrentPrices} />
-                <Price
-                  shopPrices={product.shopCurrentPrices}
-                  productId={product.id}
-                />
+                <Price productId={product.id} />
               </Link>
             </div>
           ))}
@@ -135,35 +165,7 @@ export default async function Page({ params, searchParams }: Props) {
   );
 }
 
-async function Price({
-  shopPrices,
-  productId,
-}: {
-  shopPrices: productsShopsPrices[];
-  productId: number;
-}) {
-  for (const shopPrice of shopPrices) {
-    switch (shopPrice.shopId) {
-      case 1:
-        await sirena.processByProductShopPrice(shopPrice);
-        break;
-      case 2:
-        await nacional.processByProductShopPrice(shopPrice);
-        break;
-      case 3:
-        await jumbo.processByProductShopPrice(shopPrice);
-        break;
-      case 4:
-        await plazaLama.processByProductShopPrice(shopPrice);
-        break;
-      case 5:
-        await pricesmart.processByProductShopPrice(shopPrice);
-        break;
-      case 6:
-        await bravo.processByProductShopPrice(shopPrice);
-    }
-  }
-
+async function Price({ productId }: { productId: number }) {
   const lowerPrice = await db.query.productsShopsPrices.findFirst({
     columns: {
       currentPrice: true,

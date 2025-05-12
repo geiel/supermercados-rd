@@ -13,13 +13,12 @@ import { Skeleton } from "./ui/skeleton";
 
 import { cn } from "@/lib/utils";
 import { productsSelect } from "@/db/schema";
-import { Badge } from "./ui/badge";
 
 type AutoCompleteProps = {
   products: productsSelect[];
   emptyMessage: string;
   value?: productsSelect;
-  onValueChange?: (value: productsSelect) => void;
+  productName?: string;
   onInputChange?: (value: string) => void;
   onSearch: (inputValue: string) => void;
   isLoading?: boolean;
@@ -32,16 +31,18 @@ export const AutoComplete = ({
   placeholder,
   emptyMessage,
   value,
-  onValueChange,
   onInputChange,
   onSearch,
   disabled,
   isLoading = false,
+  productName,
 }: AutoCompleteProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [isOpen, setOpen] = useState(false);
-  const [inputValue, setInputValue] = useState<string>(value?.name || "");
+  const [inputValue, setInputValue] = useState<string>(
+    value?.name || productName || ""
+  );
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -62,24 +63,25 @@ export const AutoComplete = ({
         );
 
         if (optionToSelect) {
-          onValueChange?.(optionToSelect);
           onSearch(optionToSelect.name);
         } else {
           onSearch(input.value);
         }
+
+        input.blur();
       }
 
       if (event.key === "Escape") {
         input.blur();
       }
     },
-    [isOpen, products, onValueChange, onSearch]
+    [isOpen, products, onSearch]
   );
 
   const handleSelectProduct = useCallback(
     (selectedProduct: productsSelect) => {
       setInputValue(selectedProduct.name);
-      onValueChange?.(selectedProduct);
+      onSearch(selectedProduct.name);
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -87,7 +89,7 @@ export const AutoComplete = ({
         inputRef?.current?.blur();
       }, 0);
     },
-    [onValueChange]
+    [onSearch]
   );
 
   const handlerInputChange = (value: string) => {
@@ -145,7 +147,6 @@ export const AutoComplete = ({
                       className={cn("flex w-full items-center gap-2")}
                     >
                       {product.name}
-                      <Badge variant="secondary">{product.unit}</Badge>
                     </CommandItem>
                   );
                 })}

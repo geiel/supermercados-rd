@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   const suggestions = await db
-    .select()
+    .selectDistinctOn([products.name])
     .from(products)
     .where(sql`unaccent(${products.name}) ~* unaccent(${`\\m${value}`})`)
     .limit(limit ? Number(limit) : 10);
