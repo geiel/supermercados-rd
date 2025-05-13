@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { productsCategoriesSelect, shopsSelect } from "@/db/schema";
-import { getProductList } from "@/lib/scrappers/sirena-extractor";
+import { getProductListSirena } from "@/lib/scrappers/sirena-extractor";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { TypographyH3 } from "./typography-h3";
 import { getProductListJumbo } from "@/lib/scrappers/jumbo-extractor";
-import { getProductListSirena } from "@/lib/scrappers/nacional-extractor";
+import { getProductListNacional } from "@/lib/scrappers/nacional-extractor";
 import { getProductListPlazaLama } from "@/lib/scrappers/plaza-lama-extractor";
 import { getProductListPricesmart } from "@/lib/scrappers/pricesmart-extractor";
 import { getProductListBravo } from "@/lib/scrappers/bravo-extractor";
@@ -41,10 +41,10 @@ export function ProductExtractor({
     try {
       switch (shopId) {
         case "1":
-          await getProductList(Number(cateogoryId), url);
+          await getProductListSirena(Number(cateogoryId), url);
           break;
         case "2":
-          await getProductListSirena(Number(cateogoryId), url);
+          await getProductListNacional(Number(cateogoryId), url);
           break;
         case "3":
           await getProductListJumbo(Number(cateogoryId), url);

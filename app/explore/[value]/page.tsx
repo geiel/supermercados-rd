@@ -1,6 +1,5 @@
 import { db } from "@/db";
-import { count, sql } from "drizzle-orm";
-import { products, productsShopsPrices } from "@/db/schema";
+import { productsShopsPrices } from "@/db/schema";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { sirena } from "@/lib/scrappers/sirena";
@@ -13,6 +12,7 @@ import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
 import { BottomPagination } from "@/components/bottom-pagination";
 import { ProductImage } from "@/components/product-image";
+import { searchProducts } from "@/lib/search-query";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -46,47 +46,14 @@ function getOffset(page: string | undefined): number {
 export default async function Page({ params, searchParams }: Props) {
   const { value } = await params;
   const { page } = await searchParams;
-  const decodedValue = decodeURIComponent(value);
-  let similarityPercentage = "0.2";
 
-  if (decodedValue.split(" ").length >= 3) {
-    similarityPercentage = "0.3";
-  }
+  const productsAndTotal = await searchProducts(
+    decodeURIComponent(value).trim(),
+    15,
+    getOffset(page)
+  );
 
-  const productsWithShopPrices = await db.query.products.findMany({
-    extras: {
-      sml: sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${decodedValue})))`.as(
-        "sml"
-      ),
-    },
-    where: sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${decodedValue}))) > ${similarityPercentage}`,
-    with: {
-      shopCurrentPrices: {
-        where: (shopCurrentPrices, { eq, or, isNull }) =>
-          or(
-            isNull(shopCurrentPrices.hidden),
-            eq(shopCurrentPrices.hidden, false)
-          ),
-      },
-      brand: true,
-    },
-    orderBy: sql`sml desc`,
-    limit: 15,
-    offset: getOffset(page),
-  });
-
-  const total = await db
-    .select({ amount: count() })
-    .from(products)
-    .where(
-      sql`similarity(unaccent(lower(${
-        products.name
-      })), unaccent(lower(${decodeURIComponent(
-        value
-      )}))) > ${similarityPercentage}`
-    );
-
-  const filteredProducts = productsWithShopPrices.filter(
+  const filteredProducts = productsAndTotal.products.filter(
     (product) => product.shopCurrentPrices.length > 0
   );
 
@@ -159,7 +126,7 @@ export default async function Page({ params, searchParams }: Props) {
             </div>
           ))}
         </div>
-        <BottomPagination items={total[0].amount} />
+        <BottomPagination items={productsAndTotal.total} />
       </div>
     </div>
   );

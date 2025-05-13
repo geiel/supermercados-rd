@@ -3,10 +3,11 @@
 import { db } from "@/db";
 import {
   products,
+  productsBrands,
   productsPricesHistory,
   productsShopsPrices,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function adminMergeProduct(
   parentProductId: number,
@@ -23,4 +24,47 @@ export async function adminMergeProduct(
     .where(eq(productsShopsPrices.productId, childProductId));
 
   await db.delete(products).where(eq(products.id, childProductId));
+}
+
+export async function getSimilarProducts(categoryId: number) {
+  const threshold = 0.4;
+
+  const duplicates = await db
+    .select({
+      id1: products.id,
+      name1: products.name,
+      image1: products.image,
+      unit1: products.unit,
+      brand1Name: sql<string>`b1.name`,
+      id2: sql<number>`p2.id`,
+      name2: sql<string>`p2.name`,
+      image2: sql<string>`p2.image`,
+      unit2: sql<string>`p2.unit`,
+      brand2Name: sql<string>`b2.name`,
+      sml: sql<number>`
+      similarity(
+        unaccent(lower(${products.name})),
+        unaccent(lower(p2.name))
+      )
+    `.as("sml"),
+    })
+    .from(products)
+    .innerJoin(
+      sql`${products} as p2`,
+      sql`
+        ${products.id} < p2.id
+        AND ${products.brandId} <> p2."brandId"
+        AND p2."brandId" = 19
+        AND similarity(
+              unaccent(lower(${products.name})),
+              unaccent(lower(p2.name))
+            ) > ${threshold}
+      `
+    )
+    .innerJoin(sql`${productsBrands} as b1`, sql`${products.brandId} = b1.id`)
+    .innerJoin(sql`${productsBrands} as b2`, sql`p2."brandId" = b2.id`)
+    .where(eq(products.categoryId, categoryId))
+    .orderBy(sql`sml DESC`);
+
+  return duplicates;
 }

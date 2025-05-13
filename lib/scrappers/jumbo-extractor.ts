@@ -111,6 +111,18 @@ export async function getProductListJumbo(categoryId: number, url: string) {
       .insert(productsShopsPrices)
       .values(product.price)
       .onConflictDoNothing();
+
+    if (exist.brandId === 53) {
+      console.log(
+        `[INFO] product is from nacional update to Centro Cuesta Nacional`
+      );
+      await db
+        .update(products)
+        .set({
+          brandId: 81,
+        })
+        .where(eq(products.id, exist.id));
+    }
     console.log(`[INFO] product 'exist' updated`);
   }
 

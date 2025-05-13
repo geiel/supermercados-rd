@@ -12,7 +12,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-export async function getProductList(categoryId: number, url: string) {
+export async function getProductListSirena(categoryId: number, url: string) {
   const unitTrackers: unitTrackerInsert[] = [];
 
   const response = await fetch(url, {

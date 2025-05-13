@@ -24,7 +24,7 @@ async function getHtml(url: string) {
   return await response.text();
 }
 
-export async function getProductListSirena(categoryId: number, url: string) {
+export async function getProductListNacional(categoryId: number, url: string) {
   const html = await getHtml(url);
 
   const $ = cheerio.load(html);
@@ -101,87 +101,33 @@ export async function getProductListSirena(categoryId: number, url: string) {
       `[INFO] start process product=${product.name} ${product.unit} url=${product.price.url}`
     );
 
-    const brandExist = await db.query.productsBrands.findFirst({
-      where: (productsBrands, { eq }) =>
-        eq(productsBrands.name, product.brandName),
-    });
+    const brand = await getCreatedBrand(product.brandName);
 
     const productExist = await db.query.products.findFirst({
       where: and(
         eq(products.name, product.name),
-        eq(products.unit, product.unit)
+        eq(products.unit, product.unit),
+        eq(products.brandId, brand!.id)
       ),
       with: {
         shopCurrentPrices: true,
       },
     });
 
-    if (!productExist) {
-      if (!brandExist) {
-        const brand = await db
-          .insert(productsBrands)
-          .values({ name: product.brandName })
-          .returning();
-        product.brandId = brand[0].id;
-      } else {
-        product.brandId = brandExist.id;
-      }
-
-      const insertedProduct = await db
-        .insert(products)
-        .values(product)
-        .returning();
-      product.price.productId = insertedProduct[0].id;
-      await db.insert(productsShopsPrices).values(product.price);
-      console.log(`[INFO] product don't exist inserted`);
+    if (productExist) {
+      console.log(`[INFO] product exist continue with next product`);
       continue;
     }
 
-    product.price.productId = productExist.id;
+    product.brandId = brand!.id;
+    const insertedProduct = await db
+      .insert(products)
+      .values(product)
+      .returning();
+    product.price.productId = insertedProduct[0].id;
 
-    if (!brandExist) {
-      console.log(
-        `[INFO] product exist but brand don't exist create a new product`
-      );
-      const brand = await db
-        .insert(productsBrands)
-        .values({ name: product.brandName })
-        .returning();
-      product.brandId = brand[0].id;
-      const insertedProduct = await db
-        .insert(products)
-        .values(product)
-        .returning();
-      product.price.productId = insertedProduct[0].id;
-      continue;
-    }
-
-    if (productExist.brandId === 19 || productExist.brandId === 30) {
-      console.log(
-        `[INFO] product exist but brand is a shop specific create a new product`
-      );
-      if (!brandExist) {
-        const brand = await db
-          .insert(productsBrands)
-          .values({ name: product.brandName })
-          .returning();
-        product.brandId = brand[0].id;
-      } else {
-        product.brandId = brandExist.id;
-      }
-      const insertedProduct = await db
-        .insert(products)
-        .values(product)
-        .returning();
-
-      product.price.productId = insertedProduct[0].id;
-    }
-
-    await db
-      .insert(productsShopsPrices)
-      .values(product.price)
-      .onConflictDoNothing();
-    console.log(`[INFO] product 'exist' updated`);
+    await db.insert(productsShopsPrices).values(product.price);
+    console.log(`[INFO] product don't exist inserted`);
   }
 
   await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
@@ -193,4 +139,24 @@ function toTitleCase(str: string) {
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+async function getCreatedBrand(brandName: string) {
+  if (!brandName) {
+    return await db.query.productsBrands.findFirst({
+      where: eq(productsBrands.id, 78),
+    });
+  }
+
+  const brandExist = await db.query.productsBrands.findFirst({
+    where: (productsBrands, { eq }) => eq(productsBrands.name, brandName),
+  });
+
+  if (brandExist) {
+    return brandExist;
+  }
+
+  return (
+    await db.insert(productsBrands).values({ name: brandName }).returning()
+  )[0];
 }
