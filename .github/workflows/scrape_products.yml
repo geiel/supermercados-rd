@@ -15,20 +15,17 @@ jobs:
       - name: 📥 Check out code
         uses: actions/checkout@v3
 
-      - name: 🛠 Setup Node.js & pnpm cache
+      - name: 🛠 Setup Node.js & npm cache
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'pnpm'             # enable pnpm lockfile caching
-
-      - name: 📦 Install pnpm
-        run: npm install -g pnpm
+          cache: 'npm'
 
       - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: 🚀 Run scraper
-        run: pnpm exec tsx ./scrape.ts
+        run: npx tsx ./scrape.ts
 
       - name: ✅ Success
         if: ${{ success() }}
