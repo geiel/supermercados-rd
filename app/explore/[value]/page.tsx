@@ -53,9 +53,13 @@ export default async function Page({ params, searchParams }: Props) {
     getOffset(page)
   );
 
-  const filteredProducts = productsAndTotal.products.filter(
-    (product) => product.shopCurrentPrices.length > 0
-  );
+  const filteredProducts = productsAndTotal.products.filter((product) => {
+    if (product.shopCurrentPrices.length === 0) {
+      productsAndTotal.total -= 1;
+    }
+
+    return product.shopCurrentPrices.length > 0;
+  });
 
   if (filteredProducts.length === 0) {
     return <div>Productos no encontrados.</div>;
@@ -111,6 +115,7 @@ export default async function Page({ params, searchParams }: Props) {
                         }}
                         placeholder="blur"
                         blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                        className="max-w-none"
                       />
                     ) : null}
                   </div>
@@ -180,6 +185,7 @@ async function ShopExclusive({
       width={50}
       height={20}
       alt="logo tienda"
+      className="max-w-none"
     />
   );
 }

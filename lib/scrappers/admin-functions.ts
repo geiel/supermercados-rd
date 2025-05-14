@@ -54,7 +54,7 @@ export async function getSimilarProducts(categoryId: number) {
       sql`
         ${products.id} < p2.id
         AND ${products.brandId} <> p2."brandId"
-        AND p2."brandId" = 19
+        AND p2."brandId" = 30
         AND similarity(
               unaccent(lower(${products.name})),
               unaccent(lower(p2.name))
@@ -64,7 +64,8 @@ export async function getSimilarProducts(categoryId: number) {
     .innerJoin(sql`${productsBrands} as b1`, sql`${products.brandId} = b1.id`)
     .innerJoin(sql`${productsBrands} as b2`, sql`p2."brandId" = b2.id`)
     .where(eq(products.categoryId, categoryId))
-    .orderBy(sql`sml DESC`);
+    .orderBy(sql`sml DESC`)
+    .limit(150);
 
   return duplicates;
 }

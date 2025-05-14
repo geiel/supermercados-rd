@@ -12,6 +12,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
+import { hideProductPrice } from "../db-utils";
 
 async function getHtml(url: string) {
   try {
@@ -56,6 +57,7 @@ async function processByProductShopPrice(
 
   if (!finalPrice) {
     processErrorLog("Jumbo", productShopPrice);
+    await hideProductPrice(productShopPrice);
     return;
   }
 

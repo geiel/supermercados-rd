@@ -23,6 +23,8 @@ export default async function Page({ params }: Props) {
     where: (products, { eq }) => eq(products.id, Number(id)),
     with: {
       shopCurrentPrices: {
+        where: (scp, { isNull, eq, or }) =>
+          or(isNull(scp.hidden), eq(scp.hidden, false)),
         with: {
           shop: true,
         },
