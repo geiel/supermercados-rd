@@ -1,40 +1,43 @@
-name: 🕵️‍♂️ Run Scraper
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Run Scraper
 
 on:
-  # every 20 minutes
   schedule:
     - cron: '*/20 * * * *'
-  # allow manual trigger
   workflow_dispatch:
 
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
+    
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
     steps:
-      - name: 📥 Check out code
-        uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: 📦 Install dependencies
+      run: npm install --frozen-lockfile
 
-      - name: 🛠 Setup Node.js & pnpm cache
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'pnpm'
+    - name: 🚀 Run scraper
+      run: npm exec tsx ./scrape.ts
 
-      - name: 📦 Install pnpm
-        run: npm install -g pnpm
+    - name: ✅ Success
+      if: ${{ success() }}
+      run: echo "Scraper completed successfully."
 
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 🚀 Run scraper
-        run: pnpm exec tsx ./scrape.ts
-
-      - name: ✅ Success
-        if: ${{ success() }}
-        run: echo "Scraper completed successfully."
-
-      - name: ❌ Fail
-        if: ${{ failure() }}
-        run: echo "Scraper failed!" && exit 1
+    - name: ❌ Fail
+      if: ${{ failure() }}
+      run: echo "Scraper failed!" && exit 1
