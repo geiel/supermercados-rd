@@ -61,8 +61,11 @@ export async function searchProducts(
     },
   });
 
+  const byId = new Map(productsResponse.map((p) => [p.id, p]));
+  const orderedProducts = res.map((r) => byId.get(r.id as number)!);
+
   return {
-    products: productsResponse,
+    products: orderedProducts,
     total: res.length > 0 ? (res[0].total_count as number) : 0,
   };
 }
