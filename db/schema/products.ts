@@ -153,3 +153,5 @@ export type productsCategoriesSelect = typeof productsCategories.$inferSelect;
 export type unitTrackerInsert = typeof unitTracker.$inferInsert;
 export type productsBrandsInsert = typeof productsBrands.$inferInsert;
 export type productsBrandsSelect = typeof productsBrands.$inferSelect;
+export type productsPricesHistorySelect =
+  typeof productsPricesHistory.$inferSelect;

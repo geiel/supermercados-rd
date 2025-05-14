@@ -1,8 +1,10 @@
+import { PricesChart } from "@/components/prices-chart";
 import { ProductImage } from "@/components/product-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
+import { bravo } from "@/lib/scrappers/bravo";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
@@ -26,6 +28,7 @@ export default async function Page({ params }: Props) {
         },
       },
       brand: true,
+      pricesHistory: true,
     },
   });
 
@@ -58,7 +61,7 @@ export default async function Page({ params }: Props) {
           ) : null}
         </div>
       </section>
-      <div>
+      <div className="flex flex-col gap-10">
         <section className="flex flex-col gap-2">
           <div className="font-bold text-2xl">Donde comprar</div>
           {product.shopCurrentPrices.map((shopPrice, i) => (
@@ -79,6 +82,11 @@ export default async function Page({ params }: Props) {
               </div>
             </div>
           ))}
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <div className="font-bold text-2xl">Historial de precios</div>
+          <PricesChart priceHistory={product.pricesHistory} />
         </section>
       </div>
     </div>
@@ -130,6 +138,9 @@ async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
       break;
     case 5:
       await pricesmart.processByProductShopPrice(shopPrice);
+      break;
+    case 6:
+      await bravo.processByProductShopPrice(shopPrice);
       break;
   }
 
