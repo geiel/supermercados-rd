@@ -8,16 +8,24 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       PGSSLMODE: require
 
     steps:
       - uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.14.0
+
       - uses: actions/setup-node@v3
         with:
           node-version: 18.x
-          cache: npm
-      - run: npm ci
+          cache: 'pnpm'
+
+      - run: pnpm install
+
       - name: Run Scrape
-        run: npm run scrape
+        run: pnpm run scrape
