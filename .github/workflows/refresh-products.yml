@@ -1,4 +1,4 @@
-name: Run Scrapers
+name: Refresh Products
 
 on:
   schedule:
