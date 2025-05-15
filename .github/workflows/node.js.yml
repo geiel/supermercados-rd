@@ -1,4 +1,4 @@
-name: Run Scrapers test
+name: Run Scrapers
 
 on:
   schedule:
@@ -23,9 +23,6 @@ jobs:
           node-version: 18.x
           cache: 'pnpm'
       - run: pnpm install
-
-      - name: Debug DB URL
-        run: echo "DATABASE_URL = $DATABASE_URL"
 
       - name: Run Scrape
         run: pnpm run scrape
