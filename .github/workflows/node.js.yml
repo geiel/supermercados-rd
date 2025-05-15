@@ -19,6 +19,6 @@ jobs:
           cache: 'npm'
       - run: npm install
       - name: Run Scrape
-        run: npm scrape
+        run: npm run scrape
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
