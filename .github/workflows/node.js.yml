@@ -1,7 +1,4 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Run Scrappers test
+name: Run Scrapers test
 
 on:
   schedule:
@@ -9,16 +6,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  scrape:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PGSSLMODE: require
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
-          cache: 'npm'
-      - run: npm install
+          node-version: 18.x
+          cache: npm
+      - run: npm ci
       - name: Run Scrape
         run: npm run scrape
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
