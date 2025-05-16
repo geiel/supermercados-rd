@@ -12,6 +12,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
+import { hideProductPrice } from "../db-utils";
 
 const scrapper = "Nacional";
 
@@ -45,6 +46,7 @@ async function processByProductShopPrice(
 
   if (!html) {
     processErrorLog(scrapper, productShopPrice);
+    await hideProductPrice(productShopPrice);
     return;
   }
 
