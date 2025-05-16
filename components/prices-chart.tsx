@@ -35,11 +35,13 @@ function getLowestPricesByDate(history: productsPricesHistorySelect[]) {
   );
 
   if (history.length > 0) {
-    const mostRecent = history.reduce((prev, cur) =>
-      prev.createdAt > cur.createdAt ? prev : cur
-    );
+    const dates = Object.keys(minByDate).sort();
+    const lastDate = dates[dates.length - 1];
     const today = new Date().toISOString().slice(0, 10);
-    minByDate[today] = parseFloat(mostRecent.price);
+
+    if (today !== lastDate) {
+      minByDate[today] = minByDate[lastDate];
+    }
   }
 
   return Object.entries(minByDate)

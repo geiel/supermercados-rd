@@ -46,7 +46,6 @@ async function processByProductShopPrice(
 
   if (!html) {
     processErrorLog(scrapper, productShopPrice);
-    await hideProductPrice(productShopPrice);
     return;
   }
 
@@ -60,6 +59,7 @@ async function processByProductShopPrice(
 
   if (!finalPrice) {
     processErrorLog(scrapper, productShopPrice);
+    await hideProductPrice(productShopPrice);
     return;
   }
 

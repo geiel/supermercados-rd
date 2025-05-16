@@ -30,7 +30,7 @@ export function SearchBar() {
   function explore(value: string) {
     if (!value) return;
 
-    router.push(`/explore/${value}`);
+    router.push(`/explore/${encodeURIComponent(value)}`);
   }
 
   return (
