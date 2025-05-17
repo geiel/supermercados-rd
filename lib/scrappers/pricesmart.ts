@@ -166,8 +166,9 @@ async function processByProductShopPrice(
   initProcessLog(scrapper, productShopPrice);
   const price = await getProductInfo(productShopPrice);
 
-  if (!price) {
+  if (!price || !price.currentPrice) {
     processErrorLog(scrapper, productShopPrice);
+    await hideProductPrice(productShopPrice);
     return;
   }
 

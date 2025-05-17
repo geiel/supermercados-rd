@@ -52,13 +52,16 @@ export async function getSimilarProducts(categoryId: number) {
     .innerJoin(
       sql`${products} as p2`,
       sql`
-        ${products.id} < p2.id
+        ${products.categoryId} = p2."categoryId"
         AND ${products.brandId} <> p2."brandId"
-        AND p2."brandId" = 30
-        AND similarity(
-              unaccent(lower(${products.name})),
-              unaccent(lower(p2.name))
+        AND p2."brandId" = 19
+        AND (
+            unaccent(lower(${products.name})) = unaccent(lower(p2.name))
+          OR similarity(
+                unaccent(lower(${products.name})),
+                unaccent(lower(p2.name))
             ) > ${threshold}
+        )
       `
     )
     .innerJoin(sql`${productsBrands} as b1`, sql`${products.brandId} = b1.id`)

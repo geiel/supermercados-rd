@@ -15,16 +15,16 @@ import { z } from "zod";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Frutas-y-vegetales-G10D04018/G10D04018",
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Carnes-G10D59015/G10D59015",
     start: 108,
-    q: "G10D04018",
+    q: "G10D59015",
     fq: [],
     search_type: "category",
     rows: 12,
     account_id: "7024",
     auth_key: "ev7libhybjg5h1d1",
     _br_uid_2: "uid=7086154559720:v=15.0:ts=1732413232358:hc=333",
-    request_id: 1746478531219,
+    request_id: 1747418369935,
     domain_key: "pricesmart_bloomreach_io_es",
     fl: "pid,title,price,thumb_image,brand,slug,skuid,currency,fractionDigits,master_sku,sold_by_weight_DO,weight_DO,weight_uom_description_DO,sign_price_DO,price_per_uom_DO,uom_description_DO,availability_DO,price_DO,inventory_DO,inventory_DO,promoid_DO",
     view_id: "DO",
@@ -87,12 +87,13 @@ export async function getProductListPricesmart(categoryId: number) {
       /(.+?)(?:\s+[\d.,]+\s*\w+(?:\s*\w+)?\s*\/\s*)?([\d.,]+\s*\w+(?:\s*\w+)?)$/
     );
 
-    if (!match) {
-      return null;
-    }
+    let productName = p.title;
+    let unit = "Revisar";
 
-    const productName = match[1].trim();
-    const unit = match[2].trim();
+    if (match) {
+      productName = match[1].trim();
+      unit = match[2].trim();
+    }
 
     unitTrackers.push({
       unit,

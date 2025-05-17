@@ -143,10 +143,11 @@ async function Price({ productId }: { productId: number }) {
       currentPrice: true,
       regularPrice: true,
     },
-    where: (priceTable, { isNotNull, eq, and }) =>
+    where: (priceTable, { isNotNull, eq, and, or, isNull }) =>
       and(
         isNotNull(priceTable.currentPrice),
-        eq(priceTable.productId, productId)
+        eq(priceTable.productId, productId),
+        or(isNull(priceTable.hidden), eq(priceTable.hidden, false))
       ),
     orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
   });

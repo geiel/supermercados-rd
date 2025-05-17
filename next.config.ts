@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       new URL(
         "https://assets-sirenago.s3-us-west-1.amazonaws.com/product/original/**"
