@@ -13,6 +13,7 @@ import { bravo } from "@/lib/scrappers/bravo";
 import { BottomPagination } from "@/components/bottom-pagination";
 import { ProductImage } from "@/components/product-image";
 import { searchProducts } from "@/lib/search-query";
+import { PricePerUnit } from "@/components/price-per-unit";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -126,7 +127,11 @@ export default async function Page({ params, searchParams }: Props) {
                   {product.name}
                 </div>
                 <ShopExclusive shopPrices={product.shopCurrentPrices} />
-                <Price productId={product.id} />
+                <Price
+                  productId={product.id}
+                  unit={product.unit}
+                  categoryId={product.categoryId}
+                />
               </Link>
             </div>
           ))}
@@ -137,7 +142,15 @@ export default async function Page({ params, searchParams }: Props) {
   );
 }
 
-async function Price({ productId }: { productId: number }) {
+async function Price({
+  productId,
+  unit,
+  categoryId,
+}: {
+  productId: number;
+  unit: string;
+  categoryId: number;
+}) {
   const lowerPrice = await db.query.productsShopsPrices.findFirst({
     columns: {
       currentPrice: true,
@@ -152,14 +165,25 @@ async function Price({ productId }: { productId: number }) {
     orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
   });
 
+  if (!lowerPrice) {
+    return null;
+  }
+
   return (
     <div>
-      <div className="font-bold text-lg pt-1">
-        RD${lowerPrice?.currentPrice}
-      </div>
-      {Number(lowerPrice?.currentPrice) < Number(lowerPrice?.regularPrice) ? (
-        <div className="font-semibold">{lowerPrice?.regularPrice}</div>
+      <div className="font-bold text-lg pt-1">RD${lowerPrice.currentPrice}</div>
+      {Number(lowerPrice.currentPrice) < Number(lowerPrice.regularPrice) ? (
+        <div className="font-semibold">{lowerPrice.regularPrice}</div>
       ) : null}
+      <PricePerUnit
+        unit={unit}
+        price={
+          Number(lowerPrice.currentPrice) < Number(lowerPrice.regularPrice)
+            ? Number(lowerPrice.regularPrice)
+            : Number(lowerPrice.currentPrice)
+        }
+        categoryId={categoryId}
+      />
     </div>
   );
 }
