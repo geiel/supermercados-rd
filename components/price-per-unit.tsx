@@ -78,7 +78,7 @@ export function PricePerUnit({
   }
 
   //Equal to "Carnes"
-  if (categoryId === 2 || unitOnly === "KG") {
+  if (categoryId === 2 || categoryId === 3 || unitOnly === "KG") {
     const lb = convertToPounds(amount, unitOnly);
     return <div className="text-xs">${(price / lb).toFixed(2)} por LB</div>;
   }

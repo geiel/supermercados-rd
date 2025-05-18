@@ -14,7 +14,8 @@ export async function adminMergeProduct(
   childProductId: number
 ) {
   await db
-    .delete(productsPricesHistory)
+    .update(productsPricesHistory)
+    .set({ productId: parentProductId })
     .where(eq(productsPricesHistory.productId, childProductId));
   await db
     .update(productsShopsPrices)
@@ -71,4 +72,14 @@ export async function getSimilarProducts(categoryId: number) {
     .limit(150);
 
   return duplicates;
+}
+
+export async function deleteProductById(productId: number) {
+  await db
+    .delete(productsPricesHistory)
+    .where(eq(productsPricesHistory.productId, productId));
+  await db
+    .delete(productsShopsPrices)
+    .where(eq(productsShopsPrices.productId, productId));
+  await db.delete(products).where(eq(products.id, productId));
 }
