@@ -53,7 +53,7 @@ export function PricePerUnit({
   const amount = Number(amountAndUnit[0]);
   const unitOnly = amountAndUnit[1];
 
-  if (amount <= 1 && unitOnly !== "KG") {
+  if (amount <= 1 && unitOnly !== "KG" && unitOnly !== "LB") {
     return null;
   }
 
@@ -65,6 +65,14 @@ export function PricePerUnit({
     unitOnly !== "KG"
   ) {
     return null;
+  }
+
+  if (amount === 1) {
+    return;
+  }
+
+  if (amount < 1 && unitOnly === "LB") {
+    return <div className="text-xs">${(price / amount).toFixed(2)} por LB</div>;
   }
 
   if (unitOnly === "UND") {

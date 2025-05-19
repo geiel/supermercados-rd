@@ -14,3 +14,12 @@ export function toSlug(text: string): string {
     .trim()
     .replace(/\s+/g, "-"); // Replace spaces with hyphens
 }
+
+export function isToday(d: Date): boolean {
+  const today = new Date();
+  return (
+    d.getFullYear() === today.getFullYear() &&
+    d.getMonth() === today.getMonth() &&
+    d.getDate() === today.getDate()
+  );
+}

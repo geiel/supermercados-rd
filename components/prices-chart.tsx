@@ -11,6 +11,7 @@ import {
 import { productsPricesHistorySelect } from "@/db/schema";
 import { Activity } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
+import { isToday } from "@/lib/utils";
 
 const chartConfig = {
   price: {
@@ -20,41 +21,62 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-function getLowestPricesByDate(history: productsPricesHistorySelect[]) {
-  const minByDate = history.reduce<Record<string, number>>(
-    (acc, { price, createdAt }) => {
-      const day = createdAt.toISOString().slice(0, 10);
-      const val = parseFloat(price);
-      if (isNaN(val)) return acc;
-      if (acc[day] === undefined || val < acc[day]) {
-        acc[day] = val;
-      }
-      return acc;
-    },
-    {}
-  );
-
-  if (history.length > 0) {
-    const dates = Object.keys(minByDate).sort();
-    const lastDate = dates[dates.length - 1];
-    const today = new Date().toISOString().slice(0, 10);
-
-    if (today !== lastDate) {
-      minByDate[today] = minByDate[lastDate];
-    }
-  }
-
-  return Object.entries(minByDate)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, price]) => ({ date, price }));
-}
-
 export function PricesChart({
   priceHistory,
 }: {
   priceHistory: productsPricesHistorySelect[];
 }) {
-  const data = getLowestPricesByDate(priceHistory);
+  console.log(priceHistory);
+
+  const organizedPrice = priceHistory
+    .map((price) => {
+      const shopPrices = priceHistory.filter((p) => p.shopId === price.shopId);
+
+      if (shopPrices.length === 1) {
+        return { ...price, stillActive: true };
+      }
+
+      const sortedByRecent = shopPrices.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      );
+
+      if (price.createdAt === sortedByRecent[0].createdAt) {
+        return { ...price, stillActive: true };
+      }
+
+      return { ...price, stillActive: false };
+    })
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+  const prices: Array<productsPricesHistorySelect & { stillActive: boolean }> =
+    [];
+
+  organizedPrice.forEach((price) => {
+    if (prices.length === 0) {
+      prices.push(price);
+      return;
+    }
+
+    const priceBefore = prices.filter((p) => p.createdAt < price.createdAt);
+    if (priceBefore.some((p) => p.stillActive && p.price < price.price)) {
+      return;
+    }
+
+    prices.push(price);
+  });
+
+  const data = prices.map((p) => ({
+    date: p.createdAt,
+    price: Number(p.price),
+  }));
+
+  if (!isToday(data[data.length - 1].date)) {
+    data.push({
+      date: new Date(),
+      price: data[data.length - 1].price,
+    });
+  }
+
   return (
     <Card>
       <CardContent>
