@@ -1,25 +1,36 @@
 import { db } from "@/db";
 import { products } from "@/db/schema";
 import { sql } from "drizzle-orm";
+import { synonyms } from "./synonyms";
+
+function removeAccents(str: string) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
 export async function searchProducts(
   value: string,
   limit: number,
   offset: number
 ) {
+  const tsQuery = buildTsQuery(removeAccents(value));
+
   const query = sql`
-        WITH
+          WITH
             fts AS (
-                SELECT
+              SELECT
                 id,
                 name,
                 ts_rank(
-                    to_tsvector('spanish', unaccent(lower(name))),
-                    plainto_tsquery('spanish', unaccent(lower(${value})))
+                  to_tsvector('spanish', unaccent(lower(name)))
+                  || to_tsvector('english', unaccent(lower(name))),
+                  to_tsquery('spanish', unaccent(lower(${tsQuery})))
+                  || to_tsquery('english', unaccent(lower(${tsQuery})))
                 ) AS rank
-                FROM ${products}
-                WHERE to_tsvector('spanish', unaccent(lower(name)))
-                @@ plainto_tsquery('spanish', unaccent(lower(${value})))
+              FROM products
+              WHERE
+                to_tsvector('spanish', unaccent(lower(name))) @@ to_tsquery('spanish', unaccent(lower(${tsQuery})))
+                OR
+                to_tsvector('english', unaccent(lower(name))) @@ to_tsquery('english', unaccent(lower(${tsQuery})))
             ),
             fuzzy AS (
                 SELECT
@@ -29,7 +40,6 @@ export async function searchProducts(
                 FROM ${products}
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
             )
-
         SELECT
             COALESCE(fts.id, fuzzy.id)    AS id,
             COALESCE(fts.name, fuzzy.name) AS name,
@@ -68,4 +78,19 @@ export async function searchProducts(
     products: orderedProducts,
     total: res.length > 0 ? (res[0].total_count as number) : 0,
   };
+}
+
+function cartesian<T>(sets: T[][]): T[][] {
+  return sets.reduce<T[][]>(
+    (acc, set) => acc.flatMap((seq) => set.map((item) => [...seq, item])),
+    [[]]
+  );
+}
+
+function buildTsQuery(raw: string) {
+  const norm = removeAccents(raw.trim().toLowerCase());
+  const words = norm.split(/\s+/);
+  const buckets = words.map((w) => [w, ...(synonyms[w] || [])]);
+  const combos = cartesian(buckets).map((arr) => arr.join(" & "));
+  return combos.join(" | ");
 }
