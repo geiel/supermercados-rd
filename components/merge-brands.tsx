@@ -150,6 +150,7 @@ export default function MergeProducts({
                         width={200}
                         height={200}
                         alt={product.name1}
+                        unoptimized
                       />
                     ) : null}
                   </div>
@@ -174,6 +175,7 @@ export default function MergeProducts({
                         width={200}
                         height={200}
                         alt={product.name2}
+                        unoptimized
                       />
                     ) : null}
                   </div>
@@ -207,6 +209,7 @@ export default function MergeProducts({
                     width={200}
                     height={200}
                     alt={product.name + product.unit}
+                    unoptimized
                   />
                 ) : null}
               </div>
