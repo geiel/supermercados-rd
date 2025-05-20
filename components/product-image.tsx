@@ -15,6 +15,7 @@ export function ProductImage(props: ImageProps) {
         setImageSrc("/no-product-found.jpg");
       }}
       alt={props.alt}
+      unoptimized
     />
   );
 }
