@@ -14,6 +14,8 @@ export async function searchProducts(
 ) {
   const tsQuery = buildTsQuery(removeAccents(value));
 
+  console.log(tsQuery);
+
   const query = sql`
           WITH
             fts AS (
