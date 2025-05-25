@@ -26,8 +26,6 @@ export function PricesChart({
 }: {
   priceHistory: productsPricesHistorySelect[];
 }) {
-  console.log(priceHistory);
-
   const organizedPrice = priceHistory
     .map((price) => {
       const shopPrices = priceHistory.filter((p) => p.shopId === price.shopId);

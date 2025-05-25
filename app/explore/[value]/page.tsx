@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
-import { toSlug } from "@/lib/utils";
+import { sanitizeForTsQuery, toSlug } from "@/lib/utils";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
@@ -49,7 +49,7 @@ export default async function Page({ params, searchParams }: Props) {
   const { page } = await searchParams;
 
   const productsAndTotal = await searchProducts(
-    decodeURIComponent(value).trim(),
+    sanitizeForTsQuery(decodeURIComponent(value).trim()),
     15,
     getOffset(page)
   );

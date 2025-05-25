@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function sanitizeForTsQuery(str: string) {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/[^a-zA-Z0-9\s]/g, " ") // strip punctuation/parentheses
+    .trim()
+    .toLowerCase();
+}
+
 export function toSlug(text: string): string {
   return text
     .toLowerCase()
