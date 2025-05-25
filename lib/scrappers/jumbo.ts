@@ -12,7 +12,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
-import { hideProductPrice } from "../db-utils";
+import { hideProductPrice, validateHistory } from "../db-utils";
 
 async function getHtml(url: string) {
   try {
@@ -72,6 +72,11 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
+    await validateHistory(
+      productShopPrice.productId,
+      productShopPrice.shopId,
+      finalPrice
+    );
     return;
   }
 

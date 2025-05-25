@@ -9,6 +9,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { and, eq } from "drizzle-orm";
+import { validateHistory } from "../db-utils";
 
 const scrapper = "Bravo";
 
@@ -103,6 +104,12 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
+
+    await validateHistory(
+      productShopPrice.productId,
+      productShopPrice.shopId,
+      productInfo.pvpArticuloTienda + ""
+    );
     return;
   }
 

@@ -9,7 +9,11 @@ import {
 import { isLessThan12HoursAgo } from "./utils";
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
-import { hideProductPrice, showProductPrice } from "../db-utils";
+import {
+  hideProductPrice,
+  showProductPrice,
+  validateHistory,
+} from "../db-utils";
 
 const scrapper = "Pricesmart";
 type Price = {
@@ -186,6 +190,11 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
+    await validateHistory(
+      productShopPrice.productId,
+      productShopPrice.shopId,
+      price.currentPrice
+    );
     return;
   }
 

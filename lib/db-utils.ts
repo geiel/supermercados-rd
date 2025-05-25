@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { productsShopsPrices } from "@/db/schema";
+import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
 export async function hideProductPrice(productShopPrice: productsShopsPrices) {
@@ -44,4 +44,33 @@ export async function showProductPrice(productShopPrice: productsShopsPrices) {
         eq(productsShopsPrices.shopId, productShopPrice.shopId)
       )
     );
+}
+
+export async function validateHistory(
+  productId: number,
+  shopId: number,
+  price: string
+) {
+  const history = await db.query.productsPricesHistory.findFirst({
+    columns: {
+      id: true,
+    },
+    where: (priceHistory, { eq, and }) =>
+      and(
+        eq(priceHistory.productId, productId),
+        eq(priceHistory.shopId, shopId)
+      ),
+  });
+
+  if (!history) {
+    console.log(
+      `[INFO] Product Shop history don't exist, creted it, productId: ${productId} shopId: ${shopId}`
+    );
+    await db.insert(productsPricesHistory).values({
+      shopId,
+      productId,
+      price,
+      createdAt: new Date(),
+    });
+  }
 }
