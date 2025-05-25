@@ -1,5 +1,8 @@
 import { db } from "@/db";
-import { productsShopsPrices } from "@/db/schema/products";
+import {
+  productsPricesHistory,
+  productsShopsPrices,
+} from "@/db/schema/products";
 import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
 import {
@@ -9,7 +12,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
-import { hideProductPrice, validateHistory } from "../db-utils";
+import { hideProductPrice } from "../db-utils";
 
 async function getHtml(url: string) {
   try {
@@ -58,11 +61,11 @@ async function processByProductShopPrice(
     return;
   }
 
-  await validateHistory(
-    productShopPrice.productId,
-    productShopPrice.shopId,
-    finalPrice
-  );
+  // await validateHistory(
+  //   productShopPrice.productId,
+  //   productShopPrice.shopId,
+  //   finalPrice
+  // );
 
   if (Number(productShopPrice.currentPrice) === Number(finalPrice)) {
     ignoreLog("Jumbo", productShopPrice);
@@ -92,11 +95,11 @@ async function processByProductShopPrice(
       )
     );
 
-  await validateHistory(
-    productShopPrice.productId,
-    productShopPrice.shopId,
-    finalPrice
-  );
+  await db.insert(productsPricesHistory).values({
+    ...productShopPrice,
+    price: finalPrice,
+    createdAt: new Date(),
+  });
 
   doneProcessLog("Jumbo", productShopPrice);
 }

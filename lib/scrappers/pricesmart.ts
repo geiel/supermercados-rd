@@ -1,4 +1,4 @@
-import { productsShopsPrices } from "@/db/schema";
+import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
 import { z } from "zod";
 import {
   doneProcessLog,
@@ -9,11 +9,7 @@ import {
 import { isLessThan12HoursAgo } from "./utils";
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
-import {
-  hideProductPrice,
-  showProductPrice,
-  validateHistory,
-} from "../db-utils";
+import { hideProductPrice, showProductPrice } from "../db-utils";
 
 const scrapper = "Pricesmart";
 type Price = {
@@ -176,11 +172,11 @@ async function processByProductShopPrice(
     return;
   }
 
-  await validateHistory(
-    productShopPrice.productId,
-    productShopPrice.shopId,
-    price.currentPrice
-  );
+  // await validateHistory(
+  //   productShopPrice.productId,
+  //   productShopPrice.shopId,
+  //   price.currentPrice
+  // );
 
   if (
     productShopPrice.currentPrice &&
@@ -213,11 +209,11 @@ async function processByProductShopPrice(
       )
     );
 
-  await validateHistory(
-    productShopPrice.productId,
-    productShopPrice.shopId,
-    price.currentPrice
-  );
+  await db.insert(productsPricesHistory).values({
+    ...productShopPrice,
+    price: price.currentPrice,
+    createdAt: new Date(),
+  });
 
   doneProcessLog(scrapper, productShopPrice);
 }

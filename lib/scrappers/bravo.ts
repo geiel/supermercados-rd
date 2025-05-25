@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { productsShopsPrices } from "@/db/schema";
+import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
 import { z } from "zod";
 import { isLessThan12HoursAgo } from "./utils";
 import {
@@ -9,7 +9,6 @@ import {
   processErrorLog,
 } from "./logs";
 import { and, eq } from "drizzle-orm";
-import { validateHistory } from "../db-utils";
 
 const scrapper = "Bravo";
 
@@ -89,11 +88,11 @@ async function processByProductShopPrice(
     return;
   }
 
-  await validateHistory(
-    productShopPrice.productId,
-    productShopPrice.shopId,
-    productInfo.pvpArticuloTienda + ""
-  );
+  // await validateHistory(
+  //   productShopPrice.productId,
+  //   productShopPrice.shopId,
+  //   productInfo.pvpArticuloTienda + ""
+  // );
 
   if (
     productShopPrice.currentPrice &&
@@ -126,11 +125,11 @@ async function processByProductShopPrice(
       )
     );
 
-  await validateHistory(
-    productShopPrice.productId,
-    productShopPrice.shopId,
-    productInfo.pvpArticuloTienda + ""
-  );
+  await db.insert(productsPricesHistory).values({
+    ...productShopPrice,
+    price: productInfo.pvpArticuloTienda + "",
+    createdAt: new Date(),
+  });
 
   doneProcessLog(scrapper, productShopPrice);
 }
