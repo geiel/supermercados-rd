@@ -123,6 +123,12 @@ async function processByProductShopPrice(
     : productInfo.data.getProductsBySKU[0].price;
   const regularPrice = productInfo.data.getProductsBySKU[0].price;
 
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    productPrice + ""
+  );
+
   if (
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) === productPrice
@@ -137,11 +143,6 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
-    await validateHistory(
-      productShopPrice.productId,
-      productShopPrice.shopId,
-      productPrice + ""
-    );
     return;
   }
 

@@ -89,6 +89,12 @@ async function processByProductShopPrice(
     return;
   }
 
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    productInfo.pvpArticuloTienda + ""
+  );
+
   if (
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) ===
@@ -104,12 +110,6 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
-
-    await validateHistory(
-      productShopPrice.productId,
-      productShopPrice.shopId,
-      productInfo.pvpArticuloTienda + ""
-    );
     return;
   }
 

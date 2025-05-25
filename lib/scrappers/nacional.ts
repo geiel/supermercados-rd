@@ -63,6 +63,12 @@ async function processByProductShopPrice(
     return;
   }
 
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    finalPrice
+  );
+
   if (Number(productShopPrice.currentPrice) === Number(finalPrice)) {
     ignoreLog(scrapper, productShopPrice);
     await db
@@ -74,11 +80,6 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
-    await validateHistory(
-      productShopPrice.productId,
-      productShopPrice.shopId,
-      finalPrice
-    );
     return;
   }
 

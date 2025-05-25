@@ -176,6 +176,12 @@ async function processByProductShopPrice(
     return;
   }
 
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    price.currentPrice
+  );
+
   if (
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) === Number(price.currentPrice)
@@ -190,11 +196,6 @@ async function processByProductShopPrice(
           eq(productsShopsPrices.shopId, productShopPrice.shopId)
         )
       );
-    await validateHistory(
-      productShopPrice.productId,
-      productShopPrice.shopId,
-      price.currentPrice
-    );
     return;
   }
 
