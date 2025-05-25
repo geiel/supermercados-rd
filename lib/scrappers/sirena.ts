@@ -1,7 +1,4 @@
-import {
-  productsPricesHistory,
-  productsShopsPrices,
-} from "@/db/schema/products";
+import { productsShopsPrices } from "@/db/schema/products";
 import { z } from "zod";
 import {
   doneProcessLog,
@@ -126,11 +123,11 @@ async function processByProductShopPrice(
       )
     );
 
-  await db.insert(productsPricesHistory).values({
-    ...productShopPrice,
-    price: productInfo.product.price,
-    createdAt: new Date(),
-  });
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    productInfo.product.price
+  );
 
   doneProcessLog(scrapper, productShopPrice);
 }

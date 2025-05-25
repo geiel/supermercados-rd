@@ -1,8 +1,5 @@
 import { db } from "@/db";
-import {
-  productsPricesHistory,
-  productsShopsPrices,
-} from "@/db/schema/products";
+import { productsShopsPrices } from "@/db/schema/products";
 import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
 import {
@@ -95,11 +92,11 @@ async function processByProductShopPrice(
       )
     );
 
-  await db.insert(productsPricesHistory).values({
-    ...productShopPrice,
-    price: finalPrice,
-    createdAt: new Date(),
-  });
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    finalPrice
+  );
 
   doneProcessLog("Jumbo", productShopPrice);
 }

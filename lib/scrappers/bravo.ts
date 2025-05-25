@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
+import { productsShopsPrices } from "@/db/schema";
 import { z } from "zod";
 import { isLessThan12HoursAgo } from "./utils";
 import {
@@ -126,11 +126,11 @@ async function processByProductShopPrice(
       )
     );
 
-  await db.insert(productsPricesHistory).values({
-    ...productShopPrice,
-    price: productInfo.pvpArticuloTienda + "",
-    createdAt: new Date(),
-  });
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    productInfo.pvpArticuloTienda + ""
+  );
 
   doneProcessLog(scrapper, productShopPrice);
 }

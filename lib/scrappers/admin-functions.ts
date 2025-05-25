@@ -55,7 +55,7 @@ export async function getSimilarProducts(categoryId: number) {
       sql`
         ${products.categoryId} = p2."categoryId"
         AND ${products.brandId} <> p2."brandId"
-        AND p2."brandId" = 19
+        AND p2."brandId" = 30
         AND (
             unaccent(lower(${products.name})) = unaccent(lower(p2.name))
           OR similarity(

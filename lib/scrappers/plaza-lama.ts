@@ -1,4 +1,4 @@
-import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
+import { productsShopsPrices } from "@/db/schema";
 import { isLessThan12HoursAgo } from "./utils";
 import {
   doneProcessLog,
@@ -160,11 +160,11 @@ async function processByProductShopPrice(
       )
     );
 
-  await db.insert(productsPricesHistory).values({
-    ...productShopPrice,
-    price: productPrice.toString(),
-    createdAt: new Date(),
-  });
+  await validateHistory(
+    productShopPrice.productId,
+    productShopPrice.shopId,
+    productPrice + ""
+  );
 
   doneProcessLog(scrapper, productShopPrice);
 }
