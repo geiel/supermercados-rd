@@ -13,7 +13,9 @@ export function SearchBar() {
   const params = useParams<{ value?: string }>();
 
   if (params.value) {
-    params.value = decodeURIComponent(params.value);
+    params.value = decodeURIComponent(
+      params.value.replace(/%(?![0-9A-Fa-f]{2})/g, "%25")
+    );
   }
 
   const { data } = useSWR(

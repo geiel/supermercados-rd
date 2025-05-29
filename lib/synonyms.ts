@@ -8,6 +8,12 @@ const baseMap: Record<string, string[]> = {
   rib: ["costilla", "costillas"],
   short: ["corta", "cortas"],
   hamburguer: ["hamburgesa", "hamburgesas"],
+  squash: ["calabaza", "calabazas"],
+  gold: ["dorada", "dorado"],
+  acorn: ["bellota"],
+  bbq: ["barbeque"],
+  ajie: ["aji"],
+  smoked: ["ahumado", "ahumada"],
 };
 
 export const synonyms: Record<string, string[]> = {};
