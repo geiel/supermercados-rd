@@ -9,6 +9,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { and, eq } from "drizzle-orm";
+import { hideProductPrice } from "../db-utils";
 
 const scrapper = "Bravo";
 
@@ -90,14 +91,9 @@ async function processByProductShopPrice(
 
   if (!productInfo) {
     processErrorLog(scrapper, productShopPrice);
+    await hideProductPrice(productShopPrice);
     return;
   }
-
-  // await validateHistory(
-  //   productShopPrice.productId,
-  //   productShopPrice.shopId,
-  //   productInfo.pvpArticuloTienda + ""
-  // );
 
   if (
     productShopPrice.currentPrice &&
