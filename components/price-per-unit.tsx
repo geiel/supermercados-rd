@@ -68,6 +68,11 @@ export function PricePerUnit({
   }
 
   if (amount === 1) {
+    if (unitOnly === "KG") {
+      const lb = convertToPounds(amount, unitOnly);
+      return <div className="text-xs">${(price / lb).toFixed(2)} por LB</div>;
+    }
+
     return;
   }
 

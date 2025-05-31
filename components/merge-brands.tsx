@@ -51,6 +51,7 @@ export default function MergeProducts({
   const [childProductId, setChildProductId] = useState("");
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [ignoredProducts, setIgnoredProducts] = useState<number[]>([]);
 
   async function searchProducts() {
     setLoading(true);
@@ -66,11 +67,14 @@ export default function MergeProducts({
 
   async function searchSimilarProducts() {
     setLoadingSimilar(true);
-    setSimilarProducts(await getSimilarProducts(Number(cateogoryId)));
+    setSimilarProducts(
+      await getSimilarProducts(Number(cateogoryId), ignoredProducts)
+    );
     setLoadingSimilar(false);
   }
 
-  function removeItem(index: number) {
+  function removeItem(index: number, productId: number) {
+    setIgnoredProducts((ignoredProducts) => [...ignoredProducts, productId]);
     setSimilarProducts(similarProducts.filter((_, i) => i !== index));
   }
 
@@ -127,6 +131,9 @@ export default function MergeProducts({
           {loadingSimilar ? <Loader2 className="animate-spin" /> : null}
           Buscar similares
         </Button>
+        <div>
+          <Button onClick={() => setIgnoredProducts([])}>Reset</Button>
+        </div>
       </div>
 
       <div className="flex">
@@ -184,7 +191,9 @@ export default function MergeProducts({
                 </Link>
               </div>
               <div>
-                <Button onClick={() => removeItem(index)}>Ignorar</Button>
+                <Button onClick={() => removeItem(index, product.id2)}>
+                  Ignorar
+                </Button>
               </div>
             </>
           ))}

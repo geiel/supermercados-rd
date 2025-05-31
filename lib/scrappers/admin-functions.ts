@@ -7,7 +7,7 @@ import {
   productsPricesHistory,
   productsShopsPrices,
 } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 export async function adminMergeProduct(
   parentProductId: number,
@@ -27,49 +27,52 @@ export async function adminMergeProduct(
   await db.delete(products).where(eq(products.id, childProductId));
 }
 
-export async function getSimilarProducts(categoryId: number) {
-  const threshold = 0.4;
-
+export async function getSimilarProducts(
+  categoryId: number,
+  ignoredProducts: number[],
+  threshold = 0.4
+) {
   const duplicates = await db
     .select({
       id1: products.id,
       name1: products.name,
       image1: products.image,
       unit1: products.unit,
-      brand1Name: sql<string>`b1.name`,
-      id2: sql<number>`p2.id`,
-      name2: sql<string>`p2.name`,
-      image2: sql<string>`p2.image`,
-      unit2: sql<string>`p2.unit`,
-      brand2Name: sql<string>`b2.name`,
+      brand1Name: sql`b1.name`.as<string>(),
+      id2: sql`p2.id`.as<number>(),
+      name2: sql`p2.name`.as<string>(),
+      image2: sql`p2.image`.as<string>(),
+      unit2: sql`p2.unit`.as<string>(),
+      brand2Name: sql`b2.name`.as<string>(),
       sml: sql<number>`
-      similarity(
-        unaccent(lower(${products.name})),
-        unaccent(lower(p2.name))
-      )
-    `.as("sml"),
+        similarity(
+          unaccent(lower(${products.name})),
+          unaccent(lower(p2.name))
+        )
+      `.as("sml"),
     })
     .from(products)
+    // Join p2 (the “other” product in the same category)
     .innerJoin(
-      sql`${products} as p2`,
+      sql`${products} AS p2`,
       sql`
         ${products.categoryId} = p2."categoryId"
+        AND ${products.id} <> p2.id
         AND ${products.brandId} <> p2."brandId"
-        AND p2."brandId" = 80
-        AND (
-            unaccent(lower(${products.name})) = unaccent(lower(p2.name))
-          OR similarity(
-                unaccent(lower(${products.name})),
-                unaccent(lower(p2.name))
+        AND similarity(
+              unaccent(lower(${products.name})),
+              unaccent(lower(p2.name))
             ) > ${threshold}
-        )
       `
     )
-    .innerJoin(sql`${productsBrands} as b1`, sql`${products.brandId} = b1.id`)
-    .innerJoin(sql`${productsBrands} as b2`, sql`p2."brandId" = b2.id`)
-    .where(eq(products.categoryId, categoryId))
-    .orderBy(sql`sml DESC`)
-    .limit(300);
+    // Join brands for each side
+    .innerJoin(sql`${productsBrands} AS b1`, sql`${products}."brandId" = b1.id`)
+    .innerJoin(sql`${productsBrands} AS b2`, sql`p2."brandId" = b2.id`)
+    // Global WHERE to restrict by categoryId and ignoredProducts
+    .where(
+      and(eq(products.categoryId, categoryId), eq(products.unit, sql`p2.unit`))
+    )
+    .orderBy(sql`"sml" DESC`);
 
   return duplicates;
 }

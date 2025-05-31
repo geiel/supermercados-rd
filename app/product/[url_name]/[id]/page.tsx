@@ -51,16 +51,24 @@ export default async function Page({ params }: Props) {
           <div className="font-bold">{product.unit}</div>
         </Badge>
         <div className="px-4 py-8">
-          {product.image ? (
-            <ProductImage
-              src={product.image}
-              width={450}
-              height={200}
-              alt={product.name + product.unit}
-              placeholder="blur"
-              blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-            />
-          ) : null}
+          <div className="flex justify-center">
+            <div className="h-[500px] w-[500px] relative">
+              {product.image ? (
+                <ProductImage
+                  src={product.image}
+                  fill
+                  sizes="500px"
+                  style={{
+                    objectFit: "contain",
+                  }}
+                  alt={product.name + product.unit}
+                  placeholder="blur"
+                  blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                  className="max-w-none"
+                />
+              ) : null}
+            </div>
+          </div>
         </div>
       </section>
       <div className="flex flex-col gap-10">

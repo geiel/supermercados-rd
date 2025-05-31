@@ -47,6 +47,11 @@ async function getProductInfo(api: string | null, shopId: number) {
           z.object({
             idTiendaArticuloTienda: z.number(),
             pvpArticuloTienda: z.number(),
+            associatedOferta: z.array(
+              z.object({
+                precioReferenciaArticuloTiendaOferta: z.number(),
+              })
+            ),
           })
         ),
       }),
@@ -116,6 +121,11 @@ async function processByProductShopPrice(
     .update(productsShopsPrices)
     .set({
       currentPrice: productInfo.pvpArticuloTienda + "",
+      regularPrice:
+        productInfo.associatedOferta.length > 0
+          ? productInfo.associatedOferta[0]
+              .precioReferenciaArticuloTiendaOferta + ""
+          : null,
       updateAt: new Date(),
     })
     .where(

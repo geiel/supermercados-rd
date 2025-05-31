@@ -1,5 +1,6 @@
 const baseMap: Record<string, string[]> = {
   arrugula: ["rucula", "arrugulas", "ruculas"],
+  mint: ["menta"],
   ny: ["new & york"],
   steak: ["bistec"],
   bacon: ["tocineta", "tocino", "tocinetas", "tocinos"],
@@ -7,13 +8,14 @@ const baseMap: Record<string, string[]> = {
   red: ["rojo", "roja", "rojos", "rojas"],
   rib: ["costilla", "costillas"],
   short: ["corta", "cortas"],
-  hamburguer: ["hamburgesa", "hamburgesas"],
+  hamburguer: ["hamburgesa", "hamburgesas", "hamburguesa", "hamburguesas"],
   squash: ["calabaza", "calabazas"],
   gold: ["dorada", "dorado"],
   acorn: ["bellota"],
   bbq: ["barbeque"],
   ajie: ["aji"],
   smoked: ["ahumado", "ahumada"],
+  choriso: ["chorizo"],
 };
 
 export const synonyms: Record<string, string[]> = {};
