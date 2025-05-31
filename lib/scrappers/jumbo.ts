@@ -61,12 +61,6 @@ async function processByProductShopPrice(
     return;
   }
 
-  // await validateHistory(
-  //   productShopPrice.productId,
-  //   productShopPrice.shopId,
-  //   finalPrice
-  // );
-
   if (Number(productShopPrice.currentPrice) === Number(finalPrice)) {
     ignoreLog("Jumbo", productShopPrice);
     await db

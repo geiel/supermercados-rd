@@ -16,6 +16,18 @@ const baseMap: Record<string, string[]> = {
   ajie: ["aji"],
   smoked: ["ahumado", "ahumada"],
   choriso: ["chorizo"],
+  soft: ["suave"],
+  swiss: ["suizo", "suiso"],
+  spicy: ["picante"],
+  std: ["standard"],
+  ext: ["extra", "xtra"],
+  reb: ["rebanado", "rebanada"],
+  artisian: ["artesana"],
+  cong: ["congelada", "congelado"],
+  blue: ["azul"],
+  crumbled: ["desmenuzado", "desmenuzada"],
+  herb: ["hierba", "herbs", "hierbas"],
+  wedge: ["cuña"],
 };
 
 export const synonyms: Record<string, string[]> = {};

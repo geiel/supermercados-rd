@@ -52,7 +52,6 @@ export async function getSimilarProducts(
       `.as("sml"),
     })
     .from(products)
-    // Join p2 (the “other” product in the same category)
     .innerJoin(
       sql`${products} AS p2`,
       sql`
@@ -65,12 +64,14 @@ export async function getSimilarProducts(
             ) > ${threshold}
       `
     )
-    // Join brands for each side
     .innerJoin(sql`${productsBrands} AS b1`, sql`${products}."brandId" = b1.id`)
     .innerJoin(sql`${productsBrands} AS b2`, sql`p2."brandId" = b2.id`)
-    // Global WHERE to restrict by categoryId and ignoredProducts
     .where(
-      and(eq(products.categoryId, categoryId), eq(products.unit, sql`p2.unit`))
+      and(
+        eq(products.categoryId, categoryId),
+        // eq(products.unit, sql`p2.unit`),
+        eq(sql`p2."brandId"`, 30)
+      )
     )
     .orderBy(sql`"sml" DESC`);
 

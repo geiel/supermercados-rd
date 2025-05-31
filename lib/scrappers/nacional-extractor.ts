@@ -40,12 +40,12 @@ export async function getProductListNacional(categoryId: number, url: string) {
     let image = $(element).find("img.product-image-photo").attr("src");
 
     if (image) {
-      image = image.replace(/\/cache\/[^/]+/, "");
+      image = image.replace(/\?.*$/, "");
     }
 
     const url = $(element).find(".product-item-link").attr("href");
     const brandName = toTitleCase(
-      $(element).find(".product-brand").text().trim()
+      $(element).find(".product-item-brand").text().trim()
     );
     const name = $(element)
       .find(".product.name.product-item-name")
@@ -98,7 +98,7 @@ export async function getProductListNacional(categoryId: number, url: string) {
 
   for (const product of dbProducts) {
     console.log(
-      `[INFO] start process product=${product.name} ${product.unit} url=${product.price.url}`
+      `[INFO] start process product=${product.name} ${product.unit} url=${product.price.url} brand=${product.brandName}`
     );
 
     const brand = await getCreatedBrand(product.brandName);
@@ -144,7 +144,7 @@ function toTitleCase(str: string) {
 async function getCreatedBrand(brandName: string) {
   if (!brandName) {
     return await db.query.productsBrands.findFirst({
-      where: eq(productsBrands.id, 78),
+      where: eq(productsBrands.id, 53),
     });
   }
 

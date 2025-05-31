@@ -172,9 +172,6 @@ async function Price({
   return (
     <div>
       <div className="font-bold text-lg pt-1">RD${lowerPrice.currentPrice}</div>
-      {Number(lowerPrice.currentPrice) < Number(lowerPrice.regularPrice) ? (
-        <div className="font-semibold">{lowerPrice.regularPrice}</div>
-      ) : null}
       <PricePerUnit
         unit={unit}
         price={

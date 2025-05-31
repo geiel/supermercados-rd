@@ -12,7 +12,7 @@ import {
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
 import { isLessThan12HoursAgo } from "./utils";
-import { hideProductPrice, showProductPrice } from "../db-utils";
+import { hideProductPrice } from "../db-utils";
 
 const scrapper = "La Sirena";
 
@@ -84,13 +84,6 @@ async function processByProductShopPrice(
     return;
   }
 
-  showProductPrice(productShopPrice);
-
-  // await validateHistory(
-  //   productShopPrice.productId,
-  //   productShopPrice.shopId,
-  //   productInfo.product.price
-  // );
   if (
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) === Number(productInfo.product.price)
