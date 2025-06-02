@@ -73,8 +73,10 @@ export default function MergeProducts({
     setLoadingSimilar(false);
   }
 
-  function removeItem(index: number, productId: number) {
-    setIgnoredProducts((ignoredProducts) => [...ignoredProducts, productId]);
+  function removeItem(index: number, productId: number, db = true) {
+    if (db) {
+      setIgnoredProducts((ignoredProducts) => [...ignoredProducts, productId]);
+    }
     setSimilarProducts(similarProducts.filter((_, i) => i !== index));
   }
 
@@ -190,9 +192,12 @@ export default function MergeProducts({
                   <div className="font-semibold">{product.name2}</div>
                 </Link>
               </div>
-              <div>
-                <Button onClick={() => removeItem(index, product.id2)}>
+              <div className="flex gap-2">
+                <Button onClick={() => removeItem(index, product.id2, false)}>
                   Ignorar
+                </Button>
+                <Button onClick={() => removeItem(index, product.id2, true)}>
+                  Ignorar DB
                 </Button>
               </div>
             </>

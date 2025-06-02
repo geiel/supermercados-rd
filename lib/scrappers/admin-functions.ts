@@ -7,7 +7,7 @@ import {
   productsPricesHistory,
   productsShopsPrices,
 } from "@/db/schema";
-import { eq, sql, and, not } from "drizzle-orm";
+import { eq, sql, and, notInArray } from "drizzle-orm";
 
 export async function adminMergeProduct(
   parentProductId: number,
@@ -69,9 +69,10 @@ export async function getSimilarProducts(
     .where(
       and(
         eq(products.categoryId, categoryId),
-        eq(products.unit, sql`p2.unit`),
-        // eq(sql`p2."brandId"`, 69),
-        not(eq(products.categoryId, 1))
+        // eq(products.unit, sql`p2.unit`),
+        eq(sql`p2."brandId"`, 80),
+        notInArray(sql`p2.id`, ignoredProducts)
+        // not(eq(products.categoryId, 1))
       )
     )
     .orderBy(sql`"sml" DESC`);
