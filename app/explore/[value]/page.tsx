@@ -91,7 +91,7 @@ export default async function Page({ params, searchParams }: Props) {
   );
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto pb-4">
       <div className="flex flex-1 flex-col gap-4">
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
           {filteredProducts.map((product) => (
@@ -165,22 +165,19 @@ async function Price({
     orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
   });
 
-  if (!lowerPrice) {
+  if (!lowerPrice || !lowerPrice.currentPrice) {
     return null;
+  }
+
+  let price = lowerPrice.currentPrice;
+  if (lowerPrice.regularPrice && lowerPrice.regularPrice < price) {
+    price = lowerPrice.regularPrice;
   }
 
   return (
     <div>
       <div className="font-bold text-lg pt-1">RD${lowerPrice.currentPrice}</div>
-      <PricePerUnit
-        unit={unit}
-        price={
-          Number(lowerPrice.currentPrice) < Number(lowerPrice.regularPrice)
-            ? Number(lowerPrice.regularPrice)
-            : Number(lowerPrice.currentPrice)
-        }
-        categoryId={categoryId}
-      />
+      <PricePerUnit unit={unit} price={Number(price)} categoryId={categoryId} />
     </div>
   );
 }

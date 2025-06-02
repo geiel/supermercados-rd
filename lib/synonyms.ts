@@ -43,6 +43,7 @@ const baseMap: Record<string, string[]> = {
   blackberry: ["mora", "blackberries", "moras"],
   ring: ["anilla", "anillo"],
   mandarina: ["clementina"],
+  carnation: ["evaporada"],
 };
 
 export const synonyms: Record<string, string[]> = {};
