@@ -52,12 +52,12 @@ export default async function Page({ params }: Props) {
         </Badge>
         <div className="px-4 py-8">
           <div className="flex justify-center">
-            <div className="h-[500px] w-[500px] relative">
+            <div className="h-[290px] w-[290px] md:h-[500px] md:w-[500px] relative">
               {product.image ? (
                 <ProductImage
                   src={product.image}
                   fill
-                  sizes="500px"
+                  sizes="(max-width: 768px) 290px, 500px"
                   style={{
                     objectFit: "contain",
                   }}

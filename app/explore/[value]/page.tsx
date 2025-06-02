@@ -92,7 +92,7 @@ export default async function Page({ params, searchParams }: Props) {
 
   return (
     <div className="container mx-auto">
-      <div className="flex flex-1 flex-col gap-4 p-2">
+      <div className="flex flex-1 flex-col gap-4">
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
           {filteredProducts.map((product) => (
             <div

@@ -15,16 +15,16 @@ import { z } from "zod";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Embutidos-deli_meat/deli_meat",
-    start: 60,
-    q: "deli_meat",
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Lacteos-y-Huevos-G10D07010/Queso-crema-G10D07010004/G10D07010004",
+    start: 0,
+    q: "G10D07010004",
     fq: [],
     search_type: "category",
     rows: 12,
     account_id: "7024",
     auth_key: "ev7libhybjg5h1d1",
     _br_uid_2: "uid=7086154559720:v=15.0:ts=1732413232358:hc=333",
-    request_id: 1748553790267,
+    request_id: 1748819314742,
     domain_key: "pricesmart_bloomreach_io_es",
     fl: "pid,title,price,thumb_image,brand,slug,skuid,currency,fractionDigits,master_sku,sold_by_weight_DO,weight_DO,weight_uom_description_DO,sign_price_DO,price_per_uom_DO,uom_description_DO,availability_DO,price_DO,inventory_DO,inventory_DO,promoid_DO",
     view_id: "DO",

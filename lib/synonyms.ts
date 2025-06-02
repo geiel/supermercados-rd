@@ -28,6 +28,10 @@ const baseMap: Record<string, string[]> = {
   crumbled: ["desmenuzado", "desmenuzada"],
   herb: ["hierba", "herbs", "hierbas"],
   wedge: ["cuña"],
+  untable: ["spreadable"],
+  cream: ["crema"],
+  cheese: ["queso"],
+  mozzarella: ["mozarela", "mozzarela", "mozarella", "mosarela"],
 };
 
 export const synonyms: Record<string, string[]> = {};

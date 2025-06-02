@@ -4,6 +4,8 @@ function convertToGrams(quantity: number, unit: string): number {
       return quantity;
     case "OZ":
       return quantity * 28.35;
+    case "LB":
+      return quantity * 453.59237;
     default:
       return 0;
   }
@@ -43,7 +45,9 @@ export function PricePerUnit({
   const amountAndUnit = unit.split(" ");
 
   if (amountAndUnit.length < 2) {
-    return null;
+    const unit = amountAndUnit[0];
+    amountAndUnit[0] = "1";
+    amountAndUnit.push(unit);
   }
 
   if (isNaN(Number(amountAndUnit[0]))) {
@@ -73,10 +77,18 @@ export function PricePerUnit({
       return <div className="text-xs">${(price / lb).toFixed(2)} por LB</div>;
     }
 
+    if (unitOnly === "LB" && categoryId === 4) {
+      return (
+        <div className="text-xs">
+          ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR
+        </div>
+      );
+    }
+
     return;
   }
 
-  if (amount < 1 && unitOnly === "LB") {
+  if (amount < 1 && unitOnly === "LB" && categoryId !== 4) {
     return <div className="text-xs">${(price / amount).toFixed(2)} por LB</div>;
   }
 
@@ -86,7 +98,7 @@ export function PricePerUnit({
     );
   }
 
-  if (unitOnly === "LB") {
+  if (unitOnly === "LB" && categoryId !== 4) {
     return <div className="text-xs">${(price / amount).toFixed(2)} por LB</div>;
   }
 
