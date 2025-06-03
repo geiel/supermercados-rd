@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { AutoComplete } from "./autocomplete";
-import { createSelectSchema } from "drizzle-zod";
-import { products } from "@/db/schema";
 import useSWR from "swr";
 import { useParams, useRouter } from "next/navigation";
+import { z } from "zod";
 
 export function SearchBar() {
   const [value, setValue] = useState("");
@@ -23,8 +22,8 @@ export function SearchBar() {
     async (key) => {
       const response = await fetch(key);
 
-      return createSelectSchema(products)
-        .array()
+      return z
+        .array(z.object({ phrase: z.string() }))
         .parse(await response.json());
     }
   );
@@ -37,7 +36,7 @@ export function SearchBar() {
 
   return (
     <AutoComplete
-      products={data ? data : []}
+      suggestions={data ? data : []}
       placeholder="Buscar..."
       emptyMessage="No encontrado."
       onInputChange={setValue}

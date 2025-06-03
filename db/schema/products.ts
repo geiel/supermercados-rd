@@ -33,6 +33,10 @@ export const products = pgTable(
   })
 );
 
+export const searchPhases = pgTable("search_phrases", {
+  phrase: text().primaryKey(),
+});
+
 export const productsRelations = relations(products, ({ many, one }) => ({
   shopCurrentPrices: many(productsShopsPrices),
   pricesHistory: many(productsPricesHistory),

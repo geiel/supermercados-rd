@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { products } from "@/db/schema/products";
-import { sql } from "drizzle-orm";
+import { searchPhases } from "@/db/schema/products";
+import { desc, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -13,17 +13,13 @@ export async function GET(request: NextRequest) {
   }
 
   const suggestions = await db
-    .selectDistinctOn([products.name])
-    .from(products)
-    .where(
-      sql`
-        to_tsvector('spanish', unaccent(lower(${products.name}))) @@ plainto_tsquery('spanish', unaccent(lower(${value})))
-        OR
-        to_tsvector('english', unaccent(lower(${products.name}))) @@ plainto_tsquery('english', unaccent(lower(${value})))
-        OR
-        unaccent(lower(${products.name})) ILIKE '%' || unaccent(lower(${value})) || '%'
-      `
-    )
+    .select({
+      phrase: searchPhases.phrase,
+      sml: sql`similarity(${searchPhases.phrase}, ${value})`.as("sml"),
+    })
+    .from(searchPhases)
+    .where(sql`${searchPhases.phrase} % ${value}`)
+    .orderBy(desc(sql`sml`))
     .limit(limit ? Number(limit) : 10);
 
   return Response.json(suggestions);

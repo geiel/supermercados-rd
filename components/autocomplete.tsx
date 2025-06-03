@@ -20,8 +20,12 @@ import { Skeleton } from "./ui/skeleton";
 import { cn } from "@/lib/utils";
 import { productsSelect } from "@/db/schema";
 
+type ProductSuggestion = {
+  phrase: string;
+};
+
 type AutoCompleteProps = {
-  products: productsSelect[];
+  suggestions: ProductSuggestion[];
   emptyMessage: string;
   value?: productsSelect;
   productName?: string;
@@ -33,7 +37,7 @@ type AutoCompleteProps = {
 };
 
 export const AutoComplete = ({
-  products,
+  suggestions,
   placeholder,
   emptyMessage,
   value,
@@ -50,13 +54,15 @@ export const AutoComplete = ({
     value?.name || productName || ""
   );
 
-  const [prevProducts, setPrevProducts] = useState<productsSelect[]>([]);
+  const [prevSuggestions, setPrevSuggestions] = useState<ProductSuggestion[]>(
+    []
+  );
 
   useEffect(() => {
-    if (products.length > 0 && inputValue.length > 0) {
-      setPrevProducts(products);
+    if (suggestions.length > 0 && inputValue.length > 0) {
+      setPrevSuggestions(suggestions);
     }
-  }, [products, inputValue]);
+  }, [suggestions, inputValue]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -72,12 +78,12 @@ export const AutoComplete = ({
 
       // This is not a default behaviour of the <input /> field
       if (event.key === "Enter" && input.value !== "") {
-        const optionToSelect = products.find(
-          (product) => product.name === input.value
+        const optionToSelect = suggestions.find(
+          (suggestion) => suggestion.phrase === input.value
         );
 
         if (optionToSelect) {
-          onSearch(optionToSelect.name);
+          onSearch(optionToSelect.phrase);
         } else {
           onSearch(input.value);
         }
@@ -89,13 +95,13 @@ export const AutoComplete = ({
         input.blur();
       }
     },
-    [isOpen, products, onSearch]
+    [isOpen, suggestions, onSearch]
   );
 
   const handleSelectProduct = useCallback(
-    (selectedProduct: productsSelect) => {
-      setInputValue(selectedProduct.name);
-      onSearch(selectedProduct.name);
+    (selectedSuggestion: ProductSuggestion) => {
+      setInputValue(selectedSuggestion.phrase);
+      onSearch(selectedSuggestion.phrase);
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -115,7 +121,8 @@ export const AutoComplete = ({
     setOpen(true);
   };
 
-  const displayProducts = products.length > 0 ? products : prevProducts;
+  const displaySuggestions =
+    suggestions.length > 0 ? suggestions : prevSuggestions;
 
   return (
     <CommandPrimitive
@@ -152,22 +159,22 @@ export const AutoComplete = ({
               </CommandPrimitive.Loading>
             ) : null}
 
-            {displayProducts.length > 0 && !isLoading ? (
+            {displaySuggestions.length > 0 && !isLoading ? (
               <CommandGroup heading="Productos">
                 <CommandItem value={inputValue} className="hidden" />
-                {displayProducts.map((product) => {
+                {displaySuggestions.map((suggestion, key) => {
                   return (
                     <CommandItem
-                      key={product.id}
-                      value={product.name + product.unit + product.brandId}
+                      key={key}
+                      value={suggestion.phrase}
                       onMouseDown={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
                       }}
-                      onSelect={() => handleSelectProduct(product)}
+                      onSelect={() => handleSelectProduct(suggestion)}
                       className={cn("flex w-full items-center gap-2")}
                     >
-                      {product.name}
+                      {suggestion.phrase}
                     </CommandItem>
                   );
                 })}

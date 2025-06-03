@@ -6,8 +6,10 @@ import {
   productsBrands,
   productsPricesHistory,
   productsShopsPrices,
+  searchPhases,
 } from "@/db/schema";
 import { eq, sql, and, notInArray } from "drizzle-orm";
+import { STOP_WORDS } from "../stopwords";
 
 export async function adminMergeProduct(
   parentProductId: number,
@@ -88,4 +90,78 @@ export async function deleteProductById(productId: number) {
     .delete(productsShopsPrices)
     .where(eq(productsShopsPrices.productId, productId));
   await db.delete(products).where(eq(products.id, productId));
+}
+
+function tokenizeAndFilter(title: string): string[] {
+  const noAccents = title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const clean = noAccents.replace(/[^a-z0-9áéíóúñü\s]/g, " ");
+
+  const tokens = clean.split(/\s+/).filter((tok) => tok.trim() !== "");
+
+  return tokens.filter((tok) => !new Set(STOP_WORDS).has(tok));
+}
+
+function generateNgrams(tokens: string[]): Set<string> {
+  const out = new Set<string>();
+
+  // 1) Unigrams
+  for (const t of tokens) {
+    out.add(t);
+  }
+
+  // 2) Adjacent bigrams
+  for (let i = 0; i < tokens.length - 1; i++) {
+    out.add(tokens[i] + " " + tokens[i + 1]);
+  }
+
+  // 3) Adjacent trigrams
+  for (let i = 0; i < tokens.length - 2; i++) {
+    out.add(tokens[i] + " " + tokens[i + 1] + " " + tokens[i + 2]);
+  }
+
+  return out;
+}
+
+function extractSearchPhrases(productName: string): string[] {
+  const contentTokens = tokenizeAndFilter(productName);
+  const phraseSet = generateNgrams(contentTokens);
+  return Array.from(phraseSet);
+}
+
+export async function refreshPhrases() {
+  console.log("[INFO] Start inserting");
+
+  const products = await db.query.products.findMany({
+    columns: { name: true },
+  });
+  const total = products.length;
+  console.log(`[INFO] Found ${total} products to process.`);
+
+  const BATCH_SIZE = 300;
+
+  for (let offset = 0; offset < total; offset += BATCH_SIZE) {
+    const batch = products.slice(offset, offset + BATCH_SIZE);
+
+    await Promise.all(
+      batch.map(async (product) => {
+        const phrases = extractSearchPhrases(product.name);
+        for (const phrase of phrases) {
+          await db
+            .insert(searchPhases)
+            .values({ phrase })
+            .onConflictDoNothing();
+        }
+      })
+    );
+
+    const done = Math.min(offset + BATCH_SIZE, total);
+    const pct = (done / total) * 100;
+    console.log(
+      `[INFO] ${done}/${total} products processed (${pct.toFixed(1)}%)`
+    );
+  }
 }
