@@ -16,11 +16,14 @@ export async function GET(request: NextRequest) {
     .selectDistinctOn([products.name])
     .from(products)
     .where(
-      sql`unaccent(lower(${products.name})) ILIKE unaccent(lower(${
-        value || ""
-      } || '%'))`
+      sql`
+        to_tsvector('spanish', unaccent(lower(${products.name}))) @@ plainto_tsquery('spanish', unaccent(lower(${value})))
+        OR
+        to_tsvector('english', unaccent(lower(${products.name}))) @@ plainto_tsquery('english', unaccent(lower(${value})))
+        OR
+        unaccent(lower(${products.name})) ILIKE '%' || unaccent(lower(${value})) || '%'
+      `
     )
-    .orderBy(products.name)
     .limit(limit ? Number(limit) : 10);
 
   return Response.json(suggestions);

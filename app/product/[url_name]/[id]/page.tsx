@@ -85,6 +85,7 @@ export default async function Page({ params }: Props) {
                 width={60}
                 height={40}
                 alt="Supermarket logo"
+                unoptimized
               />
               <ShopPrice shopPrice={shopPrice} />
               <div>

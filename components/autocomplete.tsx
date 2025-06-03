@@ -7,7 +7,13 @@ import {
   CommandInput,
 } from "./ui/command";
 import { Command as CommandPrimitive } from "cmdk";
-import { useState, useRef, useCallback, type KeyboardEvent } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  type KeyboardEvent,
+  useEffect,
+} from "react";
 
 import { Skeleton } from "./ui/skeleton";
 
@@ -43,6 +49,14 @@ export const AutoComplete = ({
   const [inputValue, setInputValue] = useState<string>(
     value?.name || productName || ""
   );
+
+  const [prevProducts, setPrevProducts] = useState<productsSelect[]>([]);
+
+  useEffect(() => {
+    if (products.length > 0 && inputValue.length > 0) {
+      setPrevProducts(products);
+    }
+  }, [products, inputValue]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -101,8 +115,15 @@ export const AutoComplete = ({
     setOpen(true);
   };
 
+  const displayProducts = products.length > 0 ? products : prevProducts;
+
   return (
-    <CommandPrimitive onKeyDown={handleKeyDown}>
+    <CommandPrimitive
+      onKeyDown={handleKeyDown}
+      filter={() => {
+        return 1;
+      }}
+    >
       <div>
         <CommandInput
           ref={inputRef}
@@ -131,10 +152,10 @@ export const AutoComplete = ({
               </CommandPrimitive.Loading>
             ) : null}
 
-            {products.length > 0 && !isLoading ? (
+            {displayProducts.length > 0 && !isLoading ? (
               <CommandGroup heading="Productos">
                 <CommandItem value={inputValue} className="hidden" />
-                {products.map((product) => {
+                {displayProducts.map((product) => {
                   return (
                     <CommandItem
                       key={product.id}

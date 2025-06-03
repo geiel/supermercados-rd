@@ -205,6 +205,7 @@ async function ShopExclusive({
       height={20}
       alt="logo tienda"
       className="max-w-none"
+      unoptimized
     />
   );
 }
