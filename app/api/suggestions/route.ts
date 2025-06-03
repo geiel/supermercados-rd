@@ -15,7 +15,12 @@ export async function GET(request: NextRequest) {
   const suggestions = await db
     .selectDistinctOn([products.name])
     .from(products)
-    .where(sql`unaccent(${products.name}) ~* unaccent(${`\\m${value}`})`)
+    .where(
+      sql`unaccent(lower(${products.name})) ILIKE unaccent(lower(${
+        value || ""
+      } || '%'))`
+    )
+    .orderBy(products.name)
     .limit(limit ? Number(limit) : 10);
 
   return Response.json(suggestions);
