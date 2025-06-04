@@ -1,6 +1,6 @@
 import type { DialogProps } from "@radix-ui/react-dialog";
 import { Command as CommandPrimitive } from "cmdk";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { Dialog, DialogContent } from "./dialog";
 
@@ -34,8 +34,11 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
 
 const CommandInput = ({
   className,
+  onClean,
   ...props
-}: ComponentProps<typeof CommandPrimitive.Input>) => (
+}: ComponentProps<typeof CommandPrimitive.Input> & {
+  onClean?: () => void;
+}) => (
   <div
     className="flex items-center rounded-lg border px-3"
     cmdk-input-wrapper=""
@@ -48,6 +51,13 @@ const CommandInput = ({
       )}
       {...props}
     />
+
+    {props.value ? (
+      <X
+        className="ml-2 h-4.5 w-4.5 shrink-0 opacity-80 cursor-pointer"
+        onClick={onClean}
+      />
+    ) : null}
   </div>
 );
 

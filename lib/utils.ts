@@ -32,3 +32,8 @@ export function isToday(d: Date): boolean {
     d.getDate() === today.getDate()
   );
 }
+
+export function isNumeric(value: string): boolean {
+  const n = Number(value);
+  return value.trim() !== "" && !isNaN(n) && isFinite(n);
+}

@@ -8,6 +8,8 @@ function convertToGrams(quantity: number, unit: string): number {
       return quantity * 453.59237;
     case "KG":
       return quantity * 1000;
+    case "GL":
+      return quantity * 3785.411784;
     default:
       return 0;
   }
@@ -29,6 +31,8 @@ function convertToMilliliters(quantity: number, unit: string): number {
       return quantity * 453.59237;
     case "KG":
       return quantity * 1000;
+    case "GL":
+      return quantity * 3785.411784;
     default:
       return 0;
   }
@@ -99,7 +103,8 @@ export function PricePerUnit({
     unitOnly !== "KG" &&
     unitOnly !== "ML" &&
     unitOnly !== "LT" &&
-    unitOnly !== "CL"
+    unitOnly !== "CL" &&
+    unitOnly !== "GL"
   ) {
     return null;
   }
@@ -122,7 +127,12 @@ export function PricePerUnit({
   //Comparar por 100 ML
   if (categoryId === 6) {
     //Comparar por 100 GR
-    if (unitOnly !== "LT" && unitOnly !== "ML" && unitOnly !== "CL") {
+    if (
+      unitOnly !== "LT" &&
+      unitOnly !== "ML" &&
+      unitOnly !== "CL" &&
+      unitOnly !== "GL"
+    ) {
       return (
         <div className="text-xs">
           ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR

@@ -1,3 +1,5 @@
+export const PERMITED_STOP_WORDS = ["de", "por", "con", "en", "sin"];
+
 export const STOP_WORDS = `
 0
 1
@@ -85,7 +87,6 @@ cinco
 claro
 comentó
 como
-con
 conmigo
 conocer
 conseguimos
@@ -123,7 +124,6 @@ da
 dado
 dan
 dar
-de
 debajo
 debe
 deben
@@ -172,7 +172,6 @@ emplean
 emplear
 empleas
 empleo
-en
 encima
 encuentra
 enfrente
@@ -475,7 +474,6 @@ podrán
 podría
 podrían
 poner
-por
 por qué
 porque
 posible
@@ -561,7 +559,6 @@ siendo
 siete
 sigue
 siguiente
-sin
 sino
 sobre
 sois

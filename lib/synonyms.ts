@@ -44,6 +44,8 @@ const baseMap: Record<string, string[]> = {
   ring: ["anilla", "anillo"],
   mandarina: ["clementina"],
   carnation: ["evaporada"],
+  zero: ["sin"],
+  bebible: ["liquido"],
 };
 
 export const synonyms: Record<string, string[]> = {};

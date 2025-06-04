@@ -16,6 +16,18 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
+export async function generateMetadata({ params }: Props) {
+  const { id } = await params;
+  const product = await db.query.products.findFirst({
+    columns: { name: true, unit: true },
+    where: (products, { eq }) => eq(products.id, Number(id)),
+  });
+
+  return {
+    title: `${product?.name}, ${product?.unit}`,
+  };
+}
+
 export default async function Page({ params }: Props) {
   const { id } = await params;
 

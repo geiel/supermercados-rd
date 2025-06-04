@@ -22,6 +22,7 @@ import { productsSelect } from "@/db/schema";
 
 type ProductSuggestion = {
   phrase: string;
+  sml: number;
 };
 
 type AutoCompleteProps = {
@@ -121,6 +122,12 @@ export const AutoComplete = ({
     setOpen(true);
   };
 
+  function clean() {
+    setPrevSuggestions([]);
+    setInputValue("");
+    setOpen(false);
+  }
+
   const displaySuggestions =
     suggestions.length > 0 ? suggestions : prevSuggestions;
 
@@ -141,6 +148,7 @@ export const AutoComplete = ({
           placeholder={placeholder}
           disabled={disabled}
           className="text-base"
+          onClean={clean}
         />
       </div>
       <div className="relative mt-1">
@@ -161,7 +169,32 @@ export const AutoComplete = ({
 
             {displaySuggestions.length > 0 && !isLoading ? (
               <CommandGroup heading="Productos">
-                <CommandItem value={inputValue} className="hidden" />
+                {displaySuggestions[0].sml < 0.9 ? (
+                  <CommandItem
+                    key={"custom" + inputValue}
+                    value={inputValue}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onSelect={() =>
+                      handleSelectProduct({
+                        phrase: inputValue,
+                        sml: displaySuggestions[0].sml,
+                      })
+                    }
+                    className={cn("flex w-full items-center gap-2")}
+                  >
+                    {inputValue}
+                  </CommandItem>
+                ) : (
+                  <CommandItem
+                    key="hidden"
+                    value={inputValue}
+                    className="hidden"
+                  />
+                )}
+
                 {displaySuggestions.map((suggestion, key) => {
                   return (
                     <CommandItem

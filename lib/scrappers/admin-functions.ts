@@ -9,7 +9,8 @@ import {
   searchPhases,
 } from "@/db/schema";
 import { eq, sql, and, notInArray } from "drizzle-orm";
-import { STOP_WORDS } from "../stopwords";
+import { PERMITED_STOP_WORDS, STOP_WORDS } from "../stopwords";
+import { isNumeric } from "../utils";
 
 export async function adminMergeProduct(
   parentProductId: number,
@@ -98,9 +99,11 @@ function tokenizeAndFilter(title: string): string[] {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  const clean = noAccents.replace(/[^a-z0-9áéíóúñü\s]/g, " ");
+  const protectedFractions = noAccents.replace(/(\d+\/\d+)/g, "::$1::");
+  const clean = protectedFractions.replace(/[^a-z0-9%/áéíóúñü\s:]/g, " ");
+  const unwrapped = clean.replace(/::/g, "");
 
-  const tokens = clean.split(/\s+/).filter((tok) => tok.trim() !== "");
+  const tokens = unwrapped.split(/\s+/).filter((tok) => tok.trim() !== "");
 
   return tokens.filter((tok) => !new Set(STOP_WORDS).has(tok));
 }
@@ -110,16 +113,48 @@ function generateNgrams(tokens: string[]): Set<string> {
 
   // 1) Unigrams
   for (const t of tokens) {
+    if (PERMITED_STOP_WORDS.includes(t)) {
+      continue;
+    }
+
+    if (isNumeric(t)) {
+      continue;
+    }
+
+    if (t.includes("/")) {
+      continue;
+    }
+
     out.add(t);
   }
 
   // 2) Adjacent bigrams
   for (let i = 0; i < tokens.length - 1; i++) {
+    if (
+      tokens[i] === tokens[i + 1] ||
+      PERMITED_STOP_WORDS.includes(tokens[i + 1]) ||
+      (isNumeric(tokens[1]) && isNumeric(tokens[i + 1])) ||
+      isNumeric(tokens[i + 1])
+    ) {
+      continue;
+    }
+
     out.add(tokens[i] + " " + tokens[i + 1]);
   }
 
   // 3) Adjacent trigrams
   for (let i = 0; i < tokens.length - 2; i++) {
+    if (
+      tokens[i] === tokens[i + 1] ||
+      tokens[i] === tokens[i + 2] ||
+      tokens[i + 1] === tokens[i + 2] ||
+      PERMITED_STOP_WORDS.includes(tokens[i + 2]) ||
+      (isNumeric(tokens[1]) && isNumeric(tokens[i + 1])) ||
+      (isNumeric(tokens[i + 1]) && isNumeric(tokens[i + 2]))
+    ) {
+      continue;
+    }
+
     out.add(tokens[i] + " " + tokens[i + 1] + " " + tokens[i + 2]);
   }
 

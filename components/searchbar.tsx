@@ -23,7 +23,7 @@ export function SearchBar() {
       const response = await fetch(key);
 
       return z
-        .array(z.object({ phrase: z.string() }))
+        .array(z.object({ phrase: z.string(), sml: z.number() }))
         .parse(await response.json());
     }
   );
