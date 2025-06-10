@@ -1,5 +1,6 @@
 import { PricesChart } from "@/components/prices-chart";
 import { ProductImage } from "@/components/product-image";
+import { RelatedProducts } from "@/components/related-products";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
@@ -10,6 +11,7 @@ import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { sirena } from "@/lib/scrappers/sirena";
+import { searchProducts } from "@/lib/search-query";
 import Image from "next/image";
 
 type Props = {
@@ -50,6 +52,12 @@ export default async function Page({ params }: Props) {
     return <div>Producto no encontrado.</div>;
   }
 
+  const relatedProducts = await searchProducts(product.name, 16, 0);
+  relatedProducts.products.splice(
+    relatedProducts.products.findIndex((i) => i.id === product.id),
+    1
+  );
+
   return (
     <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 py-4 px-6 md:px-10">
       <section className="flex flex-col gap-2">
@@ -84,7 +92,7 @@ export default async function Page({ params }: Props) {
         </div>
       </section>
       <div className="flex flex-col gap-10">
-        <section className="flex flex-col gap-2">
+        <section className="flex flex-col">
           <div className="font-bold text-2xl">Donde comprar</div>
           {product.shopCurrentPrices.map((shopPrice, i) => (
             <div
@@ -111,6 +119,11 @@ export default async function Page({ params }: Props) {
           <div className="font-bold text-2xl">Historial de precios</div>
           <PricesChart priceHistory={product.pricesHistory} />
         </section>
+
+        <section className="flex flex-col gap-2">
+          <div className="font-bold text-2xl">Productos relacionados</div>
+          <RelatedProducts relatedProducts={relatedProducts.products} />
+        </section>
       </div>
     </div>
   );
@@ -128,7 +141,7 @@ function SearchProductButton({
     );
 
     return (
-      <Button asChild>
+      <Button size="sm" asChild>
         <a href={`${shopPrice.url}/articulos/${productId}`} target="_blank">
           Buscar
         </a>
@@ -137,7 +150,7 @@ function SearchProductButton({
   }
 
   return (
-    <Button asChild>
+    <Button size="sm" asChild>
       <a href={shopPrice.url} target="_blank">
         Buscar
       </a>

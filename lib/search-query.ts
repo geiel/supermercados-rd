@@ -14,6 +14,7 @@ export async function searchProducts(
 ) {
   const tsQuery = buildTsQuery(removeAccents(value));
 
+  console.log(tsQuery);
   const query = sql`
           WITH
             fts AS (
@@ -53,7 +54,7 @@ export async function searchProducts(
             SELECT 1
             FROM ${productsShopsPrices}
             WHERE ${productsShopsPrices.productId} = COALESCE(fts.id, fuzzy.id)
-            AND ${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE
+            AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
           )
         ORDER BY
           is_exact   DESC,

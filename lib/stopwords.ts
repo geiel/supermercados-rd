@@ -1,4 +1,14 @@
-export const PERMITED_STOP_WORDS = ["de", "por", "con", "en", "sin"];
+export const PERMITED_STOP_WORDS = [
+  "de",
+  "por",
+  "con",
+  "en",
+  "sin",
+  "y",
+  "sabor",
+];
+
+export const UNIT = ["unidades", "und"];
 
 export const STOP_WORDS = `
 0

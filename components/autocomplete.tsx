@@ -169,7 +169,12 @@ export const AutoComplete = ({
 
             {displaySuggestions.length > 0 && !isLoading ? (
               <CommandGroup heading="Productos">
-                {displaySuggestions[0].sml < 0.9 ? (
+                <CommandItem
+                  key="hidden"
+                  value={inputValue}
+                  className="hidden"
+                />
+                {/* {displaySuggestions[0].sml < 0.9 ? (
                   <CommandItem
                     key={"custom" + inputValue}
                     value={inputValue}
@@ -193,7 +198,7 @@ export const AutoComplete = ({
                     value={inputValue}
                     className="hidden"
                   />
-                )}
+                )} */}
 
                 {displaySuggestions.map((suggestion, key) => {
                   return (

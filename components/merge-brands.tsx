@@ -52,6 +52,7 @@ export default function MergeProducts({
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [ignoredProducts, setIgnoredProducts] = useState<number[]>([]);
+  const [ignoreBaseProducts, setIgnoreBaseProducts] = useState<number[]>([]);
 
   async function searchProducts() {
     setLoading(true);
@@ -68,12 +69,28 @@ export default function MergeProducts({
   async function searchSimilarProducts() {
     setLoadingSimilar(true);
     setSimilarProducts(
-      await getSimilarProducts(Number(cateogoryId), ignoredProducts)
+      await getSimilarProducts(
+        Number(cateogoryId),
+        ignoredProducts,
+        ignoreBaseProducts
+      )
     );
     setLoadingSimilar(false);
   }
 
-  function removeItem(index: number, productId: number, db = true) {
+  function removeItem(
+    index: number,
+    productId: number,
+    db = true,
+    base = false
+  ) {
+    if (base) {
+      setIgnoreBaseProducts((ignoredBaseProducts) => [
+        ...ignoredBaseProducts,
+        productId,
+      ]);
+    }
+
     if (db) {
       setIgnoredProducts((ignoredProducts) => [...ignoredProducts, productId]);
     }
@@ -193,11 +210,22 @@ export default function MergeProducts({
                 </Link>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => removeItem(index, product.id2, false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => removeItem(index, product.id2, false, false)}
+                >
                   Ignorar
                 </Button>
-                <Button onClick={() => removeItem(index, product.id2, true)}>
+                <Button
+                  onClick={() => removeItem(index, product.id2, true, false)}
+                >
                   Ignorar DB
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => removeItem(index, product.id1, false, true)}
+                >
+                  Ignorar Base
                 </Button>
               </div>
             </>

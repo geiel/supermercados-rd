@@ -31,7 +31,7 @@ const baseMap: Record<string, string[]> = {
   untable: ["spreadable"],
   cream: ["crema"],
   cheese: ["queso"],
-  mozzarella: ["mozarela", "mozzarela", "mozarella", "mosarela"],
+  mozzarella: ["mozarella"],
   flounder: ["platija"],
   cod: ["bacalao"],
   fillet: ["filete"],
@@ -46,6 +46,13 @@ const baseMap: Record<string, string[]> = {
   carnation: ["evaporada"],
   zero: ["sin"],
   bebible: ["liquido"],
+  banana: ["guineo"],
+  greek: ["griego"],
+  kids: ["niños", "ninos"],
+  activia: ["dannon"],
+  org: ["organico"],
+  margarina: ["mantequilla"],
+  vanilla: ["vainilla"],
 };
 
 export const synonyms: Record<string, string[]> = {};

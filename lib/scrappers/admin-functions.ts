@@ -9,7 +9,7 @@ import {
   searchPhases,
 } from "@/db/schema";
 import { eq, sql, and, notInArray } from "drizzle-orm";
-import { PERMITED_STOP_WORDS, STOP_WORDS } from "../stopwords";
+import { PERMITED_STOP_WORDS, STOP_WORDS, UNIT } from "../stopwords";
 import { isNumeric } from "../utils";
 
 export async function adminMergeProduct(
@@ -33,6 +33,7 @@ export async function adminMergeProduct(
 export async function getSimilarProducts(
   categoryId: number,
   ignoredProducts: number[],
+  ignoredBaseProducts: number[],
   threshold = 0.4
 ) {
   const duplicates = await db
@@ -73,9 +74,12 @@ export async function getSimilarProducts(
       and(
         eq(products.categoryId, categoryId),
         // eq(products.unit, sql`p2.unit`),
-        eq(sql`p2."brandId"`, 19),
-        notInArray(sql`p2.id`, ignoredProducts)
-        // not(eq(products.categoryId, 1))
+        eq(sql`p2."brandId"`, 69),
+        notInArray(sql`p2.id`, ignoredProducts),
+        notInArray(products.id, ignoredBaseProducts),
+        // sql`p2.name LIKE '%Vaquita%'`,
+        // sql`unaccent(lower(p2.name)) NOT LIKE '%leche%'`,
+        sql`unaccent(lower(${products.name})) LIKE '%leche%'`
       )
     )
     .orderBy(sql`"sml" DESC`);
@@ -139,6 +143,10 @@ function generateNgrams(tokens: string[]): Set<string> {
       continue;
     }
 
+    if (!isNumeric(tokens[i]) && UNIT.includes(tokens[i + 1])) {
+      continue;
+    }
+
     out.add(tokens[i] + " " + tokens[i + 1]);
   }
 
@@ -155,7 +163,37 @@ function generateNgrams(tokens: string[]): Set<string> {
       continue;
     }
 
+    if (!isNumeric(tokens[i + 1]) && UNIT.includes(tokens[i + 2])) {
+      continue;
+    }
+
     out.add(tokens[i] + " " + tokens[i + 1] + " " + tokens[i + 2]);
+  }
+
+  // 4) Adjacent 4-grams
+  for (let i = 0; i < tokens.length - 3; i++) {
+    const t1 = tokens[i];
+    const t2 = tokens[i + 1];
+    const t3 = tokens[i + 2];
+    const t4 = tokens[i + 3];
+
+    if (isNumeric(t4)) {
+      continue;
+    }
+    if (PERMITED_STOP_WORDS.includes(t4)) {
+      continue;
+    }
+    const quartet = [t1, t2, t3, t4];
+    const uniqueCount = new Set(quartet).size;
+    if (uniqueCount < 4) {
+      continue;
+    }
+
+    if (!isNumeric(t3) && UNIT.includes(t4)) {
+      continue;
+    }
+
+    out.add(`${t1} ${t2} ${t3} ${t4}`);
   }
 
   return out;
