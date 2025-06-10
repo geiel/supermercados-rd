@@ -9,7 +9,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { productsPricesHistorySelect } from "@/db/schema";
-import { Activity } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { isToday } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ const chartConfig = {
   price: {
     label: "Precio",
     color: "hsl(var(--chart-1))",
-    icon: Activity,
+    icon: DollarSign,
   },
 } satisfies ChartConfig;
 
@@ -79,13 +79,18 @@ export function PricesChart({
     });
   }
 
+  const formatedData = data.map((d) => ({
+    date: d.date.toISOString().split("T")[0],
+    price: d.price,
+  }));
+
   return (
     <Card>
       <CardContent>
         <ChartContainer config={chartConfig}>
           <AreaChart
             accessibilityLayer
-            data={data}
+            data={formatedData}
             margin={{
               left: 12,
               right: 12,
@@ -108,7 +113,17 @@ export function PricesChart({
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString("es-ES", {
+                      month: "short",
+                      day: "numeric",
+                    });
+                  }}
+                />
+              }
             />
             <Area
               dataKey="price"
