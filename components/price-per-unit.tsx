@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 function convertToGrams(quantity: number, unit: string): number {
   switch (unit.toUpperCase()) {
     case "GR":
@@ -75,10 +77,12 @@ export function PricePerUnit({
   unit,
   price,
   categoryId,
+  className,
 }: {
   unit: string;
   price: number;
   categoryId: number;
+  className?: string;
 }) {
   const amountAndUnit = unit.split(" ");
 
@@ -111,14 +115,16 @@ export function PricePerUnit({
 
   if (unitOnly === "UND") {
     return (
-      <div className="text-xs">${(price / amount).toFixed(2)} por UND</div>
+      <div className={cn("text-xs", className)}>
+        ${(price / amount).toFixed(2)} por UND
+      </div>
     );
   }
 
   //Comprarar por 100 GR
   if (categoryId === 4) {
     return (
-      <div className="text-xs">
+      <div className={cn("text-xs", className)}>
         ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR
       </div>
     );
@@ -134,14 +140,14 @@ export function PricePerUnit({
       unitOnly !== "GL"
     ) {
       return (
-        <div className="text-xs">
+        <div className={cn("text-xs", className)}>
           ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR
         </div>
       );
     }
 
     return (
-      <div className="text-xs">
+      <div className={cn("text-xs", className)}>
         ${getPricePer100Milliliters(price, amount, unitOnly)} por 100 ML
       </div>
     );
@@ -149,5 +155,9 @@ export function PricePerUnit({
 
   //Comprarar por LB
   const lb = convertToPounds(amount, unitOnly);
-  return <div className="text-xs">${(price / lb).toFixed(2)} por LB</div>;
+  return (
+    <div className={cn("text-xs", className)}>
+      ${(price / lb).toFixed(2)} por LB
+    </div>
+  );
 }

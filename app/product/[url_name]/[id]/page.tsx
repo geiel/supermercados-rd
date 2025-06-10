@@ -1,3 +1,4 @@
+import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductImage } from "@/components/product-image";
 import { RelatedProducts } from "@/components/related-products";
@@ -42,6 +43,7 @@ export default async function Page({ params }: Props) {
         with: {
           shop: true,
         },
+        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
       },
       brand: true,
       pricesHistory: true,
@@ -60,33 +62,35 @@ export default async function Page({ params }: Props) {
 
   return (
     <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 py-4 px-6 md:px-10">
-      <section className="flex flex-col gap-2">
-        <div>
-          {product.brand ? (
-            <div className="font-bold text-2xl">{product.brand.name}</div>
-          ) : null}
-          <div className="text-xl">{product.name}</div>
-        </div>
-        <Badge>
-          <div className="font-bold">{product.unit}</div>
-        </Badge>
-        <div className="px-4 py-8">
-          <div className="flex justify-center">
-            <div className="h-[290px] w-[290px] md:h-[500px] md:w-[500px] relative">
-              {product.image ? (
-                <ProductImage
-                  src={product.image}
-                  fill
-                  sizes="(max-width: 768px) 290px, 500px"
-                  style={{
-                    objectFit: "contain",
-                  }}
-                  alt={product.name + product.unit}
-                  placeholder="blur"
-                  blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-                  className="max-w-none"
-                />
-              ) : null}
+      <section>
+        <div className="flex flex-col gap-2 sticky top-0">
+          <div>
+            {product.brand ? (
+              <div className="font-bold text-2xl">{product.brand.name}</div>
+            ) : null}
+            <div className="text-xl">{product.name}</div>
+          </div>
+          <Badge>
+            <div className="font-bold">{product.unit}</div>
+          </Badge>
+          <div className="px-4 py-8">
+            <div className="flex justify-center">
+              <div className="h-[290px] w-[290px] md:h-[500px] md:w-[500px] relative">
+                {product.image ? (
+                  <ProductImage
+                    src={product.image}
+                    fill
+                    sizes="(max-width: 768px) 290px, 500px"
+                    style={{
+                      objectFit: "contain",
+                    }}
+                    alt={product.name + product.unit}
+                    placeholder="blur"
+                    blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                    className="max-w-none"
+                  />
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
@@ -107,8 +111,12 @@ export default async function Page({ params }: Props) {
                 alt="Supermarket logo"
                 unoptimized
               />
-              <ShopPrice shopPrice={shopPrice} />
-              <div>
+              <ShopPrice
+                shopPrice={shopPrice}
+                unit={product.unit}
+                categoryId={product.categoryId}
+              />
+              <div className="place-self-end self-center">
                 <SearchProductButton shopPrice={shopPrice} />
               </div>
             </div>
@@ -158,7 +166,15 @@ function SearchProductButton({
   );
 }
 
-async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
+async function ShopPrice({
+  shopPrice,
+  unit,
+  categoryId,
+}: {
+  shopPrice: productsShopsPrices;
+  unit: string;
+  categoryId: number;
+}) {
   switch (shopPrice.shopId) {
     case 1:
       await sirena.processByProductShopPrice(shopPrice);
@@ -194,11 +210,21 @@ async function ShopPrice({ shopPrice }: { shopPrice: productsShopsPrices }) {
   });
 
   return (
-    <div className="flex gap-1 col-span-2 ">
-      <div className="font-bold text-lg">RD${lowerPrice?.currentPrice}</div>
-      {Number(lowerPrice?.currentPrice) < Number(lowerPrice?.regularPrice) ? (
-        <div>RD${lowerPrice?.regularPrice}</div>
-      ) : null}
+    <div className="col-span-2">
+      <div className="flex gap-1 items-center">
+        <div className="font-bold text-lg">RD${lowerPrice?.currentPrice}</div>
+        {Number(lowerPrice?.currentPrice) < Number(lowerPrice?.regularPrice) ? (
+          <div className="line-through text-lg">
+            RD${lowerPrice?.regularPrice}
+          </div>
+        ) : null}
+      </div>
+      <PricePerUnit
+        price={Number(lowerPrice?.currentPrice)}
+        unit={unit}
+        categoryId={categoryId}
+        className="opacity-60"
+      />
     </div>
   );
 }

@@ -19,7 +19,7 @@ async function main() {
         ),
         or(isNull(scp.hidden), eq(scp.hidden, false))
       ),
-    limit: 200,
+    limit: 400,
   });
 
   for (const shopPrice of allShopPrices) {
