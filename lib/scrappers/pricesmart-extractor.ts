@@ -15,9 +15,9 @@ import { z } from "zod";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Lacteos-y-Huevos-G10D07010/Mantequilla-y-margarina-G10D07010001/G10D07010001",
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Lacteos-y-Huevos-G10D07010/Huevos-G10D03010005/G10D03010005",
     start: 0,
-    q: "G10D07010001",
+    q: "G10D03010005",
     fq: [],
     search_type: "category",
     rows: 12,

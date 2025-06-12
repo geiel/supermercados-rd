@@ -80,7 +80,7 @@ export function PricesChart({
   }
 
   const formatedData = data.map((d) => ({
-    date: d.date.toISOString().split("T")[0],
+    date: d.date.toISOString(),
     price: d.price,
   }));
 

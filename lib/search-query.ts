@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import { synonyms } from "./synonyms";
 
 function removeAccents(str: string) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace("&", "");
 }
 
 export async function searchProducts(

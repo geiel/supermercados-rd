@@ -21,7 +21,7 @@ export function RelatedProducts({
 }) {
   return (
     <ScrollArea>
-      <div className="flex max-w-xl space-x-4">
+      <div className="flex max-w-lg space-x-4">
         {relatedProducts.map((relatedProduct) => (
           <Link
             href={`/product/${toSlug(relatedProduct.name)}/${

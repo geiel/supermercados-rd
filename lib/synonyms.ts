@@ -53,6 +53,8 @@ const baseMap: Record<string, string[]> = {
   org: ["organico"],
   margarina: ["mantequilla"],
   vanilla: ["vainilla"],
+  dairy: ["lactosa", "lacteo"],
+  peach: ["durazno"]
 };
 
 export const synonyms: Record<string, string[]> = {};

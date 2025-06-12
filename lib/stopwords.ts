@@ -6,6 +6,7 @@ export const PERMITED_STOP_WORDS = [
   "sin",
   "y",
   "sabor",
+  "la",
 ];
 
 export const UNIT = ["unidades", "und"];
@@ -375,7 +376,6 @@ j
 junto
 k
 l
-la
 lado
 largo
 las
