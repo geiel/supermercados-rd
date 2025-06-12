@@ -1,7 +1,6 @@
 import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
 import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
 import { sanitizeForTsQuery, toSlug } from "@/lib/utils";
@@ -14,6 +13,7 @@ import { BottomPagination } from "@/components/bottom-pagination";
 import { ProductImage } from "@/components/product-image";
 import { searchProducts } from "@/lib/search-query";
 import { PricePerUnit } from "@/components/price-per-unit";
+import { Unit } from "@/components/unit";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -121,7 +121,7 @@ export default async function Page({ params, searchParams }: Props) {
                     ) : null}
                   </div>
                 </div>
-                <Badge>{product.unit}</Badge>
+                <Unit unit={product.unit} />
                 <div>
                   <div className="font-bold">{product.brand.name}</div>
                   {product.name}

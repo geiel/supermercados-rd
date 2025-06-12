@@ -2,8 +2,8 @@ import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductImage } from "@/components/product-image";
 import { RelatedProducts } from "@/components/related-products";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Unit } from "@/components/unit";
 import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
 import { bravo } from "@/lib/scrappers/bravo";
@@ -75,9 +75,7 @@ export default async function Page({ params }: Props) {
             ) : null}
             <div className="text-xl">{product.name}</div>
           </div>
-          <Badge>
-            <div className="font-bold">{product.unit}</div>
-          </Badge>
+          <Unit unit={product.unit} className="font-bold" />
           <div className="px-4 py-8">
             <div className="flex justify-center">
               <div className="h-[290px] w-[290px] md:h-[500px] md:w-[500px] relative">

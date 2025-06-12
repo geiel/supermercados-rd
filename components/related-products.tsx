@@ -7,8 +7,8 @@ import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { ProductImage } from "./product-image";
 import Link from "next/link";
 import { toSlug } from "@/lib/utils";
-import { Badge } from "./ui/badge";
 import { PricePerUnit } from "./price-per-unit";
+import { Unit } from "./unit";
 
 export function RelatedProducts({
   relatedProducts,
@@ -46,7 +46,7 @@ export function RelatedProducts({
                 />
               ) : null}
             </div>
-            <Badge>{relatedProduct.unit}</Badge>
+            <Unit unit={relatedProduct.unit} />
             <div>
               <div className="font-bold">{relatedProduct.brand.name}</div>
               {relatedProduct.name}

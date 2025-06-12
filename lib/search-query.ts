@@ -4,7 +4,10 @@ import { sql } from "drizzle-orm";
 import { synonyms } from "./synonyms";
 
 function removeAccents(str: string) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace("&", "");
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace("&", "");
 }
 
 export async function searchProducts(
@@ -99,5 +102,7 @@ function buildTsQuery(raw: string) {
   const words = norm.split(/\s+/);
   const buckets = words.map((w) => [w, ...(synonyms[w] || [])]);
   const combos = cartesian(buckets).map((arr) => arr.join(" & "));
-  return combos.join(" | ");
+
+  //Get max 10 combos
+  return combos.slice(0, 10).join(" | ");
 }
