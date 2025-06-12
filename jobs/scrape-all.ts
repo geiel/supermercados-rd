@@ -19,7 +19,7 @@ async function main() {
         ),
         or(isNull(scp.hidden), eq(scp.hidden, false))
       ),
-    limit: 400,
+    limit: 200,
   });
 
   for (const shopPrice of allShopPrices) {
@@ -42,7 +42,7 @@ async function main() {
       case 6:
         await bravo.processByProductShopPrice(shopPrice);
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 1000));
   }
 
   process.exit(0);
