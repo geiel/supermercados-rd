@@ -78,6 +78,13 @@
       "when": 1748962270286,
       "tag": "0010_thankful_microbe",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1749835177651,
+      "tag": "0011_careless_moonstone",
+      "breakpoints": true
     }
   ]
 }

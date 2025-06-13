@@ -1,0 +1,1 @@
+ALTER TABLE "products_shops_prices" ADD CONSTRAINT "unique_shop_product" UNIQUE NULLS NOT DISTINCT("url","api");

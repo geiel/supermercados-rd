@@ -105,7 +105,10 @@ export const productsShopsPrices = pgTable(
     updateAt: timestamp({ withTimezone: true }),
     hidden: boolean(),
   },
-  (table) => [primaryKey({ columns: [table.productId, table.shopId] })]
+  (table) => [
+    primaryKey({ columns: [table.productId, table.shopId] }),
+    unique("unique_shop_product").on(table.url, table.api).nullsNotDistinct(),
+  ]
 );
 
 export const productsShopsPricesRelations = relations(

@@ -120,14 +120,21 @@ export async function getProductListNacional(categoryId: number, url: string) {
     }
 
     product.brandId = brand!.id;
-    const insertedProduct = await db
-      .insert(products)
-      .values(product)
-      .returning();
-    product.price.productId = insertedProduct[0].id;
 
-    await db.insert(productsShopsPrices).values(product.price);
-    console.log(`[INFO] product don't exist inserted`);
+    try {
+      await db.transaction(async (tx) => {
+        const insertedProduct = await tx
+          .insert(products)
+          .values(product)
+          .returning();
+        product.price.productId = insertedProduct[0].id;
+
+        await tx.insert(productsShopsPrices).values(product.price);
+        console.log(`[INFO] product don't exist inserted`);
+      });
+    } catch (err) {
+      console.log("[ERROR] Error when trying insert a new product", err);
+    }
   }
 
   await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();

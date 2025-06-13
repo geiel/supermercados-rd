@@ -74,7 +74,7 @@ export async function getSimilarProducts(
       and(
         eq(products.categoryId, categoryId),
         // eq(products.unit, sql`p2.unit`),
-        eq(sql`p2."brandId"`, 19),
+        eq(sql`p2."brandId"`, 30),
         notInArray(sql`p2.id`, ignoredProducts),
         notInArray(products.id, ignoredBaseProducts)
         // sql`p2.name LIKE '%Vaquita%'`,

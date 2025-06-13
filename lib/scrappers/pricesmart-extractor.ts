@@ -15,9 +15,9 @@ import { z } from "zod";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Lacteos-y-Huevos-G10D07010/Huevos-G10D03010005/G10D03010005",
-    start: 0,
-    q: "G10D03010005",
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Panaderia-y-reposteria-Fresh_Bakery/Fresh_Bakery",
+    start: 12,
+    q: "Fresh_Bakery",
     fq: [],
     search_type: "category",
     rows: 12,
@@ -144,14 +144,21 @@ export async function getProductListPricesmart(categoryId: number) {
     }
 
     product.brandId = brand!.id;
-    const insertedProduct = await db
-      .insert(products)
-      .values(product)
-      .returning();
-    product.price.productId = insertedProduct[0].id;
 
-    await db.insert(productsShopsPrices).values(product.price);
-    console.log(`[INFO] product don't exist inserted`);
+    try {
+      await db.transaction(async (tx) => {
+        const insertedProduct = await tx
+          .insert(products)
+          .values(product)
+          .returning();
+        product.price.productId = insertedProduct[0].id;
+
+        await tx.insert(productsShopsPrices).values(product.price);
+        console.log(`[INFO] product don't exist inserted`);
+      });
+    } catch (err) {
+      console.log("[ERROR] Error when trying insert a new product", err);
+    }
   }
 
   await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();
