@@ -56,6 +56,8 @@ const baseMap: Record<string, string[]> = {
   dairy: ["lactosa", "lacteo"],
   peach: ["durazno"],
   pastel: ["bizcocho", "biscocho"],
+  string: ["palitos", "palito"],
+  green: ["verde", "verdes"],
 };
 
 export const synonyms: Record<string, string[]> = {};
