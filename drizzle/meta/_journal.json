@@ -85,6 +85,13 @@
       "when": 1749835177651,
       "tag": "0011_careless_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1750104547089,
+      "tag": "0012_bored_the_fallen",
+      "breakpoints": true
     }
   ]
 }

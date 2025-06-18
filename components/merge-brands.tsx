@@ -75,6 +75,8 @@ export default function MergeProducts({
         ignoreBaseProducts
       )
     );
+
+    // setSimilarProducts(await getGlobalSimilarProducts(ignoredProducts));
     setLoadingSimilar(false);
   }
 

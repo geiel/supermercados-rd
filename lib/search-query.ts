@@ -24,6 +24,7 @@ export async function searchProducts(
               SELECT
                 id,
                 name,
+                deleted,
                 ts_rank(
                   to_tsvector('spanish', unaccent(lower(name)))
                   || to_tsvector('english', unaccent(lower(name))),
@@ -40,6 +41,7 @@ export async function searchProducts(
                 SELECT
                 id,
                 name,
+                deleted,
                 similarity(unaccent(lower(name)), unaccent(lower(${value}))) AS sim
                 FROM ${products}
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
@@ -59,6 +61,8 @@ export async function searchProducts(
             WHERE ${productsShopsPrices.productId} = COALESCE(fts.id, fuzzy.id)
             AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
           )
+          AND fts.deleted IS NOT TRUE
+          AND fuzzy.deleted IS NOT TRUE
         ORDER BY
           is_exact   DESC,
           fts_rank   DESC,

@@ -60,7 +60,11 @@ export function PricesChart({
     }
 
     const priceBefore = prices.filter((p) => p.createdAt < price.createdAt);
-    if (priceBefore.some((p) => p.stillActive && p.price < price.price)) {
+    if (
+      priceBefore.some(
+        (p) => p.stillActive && Number(p.price) < Number(price.price)
+      )
+    ) {
       return;
     }
 

@@ -70,6 +70,14 @@ export async function getSimilarProducts(
     )
     .innerJoin(sql`${productsBrands} AS b1`, sql`${products}."brandId" = b1.id`)
     .innerJoin(sql`${productsBrands} AS b2`, sql`p2."brandId" = b2.id`)
+    // .innerJoin(
+    //   sql`${productsShopsPrices} AS ps1`,
+    //   eq(products.id, sql`ps1."productId"`)
+    // )
+    // .innerJoin(
+    //   sql`${productsShopsPrices} AS ps2`,
+    //   eq(sql`p2.id`, sql`ps2."productId"`)
+    // )
     .where(
       and(
         eq(products.categoryId, categoryId),
@@ -77,11 +85,15 @@ export async function getSimilarProducts(
         eq(sql`p2."brandId"`, 30),
         notInArray(sql`p2.id`, ignoredProducts),
         notInArray(products.id, ignoredBaseProducts)
+        // eq(sql`ps1."shopId"`, 2),
+        // not(eq(sql`ps2."shopId"`, 2))
+
         // sql`p2.name LIKE '%Vaquita%'`,
         // sql`unaccent(lower(p2.name)) NOT LIKE '%leche%'`,
         // sql`unaccent(lower(${products.name})) LIKE '%leche%'`
       )
     )
+    // .limit(200)
     .orderBy(sql`"sml" DESC`);
 
   return duplicates;
@@ -89,12 +101,13 @@ export async function getSimilarProducts(
 
 export async function deleteProductById(productId: number) {
   await db
-    .delete(productsPricesHistory)
-    .where(eq(productsPricesHistory.productId, productId));
+    .update(products)
+    .set({ deleted: true })
+    .where(eq(products.id, productId));
   await db
-    .delete(productsShopsPrices)
+    .update(productsShopsPrices)
+    .set({ hidden: true })
     .where(eq(productsShopsPrices.productId, productId));
-  await db.delete(products).where(eq(products.id, productId));
 }
 
 function tokenizeAndFilter(title: string): string[] {

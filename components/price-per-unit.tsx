@@ -121,6 +121,19 @@ export function PricePerUnit({
     );
   }
 
+  if (
+    unitOnly === "ML" ||
+    unitOnly === "LT" ||
+    unitOnly === "CL" ||
+    unitOnly === "GL"
+  ) {
+    return (
+      <div className={cn("text-xs", className)}>
+        ${getPricePer100Milliliters(price, amount, unitOnly)} por 100 ML
+      </div>
+    );
+  }
+
   //Comprarar por 100 GR
   if (categoryId === 4) {
     return (
@@ -130,25 +143,11 @@ export function PricePerUnit({
     );
   }
 
-  //Comparar por 100 ML
+  //Comparar por 100 GR
   if (categoryId === 6) {
-    //Comparar por 100 GR
-    if (
-      unitOnly !== "LT" &&
-      unitOnly !== "ML" &&
-      unitOnly !== "CL" &&
-      unitOnly !== "GL"
-    ) {
-      return (
-        <div className={cn("text-xs", className)}>
-          ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR
-        </div>
-      );
-    }
-
     return (
       <div className={cn("text-xs", className)}>
-        ${getPricePer100Milliliters(price, amount, unitOnly)} por 100 ML
+        ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR
       </div>
     );
   }
