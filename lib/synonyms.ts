@@ -8,7 +8,7 @@ const baseMap: Record<string, string[]> = {
   red: ["rojo", "roja"],
   rib: ["costilla", "costillas"],
   short: ["corta", "cortas"],
-  hamburguer: ["hamburgesa", "hamburguesa"],
+  hamburguer: ["hamburgesa", "hamburguesa", "burger"],
   squash: ["calabaza", "calabazas"],
   gold: ["dorada", "dorado"],
   acorn: ["bellota"],
@@ -64,6 +64,10 @@ const baseMap: Record<string, string[]> = {
   zumo: ["jugo"],
   blueberry: ["arandano", "blueberries", "arandanos"],
   yaniqueque: ["pastelitos"],
+  veggie: ["vegetariano", "vegetariana"],
+  flatbread: ["pan & plano"],
+  sesamo: ["sesame"],
+  ezekiel: ["ezequiel"],
 };
 
 export const synonyms: Record<string, string[]> = {};

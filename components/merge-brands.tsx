@@ -62,7 +62,12 @@ export default function MergeProducts({
 
   async function mergeProduct() {
     setLoadingProcess(true);
-    await adminMergeProduct(Number(parentProductId), Number(childProductId));
+    try {
+      await adminMergeProduct(Number(parentProductId), Number(childProductId));
+    } catch (error) {
+      console.error(error);
+    }
+
     setLoadingProcess(false);
   }
 
