@@ -169,15 +169,10 @@ async function Price({
     return null;
   }
 
-  let price = lowerPrice.currentPrice;
-  if (lowerPrice.regularPrice && lowerPrice.regularPrice < price) {
-    price = lowerPrice.regularPrice;
-  }
-
   return (
     <div>
       <div className="font-bold text-lg pt-1">RD${lowerPrice.currentPrice}</div>
-      <PricePerUnit unit={unit} price={Number(price)} categoryId={categoryId} />
+      <PricePerUnit unit={unit} price={Number(lowerPrice.currentPrice)} categoryId={categoryId} />
     </div>
   );
 }

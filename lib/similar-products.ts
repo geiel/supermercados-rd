@@ -38,7 +38,7 @@ export async function getGlobalSimilarProducts(ingoredProducts1: number[]) {
       product2,
       and(
         lt(product1.id, product2.id),
-        sql`similarity(unaccent(lower(${product1.name})), unaccent(lower(${product2.name}))) > 0.9`
+        sql`similarity(unaccent(lower(${product1.name})), unaccent(lower(${product2.name}))) > 0.8`
       )
     )
     .where(and(notExists(select), notInArray(product2.id, ingoredProducts1)))

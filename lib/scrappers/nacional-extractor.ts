@@ -86,7 +86,7 @@ export async function getProductListNacional(categoryId: number, url: string) {
         price: {
           shopId: 2,
           productId: 0,
-          url: url.replace("congelados/comida-congelada/", ""),
+          url: url.replace("desayuno/te-e-infusiones/", ""),
         },
       });
     }

@@ -599,7 +599,6 @@ tampoco
 tan
 tanto
 tarde
-te
 temprano
 tendremos
 tendrá

@@ -15,9 +15,9 @@ import { z } from "zod";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Comida-congelada-G10D06011/G10D06011",
-    start: 36,
-    q: "G10D06011",
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Aves-Poultry/Poultry",
+    start: 24,
+    q: "Poultry",
     fq: [],
     search_type: "category",
     rows: 12,

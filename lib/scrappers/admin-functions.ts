@@ -34,7 +34,7 @@ export async function getSimilarProducts(
   categoryId: number,
   ignoredProducts: number[],
   ignoredBaseProducts: number[],
-  threshold = 0.2
+  threshold = 0.4
 ) {
   const duplicates = await db
     .select({
