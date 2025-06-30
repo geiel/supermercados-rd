@@ -76,7 +76,6 @@ aunque
 ayer
 añadió
 aún
-b
 bajo
 bastante
 bien
@@ -86,7 +85,6 @@ buena
 buenas
 bueno
 buenos
-c
 cada
 casi
 cerca

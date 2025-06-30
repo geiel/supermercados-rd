@@ -66,7 +66,7 @@ export default async function Page({ params }: Props) {
   );
 
   return (
-    <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 py-4 px-6 md:px-10">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 py-4 px-6 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
           <div>
@@ -109,7 +109,7 @@ export default async function Page({ params }: Props) {
             >
               <Image
                 src={`/supermarket-logo/${shopPrice.shop.logo}`}
-                width={60}
+                width={50}
                 height={40}
                 alt="Supermarket logo"
                 unoptimized
@@ -152,7 +152,7 @@ function SearchProductButton({
     );
 
     return (
-      <Button size="sm" asChild>
+      <Button size="xs" asChild>
         <a href={`${shopPrice.url}/articulos/${productId}`} target="_blank">
           Buscar
         </a>
@@ -161,7 +161,7 @@ function SearchProductButton({
   }
 
   return (
-    <Button size="sm" asChild>
+    <Button size="xs" asChild>
       <a href={shopPrice.url} target="_blank">
         Buscar
       </a>

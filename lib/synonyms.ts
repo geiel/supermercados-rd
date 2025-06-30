@@ -27,6 +27,7 @@ const baseMap: Record<string, string[]> = {
   blue: ["azul"],
   crumbled: ["desmenuzado", "desmenuzada"],
   herb: ["hierba", "herbs", "hierbas"],
+  herbal: ["hierbas"],
   wedge: ["cuña"],
   untable: ["spreadable"],
   cream: ["crema"],
@@ -68,6 +69,19 @@ const baseMap: Record<string, string[]> = {
   flatbread: ["pan & plano"],
   sesamo: ["sesame"],
   ezekiel: ["ezequiel"],
+  decaffeinato: ["descafeinado"],
+  big: ["grande", "grandes"],
+  tea: ["te"],
+  iced: ["frio"],
+  lemon: ["limon"],
+  white: ["blanco"],
+  filter: ["filtro"],
+  cookies: ["galletas", "cookie"],
+  honey: ["miel"],
+  peanut: ["mani"],
+  butter: ["mantequilla"],
+  corn: ["maiz"],
+  oats: ["avena"],
 };
 
 export const synonyms: Record<string, string[]> = {};
