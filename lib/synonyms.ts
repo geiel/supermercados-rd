@@ -82,6 +82,10 @@ const baseMap: Record<string, string[]> = {
   butter: ["mantequilla"],
   corn: ["maiz"],
   oats: ["avena"],
+  almond: ["almendra"],
+  zucaritas: ["zucarita", "cereal & frosted & kelloggs"],
+  cinnamon: ["canela"],
+  frosted: ["azucarado"],
 };
 
 export const synonyms: Record<string, string[]> = {};

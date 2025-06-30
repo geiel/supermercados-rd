@@ -42,7 +42,7 @@ async function main() {
       case 6:
         await bravo.processByProductShopPrice(shopPrice);
     }
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 800));
   }
 
   process.exit(0);
