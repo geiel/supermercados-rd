@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { productsShopsPrices } from "@/db/schema";
+import { productsSelect, productsShopsPrices } from "@/db/schema";
 import Image from "next/image";
 import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
@@ -105,20 +105,7 @@ export default async function Page({ params, searchParams }: Props) {
               >
                 <div className="flex justify-center">
                   <div className="h-[220px] w-[220px] relative">
-                    {product.image ? (
-                      <ProductImage
-                        src={product.image}
-                        fill
-                        alt={product.name + product.unit}
-                        sizes="220px"
-                        style={{
-                          objectFit: "contain",
-                        }}
-                        placeholder="blur"
-                        blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-                        className="max-w-none"
-                      />
-                    ) : null}
+                    <ExploreImage product={product} />
                   </div>
                 </div>
                 <Unit unit={product.unit} />
@@ -139,6 +126,27 @@ export default async function Page({ params, searchParams }: Props) {
         <BottomPagination items={productsAndTotal.total} />
       </div>
     </div>
+  );
+}
+
+function ExploreImage({ product }: { product: productsSelect }) {
+  if (!product.image) {
+    return null;
+  }
+
+  return (
+    <ProductImage
+      src={product.image}
+      fill
+      alt={product.name + product.unit}
+      sizes="220px"
+      style={{
+        objectFit: "contain",
+      }}
+      placeholder="blur"
+      blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+      className="max-w-none"
+    />
   );
 }
 
@@ -172,7 +180,11 @@ async function Price({
   return (
     <div>
       <div className="font-bold text-lg pt-1">RD${lowerPrice.currentPrice}</div>
-      <PricePerUnit unit={unit} price={Number(lowerPrice.currentPrice)} categoryId={categoryId} />
+      <PricePerUnit
+        unit={unit}
+        price={Number(lowerPrice.currentPrice)}
+        categoryId={categoryId}
+      />
     </div>
   );
 }

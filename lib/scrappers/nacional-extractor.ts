@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
+import { formatUnit } from "./utils";
 
 async function getHtml(url: string) {
   const response = await fetch(url, {
@@ -68,7 +69,7 @@ export async function getProductListNacional(categoryId: number, url: string) {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(" ");
 
-    const unit = words.slice(unitSlice).join(" ").toUpperCase();
+    const unit = formatUnit(words.slice(unitSlice).join(" ").toUpperCase());
 
     if (url) {
       unitTrackers.push({
@@ -86,7 +87,7 @@ export async function getProductListNacional(categoryId: number, url: string) {
         price: {
           shopId: 2,
           productId: 0,
-          url: url.replace("despensa/desayuno/feculas-de-maiz-y-cremas-de-trigo/", ""),
+          url: url.replace("despensa/condimentos-y-especias/", ""),
         },
       });
     }

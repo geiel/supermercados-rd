@@ -36,7 +36,7 @@ const baseMap: Record<string, string[]> = {
   flounder: ["platija"],
   cod: ["bacalao"],
   fillet: ["filete"],
-  sticks: ["palitos"],
+  sticks: ["palitos", "deditos"],
   seafood: ["mar", "marisco"],
   spinach: ["espinaca", "espinacas"],
   tuna: ["atun"],
@@ -86,6 +86,13 @@ const baseMap: Record<string, string[]> = {
   zucaritas: ["zucarita", "cereal & frosted & kelloggs"],
   cinnamon: ["canela"],
   frosted: ["azucarado"],
+  spray: ["aerosol"],
+  virgin: ["virgen"],
+  molido: ["en & polvo"],
+  garlic: ["ajo"],
+  broth: ["sopa", "caldo"],
+  sopita: ["caldo"],
+  refinada: ["alta & pureza"],
 };
 
 export const synonyms: Record<string, string[]> = {};

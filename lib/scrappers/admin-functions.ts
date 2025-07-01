@@ -34,7 +34,7 @@ export async function getSimilarProducts(
   categoryId: number,
   ignoredProducts: number[],
   ignoredBaseProducts: number[],
-  threshold = 0.1
+  threshold = 0.4
 ) {
   const duplicates = await db
     .select({
@@ -81,7 +81,7 @@ export async function getSimilarProducts(
     .where(
       and(
         eq(products.categoryId, categoryId),
-        
+
         // eq(products.unit, sql`p2.unit`),
         eq(sql`p2."brandId"`, 30),
         notInArray(sql`p2.id`, ignoredProducts),
@@ -94,7 +94,7 @@ export async function getSimilarProducts(
         // sql`unaccent(lower(${products.name})) LIKE '%leche%'`
       )
     )
-    // .limit(200)
+    .limit(200)
     .orderBy(sql`"sml" DESC`);
 
   return duplicates;

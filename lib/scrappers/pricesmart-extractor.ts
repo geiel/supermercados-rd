@@ -12,13 +12,14 @@ import {
 } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { formatUnit } from "./utils";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Cereales-y-granolas-G10D03003/G10D03003",
-    start: 12,
-    q: "G10D03003",
-    fq: [],
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Aceites-harinas-y-condimentos-G10D03009/G10D03009?fq=category%3B%22G10D37017002%22",
+    start: 0,
+    q: "G10D03009",
+    fq: ['category:"G10D37017002"'],
     search_type: "category",
     rows: 12,
     account_id: "7024",
@@ -96,7 +97,7 @@ export async function getProductListPricesmart(categoryId: number) {
     }
 
     unitTrackers.push({
-      unit: unit.toUpperCase(),
+      unit: formatUnit(unit.toUpperCase()),
       productName,
     });
 

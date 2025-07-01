@@ -51,6 +51,7 @@ export async function searchProducts(
             COALESCE(rank, 0)               AS fts_rank,
             COALESCE(sim, 0)                AS sim_score,
             CASE WHEN rank IS NOT NULL THEN 1 ELSE 0 END AS is_exact,
+            CASE WHEN unaccent(lower(name)) LIKE unaccent(lower(${value}))||'%' THEN 1 ELSE 0 END AS is_prefix,
             COUNT(*) OVER() AS total_count
         FROM fts
         FULL JOIN fuzzy USING (id, name)
@@ -65,6 +66,7 @@ export async function searchProducts(
           AND fuzzy.deleted IS NOT TRUE
         ORDER BY
           is_exact   DESC,
+          is_prefix  DESC,
           fts_rank   DESC,
           sim_score  DESC,
           COALESCE(fts.id, fuzzy.id) ASC
@@ -94,19 +96,36 @@ export async function searchProducts(
   };
 }
 
-function cartesian<T>(sets: T[][]): T[][] {
-  return sets.reduce<T[][]>(
-    (acc, set) => acc.flatMap((seq) => set.map((item) => [...seq, item])),
-    [[]]
-  );
-}
-
 function buildTsQuery(raw: string) {
   const norm = removeAccents(raw.trim().toLowerCase());
   const words = norm.split(/\s+/);
-  const buckets = words.map((w) => [w, ...(synonyms[w] || [])]);
-  const combos = cartesian(buckets).map((arr) => arr.join(" & "));
 
-  //Get max 10 combos
-  return combos.slice(0, 10).join(" | ");
+  const buckets: string[][] = [];
+  for (let i = 0; i < words.length; ) {
+    const w = words[i];
+    const next = words[i + 1];
+    const twoKey = next ? `${w} & ${next}` : null;
+    const threeKey =
+      next && words[i + 2] ? `${w} & ${next} & ${words[i + 2]}` : null;
+
+    if (threeKey && synonyms[threeKey]) {
+      const syns = synonyms[threeKey];
+      buckets.push([threeKey, ...syns]);
+      i += 3;
+    } else if (twoKey && synonyms[twoKey]) {
+      const syns = synonyms[twoKey];
+      buckets.push([twoKey, ...syns]);
+      i += 2;
+    } else {
+      buckets.push([w, ...(synonyms[w] || [])]);
+      i += 1;
+    }
+  }
+
+  return buckets
+    .map((bucket) => {
+      if (bucket.length === 1) return bucket[0];
+      return `(${bucket.join(" | ")})`;
+    })
+    .join(" & ");
 }

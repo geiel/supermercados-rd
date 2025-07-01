@@ -12,6 +12,7 @@ import {
 import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { formatUnit } from "./utils";
 
 async function getHtml(url: string) {
   const response = await fetch(url, {
@@ -55,7 +56,7 @@ export async function getProductListJumbo(categoryId: number, url: string) {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(" ");
 
-    const unit = words.slice(unitSlice).join(" ").toUpperCase();
+    const unit = formatUnit(words.slice(unitSlice).join(" ").toUpperCase());
 
     if (url) {
       unitTrackers.push({

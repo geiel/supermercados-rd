@@ -11,6 +11,7 @@ import {
 } from "@/db/schema/products";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { formatUnit } from "./utils";
 
 export async function getProductListSirena(categoryId: number, url: string) {
   const unitTrackers: unitTrackerInsert[] = [];
@@ -60,7 +61,7 @@ export async function getProductListSirena(categoryId: number, url: string) {
         )
         .join(" ");
 
-      const unit = words.slice(unitSlice).join(" ").toUpperCase();
+      const unit = formatUnit(words.slice(unitSlice).join(" ").toUpperCase());
 
       unitTrackers.push({
         unit,

@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { formatUnit } from "./utils";
 
 const raw = JSON.stringify([
   {
@@ -28,7 +29,7 @@ const raw = JSON.stringify([
     operationName: "GetProductsByCategory",
     variables: {
       getProductsByCategoryInput: {
-        categoryReference: "11-46-194",
+        categoryReference: "11-46-195",
         categoryId: "null",
         clientId: "PLAZA_LAMA",
         storeReference: "PL08-D",
@@ -103,7 +104,7 @@ export async function getProductListPlazaLama(categoryId: number) {
         )
         .join(" ");
 
-      const unit = words.slice(unitSlice).join(" ").toUpperCase();
+      const unit = formatUnit(words.slice(unitSlice).join(" ").toUpperCase());
 
       unitTrackers.push({
         unit,
