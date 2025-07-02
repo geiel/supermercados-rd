@@ -14,6 +14,15 @@ export function ProductImage(props: ImageProps) {
       onError={() => {
         setImageSrc("/no-product-found.jpg");
       }}
+      onLoad={(e) => {
+        if (
+          e.currentTarget.naturalWidth === 384 &&
+          e.currentTarget.naturalHeight === 384 &&
+          imageSrc.toString().startsWith("https://supermercadosnacional.com")
+        ) {
+          setImageSrc(imageSrc.toString().replace(/__\d+(?=\.\w+$)/, ""));
+        }
+      }}
       alt={props.alt}
       unoptimized
     />
