@@ -11,13 +11,12 @@ import { sql } from "drizzle-orm";
 
 async function main() {
   const allShopPrices = await db.query.productsShopsPrices.findMany({
-    where: (scp, { isNull, eq, or, and }) =>
+    where: (scp, { isNull, or, and }) =>
       and(
         or(
           isNull(scp.updateAt),
           sql`${scp.updateAt} < now() - INTERVAL '12 HOURS'`
-        ),
-        or(isNull(scp.hidden), eq(scp.hidden, false))
+        )
       ),
     limit: 400,
   });
