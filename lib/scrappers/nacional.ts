@@ -12,7 +12,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
-import { hideProductPrice } from "../db-utils";
+import { hideProductPrice, showProductPrice } from "../db-utils";
 
 const scrapper = "Nacional";
 
@@ -63,6 +63,7 @@ async function processByProductShopPrice(
     return;
   }
 
+  await showProductPrice(productShopPrice);
   if (Number(productShopPrice.currentPrice) === Number(finalPrice)) {
     ignoreLog(scrapper, productShopPrice);
     await db

@@ -113,17 +113,11 @@ async function processByProductShopPrice(
     return;
   }
 
-  showProductPrice(productShopPrice);
+  await showProductPrice(productShopPrice);
   const productPrice = productInfo.data.getProductsBySKU[0].promotion
     ? productInfo.data.getProductsBySKU[0].promotion.conditions[0].price
     : productInfo.data.getProductsBySKU[0].price;
   const regularPrice = productInfo.data.getProductsBySKU[0].price;
-
-  // await validateHistory(
-  //   productShopPrice.productId,
-  //   productShopPrice.shopId,
-  //   productPrice + ""
-  // );
 
   if (
     productShopPrice.currentPrice &&

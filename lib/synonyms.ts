@@ -93,6 +93,23 @@ const baseMap: Record<string, string[]> = {
   broth: ["sopa", "caldo"],
   sopita: ["caldo"],
   refinada: ["alta & pureza"],
+  fortigrow: ["crecimiento"],
+  balsamic: ["balsamico"],
+  ranchero: ["baldom"],
+  duo: ["doble"],
+  powder: ["polvo"],
+  "de & coccion": ["para & cocinar", "de & cocinar"],
+  nutmeg: ["nuez & moscada"],
+  pink: ["rosado", "rosada"],
+  paprika: ["pimenton"],
+  sea: ["marino", "marina"],
+  salt: ["sal"],
+  coarse: ["gruesa"],
+  fine: ["fina"],
+  greenland: ["lucas & perez"],
+  hierbabuena: ["hierba & buena"],
+  rosa: ["flor"],
+  strawberry: ["fresa", "fresas"],
 };
 
 export const synonyms: Record<string, string[]> = {};

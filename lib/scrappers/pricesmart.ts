@@ -95,7 +95,7 @@ async function getProductInfo(
     return price;
   }
 
-  showProductPrice(productShopPrice);
+  await showProductPrice(productShopPrice);
   const priceString =
     productInfo.data.data.products.results[0].masterData.current.allVariants[0].attributesRaw.find(
       (d) => d.name === "unit_price"

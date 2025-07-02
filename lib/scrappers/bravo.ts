@@ -9,7 +9,7 @@ import {
   processErrorLog,
 } from "./logs";
 import { and, eq } from "drizzle-orm";
-import { hideProductPrice } from "../db-utils";
+import { hideProductPrice, showProductPrice } from "../db-utils";
 
 const scrapper = "Bravo";
 
@@ -95,6 +95,7 @@ async function processByProductShopPrice(
     return;
   }
 
+  await showProductPrice(productShopPrice);
   if (
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) ===
