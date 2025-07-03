@@ -5,21 +5,6 @@ import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
 export async function hideProductPrice(productShopPrice: productsShopsPrices) {
-  if (productShopPrice.hidden) {
-    await db
-      .update(productsShopsPrices)
-      .set({
-        updateAt: new Date(),
-      })
-      .where(
-        and(
-          eq(productsShopsPrices.productId, productShopPrice.productId),
-          eq(productsShopsPrices.shopId, productShopPrice.shopId)
-        )
-      );
-    return;
-  }
-
   console.log(
     `[INFO] Hide product url=${productShopPrice.url} product=${productShopPrice.productId} shopId=${productShopPrice.shopId}`
   );
