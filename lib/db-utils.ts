@@ -16,6 +16,7 @@ export async function hideProductPrice(productShopPrice: productsShopsPrices) {
     .update(productsShopsPrices)
     .set({
       hidden: true,
+      updateAt: new Date(),
     })
     .where(
       and(

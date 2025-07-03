@@ -110,6 +110,10 @@ const baseMap: Record<string, string[]> = {
   hierbabuena: ["hierba & buena"],
   rosa: ["flor"],
   strawberry: ["fresa", "fresas"],
+  vegetal: ["de & soya"],
+  avocado: ["aguacate"],
+  oil: ["aceite"],
+  cider: ["sidra"],
 };
 
 export const synonyms: Record<string, string[]> = {};
