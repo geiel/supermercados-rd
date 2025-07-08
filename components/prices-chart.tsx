@@ -24,7 +24,7 @@ const chartConfig = {
 export function PricesChart({
   priceHistory,
 }: {
-  priceHistory: productsPricesHistorySelect[];
+  priceHistory: Array<productsPricesHistorySelect>;
 }) {
   if (priceHistory.length === 0) {
     return null;
@@ -59,33 +59,54 @@ export function PricesChart({
       return;
     }
 
-    const priceBefore = prices.filter((p) => p.createdAt < price.createdAt);
-    if (
-      priceBefore.some(
-        (p) => p.stillActive && Number(p.price) < Number(price.price)
-      )
-    ) {
+    const lastPrice = prices[prices.length - 1];
+
+    if (!lastPrice.stillActive) {
+      if (price.stillActive) {
+        prices.push(price);
+        return;
+      }
+
+      if (lastPrice.shopId === price.shopId) {
+        prices.push(price);
+        return;
+      }
+
+      if (Number(price.price) < Number(lastPrice.price)) {
+        prices.push(price);
+        return;
+      }
+
       return;
     }
 
-    prices.push(price);
+    if (!price.stillActive) {
+      return;
+    }
+
+    if (Number(price.price) < Number(lastPrice.price)) {
+      prices.push(price);
+    }
   });
 
   const data = prices.map((p) => ({
     date: p.createdAt,
     price: Number(p.price),
+    shop: getShopNameById(p.shopId),
   }));
 
   if (!isToday(data[data.length - 1].date)) {
     data.push({
       date: new Date(),
       price: data[data.length - 1].price,
+      shop: data[data.length - 1].shop,
     });
   }
 
   const formatedData = data.map((d) => ({
     date: d.date.toISOString(),
     price: d.price,
+    shop: d.shop,
   }));
 
   return (
@@ -119,12 +140,12 @@ export function PricesChart({
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    const date = new Date(value);
-                    return date.toLocaleDateString("es-ES", {
+                  labelFormatter={(value, payload) => {
+                    const date = new Date(value).toLocaleDateString("es-ES", {
                       month: "short",
                       day: "numeric",
                     });
+                    return `${date} | ${payload[0].payload.shop}`;
                   }}
                 />
               }
@@ -141,4 +162,21 @@ export function PricesChart({
       </CardContent>
     </Card>
   );
+}
+
+function getShopNameById(id: number) {
+  switch (id) {
+    case 1:
+      return "La Sirena";
+    case 2:
+      return "Nacional";
+    case 3:
+      return "Jumbo";
+    case 4:
+      return "Plaza Lama";
+    case 5:
+      return "Pricesmart";
+    case 6:
+      return "Bravo";
+  }
 }

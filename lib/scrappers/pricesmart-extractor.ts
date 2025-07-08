@@ -16,10 +16,10 @@ import { formatUnit } from "./utils";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Aceites-harinas-y-condimentos-G10D03009/G10D03009?fq=category%3B%22G10D37017002%22",
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Aceites-harinas-y-condimentos-G10D03009/G10D03009",
     start: 0,
     q: "G10D03009",
-    fq: ['category:"G10D37017002"'],
+    fq: [],
     search_type: "category",
     rows: 12,
     account_id: "7024",

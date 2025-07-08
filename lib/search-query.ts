@@ -3,7 +3,7 @@ import { products, productsShopsPrices } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { synonyms } from "./synonyms";
 
-function removeAccents(str: string) {
+export function removeAccents(str: string) {
   return str
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -96,7 +96,7 @@ export async function searchProducts(
   };
 }
 
-function buildTsQuery(raw: string) {
+export function buildTsQuery(raw: string) {
   const norm = removeAccents(raw.trim().toLowerCase());
   const words = norm.split(/\s+/);
 

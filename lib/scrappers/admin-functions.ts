@@ -34,7 +34,7 @@ export async function getSimilarProducts(
   categoryId: number,
   ignoredProducts: number[],
   ignoredBaseProducts: number[],
-  threshold = 0.1
+  threshold = 0.4
 ) {
   const duplicates = await db
     .select({
@@ -71,10 +71,6 @@ export async function getSimilarProducts(
     .innerJoin(sql`${productsBrands} AS b1`, sql`${products}."brandId" = b1.id`)
     .innerJoin(sql`${productsBrands} AS b2`, sql`p2."brandId" = b2.id`)
     // .innerJoin(
-    //   sql`${productsShopsPrices} AS ps1`,
-    //   eq(products.id, sql`ps1."productId"`)
-    // )
-    // .innerJoin(
     //   sql`${productsShopsPrices} AS ps2`,
     //   eq(sql`p2.id`, sql`ps2."productId"`)
     // )
@@ -88,7 +84,7 @@ export async function getSimilarProducts(
         notInArray(sql`p2.id`, ignoredProducts),
         notInArray(products.id, ignoredBaseProducts)
         // eq(sql`ps1."shopId"`, 2),
-        // not(eq(sql`ps2."shopId"`, 2))
+        // not(eq(shopPrice1.shopId, 3)),
 
         // sql`p2.name LIKE '%Vaquita%'`,
         // sql`unaccent(lower(p2.name)) NOT LIKE '%leche%'`,
