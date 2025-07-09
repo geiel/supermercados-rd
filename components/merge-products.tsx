@@ -38,7 +38,7 @@ export function MergeProductsV2() {
   }
 
   async function searchDuplicateProducts() {
-    setDuplicateProducts(await findDuplicateProducts(19, 3, ignoredProducts));
+    setDuplicateProducts(await findDuplicateProducts(18, 6, ignoredProducts));
   }
 
   return (

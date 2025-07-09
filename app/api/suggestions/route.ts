@@ -19,7 +19,10 @@ export async function GET(request: NextRequest) {
     })
     .from(searchPhases)
     .where(sql`${searchPhases.phrase} % ${value}`)
-    .orderBy(desc(sql`sml`))
+    .orderBy(
+      desc(sql`${searchPhases.phrase} ILIKE ${value} || '%'`),
+      desc(sql`similarity(${searchPhases.phrase}, ${value})`)
+    )
     .limit(limit ? Number(limit) : 10);
 
   return Response.json(suggestions);
