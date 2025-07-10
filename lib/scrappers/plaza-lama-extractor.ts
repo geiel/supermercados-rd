@@ -29,12 +29,12 @@ const raw = JSON.stringify([
     operationName: "GetProductsByCategory",
     variables: {
       getProductsByCategoryInput: {
-        categoryReference: "11-46-192",
+        categoryReference: "11-46-190",
         categoryId: "null",
         clientId: "PLAZA_LAMA",
         storeReference: "PL08-D",
         currentPage: 1,
-        pageSize: 100,
+        pageSize: 150,
         googleAnalyticsSessionId: "",
       },
     },

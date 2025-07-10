@@ -52,7 +52,7 @@ const baseMap: Record<string, string[]> = {
   kids: ["niños", "ninos"],
   activia: ["dannon"],
   org: ["organico"],
-  margarina: ["mantequilla"],
+  margarina: ["mantequilla", "butter"],
   vanilla: ["vainilla"],
   dairy: ["lactosa", "lacteo"],
   peach: ["durazno"],
@@ -79,7 +79,6 @@ const baseMap: Record<string, string[]> = {
   cookies: ["galletas", "cookie"],
   honey: ["miel"],
   peanut: ["mani"],
-  butter: ["mantequilla"],
   corn: ["maiz"],
   oats: ["avena"],
   almond: ["almendra"],
@@ -147,6 +146,20 @@ const baseMap: Record<string, string[]> = {
   pickles: ["encurtidos"],
   vainitas: ["habichuelas"],
   tomato: ["tomate"],
+  light: ["ligera"],
+  mushroom: ["champiñones"],
+  meat: ["carne"],
+  one: ["1", "uno"],
+  two: ["2", "dos"],
+  three: ["3", "tres"],
+  four: ["4", "cuatro"],
+  five: ["5", "cinco"],
+  six: ["6", "seis"],
+  seven: ["7", "siete"],
+  eight: ["8", "ocho"],
+  nine: ["9", "nueve"],
+  french: ["frances"],
+  basil: ["albahaca"]
 };
 
 export const synonyms: Record<string, string[]> = {};
