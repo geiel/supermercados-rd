@@ -109,8 +109,9 @@ export default async function Page({ params }: Props) {
             >
               <Image
                 src={`/supermarket-logo/${shopPrice.shop.logo}`}
-                width={50}
-                height={40}
+                width={0}
+                height={0}
+                className="w-[50px] h-auto"
                 alt="Supermarket logo"
                 unoptimized
               />
@@ -128,7 +129,7 @@ export default async function Page({ params }: Props) {
 
         <section className="flex flex-col gap-2">
           <div className="font-bold text-2xl">Historial de precios</div>
-          <PricesChart priceHistory={product.pricesHistory} />
+          <PricesChart priceHistory={product.pricesHistory} currentPrices={product.shopCurrentPrices} />
         </section>
 
         <section className="flex flex-col gap-2">

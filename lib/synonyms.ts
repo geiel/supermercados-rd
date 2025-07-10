@@ -21,7 +21,7 @@ const baseMap: Record<string, string[]> = {
   spicy: ["picante"],
   std: ["standard"],
   ext: ["extra", "xtra"],
-  reb: ["rebanado", "rebanada", "slice"],
+  reb: ["rebanado", "rebanada", "slice", "slices", "rodajas"],
   artisian: ["artesana"],
   cong: ["congelada", "congelado"],
   blue: ["azul"],
@@ -62,7 +62,7 @@ const baseMap: Record<string, string[]> = {
   donuts: ["donas"],
   maracuya: ["chinola"],
   english: ["ingles"],
-  zumo: ["jugo"],
+  zumo: ["jugo", "juice"],
   blueberry: ["arandano", "blueberries", "arandanos"],
   yaniqueque: ["pastelitos"],
   veggie: ["vegetariano", "vegetariana"],
@@ -145,6 +145,8 @@ const baseMap: Record<string, string[]> = {
   tiny: ["peq", "pequeno"],
   olive: ["aceitunas", "olives"],
   pickles: ["encurtidos"],
+  vainitas: ["habichuelas"],
+  tomato: ["tomate"],
 };
 
 export const synonyms: Record<string, string[]> = {};

@@ -208,10 +208,11 @@ async function ShopExclusive({
   return (
     <Image
       src={`/supermarket-logo/${logo?.logo}`}
-      width={50}
-      height={20}
+      width={0}
+      height={0}
+      sizes="100vw"
+      className="w-[50px] h-auto"
       alt="logo tienda"
-      className="max-w-none"
       unoptimized
     />
   );

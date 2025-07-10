@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
   ChartConfig,
@@ -8,7 +8,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { productsPricesHistorySelect } from "@/db/schema";
+import { productsPricesHistorySelect, productsShopsPrices } from "@/db/schema";
 import { DollarSign } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { isToday } from "@/lib/utils";
@@ -23,8 +23,10 @@ const chartConfig = {
 
 export function PricesChart({
   priceHistory,
+  currentPrices,
 }: {
   priceHistory: Array<productsPricesHistorySelect>;
+  currentPrices: Array<productsShopsPrices>;
 }) {
   if (priceHistory.length === 0) {
     return null;
@@ -33,8 +35,11 @@ export function PricesChart({
   const organizedPrice = priceHistory
     .map((price) => {
       const shopPrices = priceHistory.filter((p) => p.shopId === price.shopId);
+      const shopActive = currentPrices.some(
+        (current) => current.shopId === price.shopId
+      );
 
-      if (shopPrices.length === 1) {
+      if (shopPrices.length === 1 && shopActive) {
         return { ...price, stillActive: true };
       }
 
@@ -42,7 +47,7 @@ export function PricesChart({
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
       );
 
-      if (price.createdAt === sortedByRecent[0].createdAt) {
+      if (price.createdAt === sortedByRecent[0].createdAt && shopActive) {
         return { ...price, stillActive: true };
       }
 
@@ -109,6 +114,10 @@ export function PricesChart({
     shop: d.shop,
   }));
 
+  const onlyPrices = formatedData.map((item) => item.price);
+  const maxPrice = Math.max(...onlyPrices);
+  const minPrice = Math.min(...onlyPrices);
+
   return (
     <Card>
       <CardContent>
@@ -136,6 +145,7 @@ export function PricesChart({
                 });
               }}
             />
+            <YAxis type="number" domain={[lower5th(minPrice), maxPrice]} hide />
             <ChartTooltip
               cursor={false}
               content={
@@ -162,6 +172,10 @@ export function PricesChart({
       </CardContent>
     </Card>
   );
+}
+
+function lower5th(n: number) {
+  return Math.floor((n - 1) / 5) * 5;
 }
 
 function getShopNameById(id: number) {
