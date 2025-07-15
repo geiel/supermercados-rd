@@ -87,7 +87,7 @@ export async function getProductListNacional(categoryId: number, url: string) {
         price: {
           shopId: 2,
           productId: 0,
-          url: url.replace("despensa/cocina-internacional/", ""),
+          url: url.replace("despensa/picaderas/", ""),
         },
       });
     }

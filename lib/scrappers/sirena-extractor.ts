@@ -22,6 +22,7 @@ export async function getProductListSirena(categoryId: number, url: string) {
       "Accept-Language": "en-US,en;q=0.9",
       Source: "c3RvcmVmcm9udA==",
     },
+    signal: AbortSignal.timeout(10000),
   });
 
   const jsonResponse = await response.json();

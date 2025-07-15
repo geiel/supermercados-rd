@@ -34,7 +34,10 @@ async function getProductInfo(api: string | null, shopId: number) {
   let jsonResponse: unknown;
 
   try {
-    const response = await fetch(api, { headers });
+    const response = await fetch(api, {
+      headers,
+      signal: AbortSignal.timeout(10000),
+    });
     jsonResponse = await response.json();
   } catch (err) {
     console.log(err);
