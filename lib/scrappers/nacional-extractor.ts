@@ -87,7 +87,7 @@ export async function getProductListNacional(categoryId: number, url: string) {
         price: {
           shopId: 2,
           productId: 0,
-          url: url.replace("despensa/azucar-y-edulcorantes/", ""),
+          url: url.replace("despensa/cocina-internacional/", ""),
         },
       });
     }
@@ -122,17 +122,24 @@ export async function getProductListNacional(categoryId: number, url: string) {
 
     product.brandId = brand!.id;
 
-    try {
-      await db.transaction(async (tx) => {
-        const insertedProduct = await tx
-          .insert(products)
-          .values(product)
-          .returning();
-        product.price.productId = insertedProduct[0].id;
+    const priceExist = await db.query.productsShopsPrices.findFirst({
+      where: (prices, { eq }) => eq(prices.url, product.price.url),
+    });
 
-        await tx.insert(productsShopsPrices).values(product.price);
-        console.log(`[INFO] product don't exist inserted`);
-      });
+    if (priceExist) {
+      console.log(`[INFO] product price exist continue with next product`);
+      continue;
+    }
+
+    try {
+      const insertedProduct = await db
+        .insert(products)
+        .values(product)
+        .returning();
+      product.price.productId = insertedProduct[0].id;
+
+      await db.insert(productsShopsPrices).values(product.price);
+      console.log(`[INFO] product don't exist inserted`);
     } catch (err) {
       console.log("[ERROR] Error when trying insert a new product", err);
     }
