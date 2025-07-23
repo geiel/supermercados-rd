@@ -35,6 +35,7 @@ const baseMap: Record<string, string[]> = {
     "sliced",
     "partido",
   ],
+  shredded: ["rallado", "rallada", "shred"],
   artisian: ["artesana"],
   cong: ["congelada", "congelado"],
   blue: ["azul"],
@@ -44,7 +45,13 @@ const baseMap: Record<string, string[]> = {
   untable: ["spreadable"],
   cream: ["crema", "creme"],
   cheese: ["queso"],
-  mozzarella: ["mozarella"],
+  mozzarella: ["mozarella", "queso & mozzarella"],
+  cheddar: ["queso & cheddar"],
+  parmesan: ["parmesano", "parmesana", "queso & parmesano", "queso & parmesana"],
+  gouda: ["queso & gouda"],
+  feta: ["queso & feta"],
+  ricotta: ["queso & ricotta"],
+  cottage: ["queso & cottage"],
   flounder: ["platija"],
   cod: ["bacalao"],
   fillet: ["filete"],
@@ -74,7 +81,7 @@ const baseMap: Record<string, string[]> = {
   maracuya: ["chinola"],
   english: ["ingles"],
   zumo: ["jugo", "juice"],
-  blueberry: ["arandano", "arandanos"],
+  blueberry: ["arandano"],
   yaniqueque: ["pastelito"],
   veggie: ["vegetariano", "vegetariana"],
   flatbread: ["pan & plano"],
@@ -212,16 +219,23 @@ const baseMap: Record<string, string[]> = {
   sugar: ["azucar", "sug"],
   carrot: ["zanahoria"],
   "ice & cream": ["helado", "haagen"],
-  parmesan: ["parmesano", "parmesana"],
   lyptus: ["eucalipto"],
   menthol: ["mentol"],
   orange: ["naranja"],
   marshmallow: ["malvavisco"],
   sirop: ["jarabe"],
+  mexican: ["mexicano", "mexicana", "mexi"],
+  with: ["con", "w"],
+  potato: ["papa"],
+  frie: ["frita", "frito"],
+  "con & sal & lays": ["clasica & lays", "lays & clasica", "lays & classic"],
+  papita: ["papas & fritas"],
+  sour: ["agrio", "agria"],
+  black: ["negro", "negra", "morena", "moreno"]
 };
 
 function pluralizeWord(word: string) {
-  if (word.includes("&")) {
+  if (word.includes("&") && word.length === 1) {
     return [word];
   }
   const variants = new Set<string>();
