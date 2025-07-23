@@ -16,12 +16,12 @@ import { formatUnit } from "./utils";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Aceites-harinas-y-condimentos-G10D03009/G10D03009",
+    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Galletas-postres-y-helados-G10D63008/G10D63008",
     start: 0,
-    q: "G10D03009",
+    q: "G10D63008",
     fq: [],
     search_type: "category",
-    rows: 12,
+    rows: 100,
     account_id: "7024",
     auth_key: "ev7libhybjg5h1d1",
     _br_uid_2: "uid=7086154559720:v=15.0:ts=1732413232358:hc=333",

@@ -104,16 +104,42 @@ export function buildTsQuery(raw: string) {
   for (let i = 0; i < words.length; ) {
     const w = words[i];
     const next = words[i + 1];
-    const twoKey = next ? `${w} & ${next}` : null;
-    const threeKey =
+    let twoKey = next ? `${w} & ${next}` : null;
+    let threeKey =
       next && words[i + 2] ? `${w} & ${next} & ${words[i + 2]}` : null;
 
     if (threeKey && synonyms[threeKey]) {
       const syns = synonyms[threeKey];
+      const key1 = threeKey.split(" & ")[0];
+      const key2 = threeKey.split(" & ")[1];
+      const key3 = threeKey.split(" & ")[2];
+      if (synonyms[key1]) {
+        const syn = synonyms[key1];
+        threeKey = `(${key1} | ${syn.join(" | ")}) & ${key2} & ${key3}`;
+      }
+      if (synonyms[key2]) {
+        const syn = synonyms[key2];
+        threeKey = threeKey.replace(key2, `(${key2} | ${syn.join(" | ")})`);
+      }
+      if (synonyms[key3]) {
+        const syn = synonyms[key3];
+        threeKey = threeKey.replace(key3, `(${key3} | ${syn.join(" | ")})`);
+      }
       buckets.push([threeKey, ...syns]);
       i += 3;
     } else if (twoKey && synonyms[twoKey]) {
       const syns = synonyms[twoKey];
+      const key1 = twoKey.split(" & ")[0];
+      const key2 = twoKey.split(" & ")[1];
+      if (synonyms[key1]) {
+        const syn = synonyms[key1];
+        twoKey = `(${key1} | ${syn.join(" | ")}) & ${key2}`;
+      }
+
+      if (synonyms[key2]) {
+        const syn = synonyms[key2];
+        twoKey = twoKey.replace(key2, `(${key2} | ${syn.join(" | ")})`);
+      }
       buckets.push([twoKey, ...syns]);
       i += 2;
     } else {
