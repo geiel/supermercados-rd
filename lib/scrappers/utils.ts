@@ -19,7 +19,7 @@ export function formatUnit(unit: string) {
     return `${unitAmount} GR`;
   }
 
-  if (unitType === "UDS" || unitType === "UN" || unitType === "UNIDADES" || unitType === "UND/PAQ") {
+  if (unitType === "UDS" || unitType === "UN" || unitType === "UNIDADES" || unitType === "UND/PAQ" || unitType === "UNIDAD") {
     return `${unitAmount} UND`;
   }
 

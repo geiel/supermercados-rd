@@ -146,6 +146,15 @@ export async function getProductListPricesmart(categoryId: number) {
 
     product.brandId = brand!.id;
 
+    const priceExist = await db.query.productsShopsPrices.findFirst({
+      where: (prices, { eq }) => eq(prices.url, product.price.url),
+    });
+
+    if (priceExist) {
+      console.log(`[INFO] product price exist continue with next product`);
+      continue;
+    }
+
     try {
       await db.transaction(async (tx) => {
         const insertedProduct = await tx

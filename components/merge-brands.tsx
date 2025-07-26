@@ -7,7 +7,7 @@ import {
 } from "@/db/schema";
 import { TypographyH3 } from "./typography-h3";
 import { Combobox } from "./combobox";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { getProductsByBrand } from "@/lib/scrappers/product-brand";
 import { Loader2 } from "lucide-react";
@@ -53,6 +53,13 @@ export default function MergeProducts({
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [ignoredProducts, setIgnoredProducts] = useState<number[]>([]);
   const [ignoreBaseProducts, setIgnoreBaseProducts] = useState<number[]>([]);
+
+  useEffect(() => {
+    const ignoredProductsFromStorage = localStorage.getItem("ignoredProducts");
+    if (ignoredProductsFromStorage) {
+      setIgnoredProducts(JSON.parse(ignoredProductsFromStorage));
+    }
+  }, []);
 
   async function searchProducts() {
     setLoading(true);
@@ -100,6 +107,7 @@ export default function MergeProducts({
 
     if (db) {
       setIgnoredProducts((ignoredProducts) => [...ignoredProducts, productId]);
+      localStorage.setItem("ignoredProducts", JSON.stringify([...ignoredProducts, productId]));
     }
     setSimilarProducts(similarProducts.filter((_, i) => i !== index));
   }

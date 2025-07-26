@@ -29,7 +29,7 @@ const raw = JSON.stringify([
     operationName: "GetProductsByCategory",
     variables: {
       getProductsByCategoryInput: {
-        categoryReference: "11-46-204",
+        categoryReference: "11-46-203",
         categoryId: "null",
         clientId: "PLAZA_LAMA",
         storeReference: "PL08-D",
@@ -106,11 +106,6 @@ export async function getProductListPlazaLama(categoryId: number) {
 
       const unit = formatUnit(words.slice(unitSlice).join(" ").toUpperCase());
 
-      unitTrackers.push({
-        unit,
-        productName,
-      });
-
       return {
         name: productName,
         unit: unit,
@@ -146,16 +141,31 @@ export async function getProductListPlazaLama(categoryId: number) {
     });
 
     if (!exist) {
+      const priceExist = await db.query.productsShopsPrices.findFirst({
+        where: (prices, { eq }) => eq(prices.url, product.price.url),
+      });
+
+      if (priceExist) {
+        console.log(`[INFO] product price exist continue with next product`);
+        continue;
+      }
+
+      unitTrackers.push({
+        unit: product.unit,
+        productName: product.name,
+      });
+
       try {
-        await db.transaction(async (tx) => {
-          const insertedProduct = await tx
-            .insert(products)
-            .values(product)
-            .returning({ id: products.id });
-          product.price.productId = insertedProduct[0].id;
-          await tx.insert(productsShopsPrices).values(product.price);
-          console.log(`[INFO] product don't exist inserted`);
-        });
+        const insertedProduct = await db
+        .insert(products)
+        .values(product)
+        .returning();
+
+        product.price.productId = insertedProduct[0].id;
+
+        await db.insert(productsShopsPrices).values(product.price);
+        console.log(`[INFO] product don't exist inserted`);
+
       } catch (err) {
         console.log("[ERROR] Error when trying insert a new product", err);
       }

@@ -8,7 +8,7 @@ const baseMap: Record<string, string[]> = {
   steak: ["bistec"],
   bacon: ["tocineta", "tocino"],
   chicken: ["pollo"],
-  red: ["rojo", "roja"],
+  red: ["rojo", "roja", "colorada"],
   rib: ["costilla"],
   short: ["corta"],
   hamburguer: ["hamburgesa", "hamburguesa", "burger"],
@@ -40,7 +40,7 @@ const baseMap: Record<string, string[]> = {
   cong: ["congelada", "congelado"],
   blue: ["azul"],
   crumbled: ["desmenuzado", "desmenuzada", "en & trozos", "diced"],
-  herb: ["hierba", "herbs", "herbal"],
+  herb: ["hierba", "herbs", "herbal", "yerba"],
   wedge: ["cuña"],
   untable: ["spreadable"],
   cream: ["crema", "creme"],
@@ -138,7 +138,7 @@ const baseMap: Record<string, string[]> = {
   raspberry: ["frambuesa"],
   pineapple: ["pina"],
   funda: ["sobre", "bolsa", "paquete"],
-  leche: ["alimento & lacteo"],
+  leche: ["alimento & lacteo", "milk"],
   nutriforte: ["lacteo & en & polvo"],
   "corn & flakes": ["hojuelas & maiz", "hojuelas & de & maiz"],
   himalaya: ["sal & rosada"],
@@ -162,9 +162,10 @@ const baseMap: Record<string, string[]> = {
   tiny: ["peq", "pequeno"],
   olive: ["aceituna"],
   pickles: ["encurtido"],
-  vainitas: ["habichuela"],
+  vainitas: ["habichuelas & tiernas"],
+  bean: ["habichuela"],
   tomato: ["tomate"],
-  light: ["ligera"],
+  light: ["ligera", "menos & grasa"],
   mushroom: ["champinon", "hongo"],
   meat: ["carne"],
   one: ["1", "uno"],
@@ -187,7 +188,7 @@ const baseMap: Record<string, string[]> = {
   roasted: ["tostado", "asado", "rostizado", "rostizada", "asada", "tostada"],
   chestnut: ["castana"],
   guisante: ["petit & pois", "guisantes & dulces"],
-  sweet: ["dulce"],
+  sweet: ["dulce", "tierno"],
   oyster: ["ostra"],
   coconut: ["coco"],
   sprout: ["brote"],
@@ -225,17 +226,23 @@ const baseMap: Record<string, string[]> = {
   marshmallow: ["malvavisco"],
   sirop: ["jarabe"],
   mexican: ["mexicano", "mexicana", "mexi"],
-  with: ["con", "w"],
+  with: ["con", "w", "c"],
   potato: ["papa"],
   frie: ["frita", "frito"],
   "con & sal & lays": ["clasica & lays", "lays & clasica", "lays & classic"],
   papita: ["papas & fritas"],
   sour: ["agrio", "agria"],
-  black: ["negro", "negra", "morena", "moreno"]
+  black: ["negro", "negra", "morena", "moreno"],
+  "azucar & refina": ["azucar & blanca"],
+  arveja: ["chicharo", "green & pea"],
+  lentil: ["lenteja"],
+  dry: ["dried", "seco", "seca"],
+  fibra: ["integral"],
+  "galleta & danesa": ["galleta & de & mantequilla"],
 };
 
 function pluralizeWord(word: string) {
-  if (word.includes("&") && word.length === 1) {
+  if (word.includes("&") || word.length === 1) {
     return [word];
   }
   const variants = new Set<string>();

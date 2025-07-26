@@ -25,7 +25,7 @@ async function main() {
           sql`${scp.updateAt} < now() - INTERVAL '3 DAYS'`
         )
       ),
-    limit: 500,
+    limit: 1000,
   });
 
   for (const shopPrice of allShopPrices) {
