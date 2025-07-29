@@ -12,6 +12,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       PGSSLMODE: require
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
 
     steps:
       - uses: actions/checkout@v3
