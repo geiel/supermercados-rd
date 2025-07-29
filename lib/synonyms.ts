@@ -1,5 +1,6 @@
 import { plural } from "pluralize";
 import { pluralizeEs } from "./pluralize-es";
+import { PERMITED_STOP_WORDS, STOP_WORDS } from "./stopwords";
 
 const baseMap: Record<string, string[]> = {
   arrugula: ["rucula"],
@@ -29,11 +30,12 @@ const baseMap: Record<string, string[]> = {
     "rebanada",
     "slice",
     "slices",
-    "rodajas",
+    "rodaja",
     "en & mitad",
     "mitades",
     "sliced",
     "partido",
+    "trozo"
   ],
   shredded: ["rallado", "rallada", "shred"],
   artisian: ["artesana"],
@@ -64,7 +66,7 @@ const baseMap: Record<string, string[]> = {
   ring: ["anilla", "anillo"],
   mandarina: ["clementina"],
   carnation: ["evaporada"],
-  zero: ["sin"],
+  zero: ["sin", "s", "free"],
   bebible: ["liquido", "liquid"],
   banana: ["guineo"],
   greek: ["griego"],
@@ -74,13 +76,14 @@ const baseMap: Record<string, string[]> = {
   margarina: ["mantequilla", "butter"],
   vanilla: ["vainilla"],
   dairy: ["lactosa", "lacteo"],
+  deslactosado: ["sin & lactosa", "deslactosada"],
   peach: ["durazno", "melocoton"],
   pastel: ["bizcocho", "biscocho"],
   green: ["verde"],
   donuts: ["donut", "dona"],
   maracuya: ["chinola"],
   english: ["ingles"],
-  zumo: ["jugo", "juice"],
+  zumo: ["jugo", "juice", "Extracto"],
   blueberry: ["arandano"],
   yaniqueque: ["pastelito"],
   veggie: ["vegetariano", "vegetariana"],
@@ -156,7 +159,6 @@ const baseMap: Record<string, string[]> = {
   edulcorante: ["endulzante"],
   "azucar & refinada": ["azucar & blanca", "azucar & refino"],
   stevia: ["azucar & dietetica", "endulzante"],
-  "sin & gluten": ["s & gluten"],
   "leche & rica": ["leche & entera & rica"],
   "salami & super & especial": ["salami & induveca"],
   tiny: ["peq", "pequeno"],
@@ -201,7 +203,7 @@ const baseMap: Record<string, string[]> = {
   toasted: ["tostado", "tostada"],
   inuts: ["imperial & nuts", "implerial & nuts"],
   lightly: ["bajo & en", "low"],
-  cacao: ["chocolate"],
+  cacao: ["chocolate", "choco"],
   kitkat: ["kit & kat"],
   mym: ["m&m", "m & m", "mm"],
   kiss: ["besito", "kisse", "beso"],
@@ -215,8 +217,6 @@ const baseMap: Record<string, string[]> = {
   popcorn: ["palomita", "pop & corn"],
   rice: ["arroz"],
   "baldom & gelatina": ["gelatina & oli"],
-  "s & a": ["sin & azucar"],
-  "s & lactosa": ["sin & lactosa"],
   sugar: ["azucar", "sug"],
   carrot: ["zanahoria"],
   "ice & cream": ["helado", "haagen"],
@@ -239,10 +239,11 @@ const baseMap: Record<string, string[]> = {
   dry: ["dried", "seco", "seca"],
   fibra: ["integral"],
   "galleta & danesa": ["galleta & de & mantequilla"],
+  dietalat: ["descremada", "descremado"],
 };
 
 function pluralizeWord(word: string) {
-  if (word.includes("&") || word.length === 1) {
+  if (word.includes("&") || word.length === 1 || STOP_WORDS.includes(word) || PERMITED_STOP_WORDS.includes(word)) {
     return [word];
   }
   const variants = new Set<string>();
