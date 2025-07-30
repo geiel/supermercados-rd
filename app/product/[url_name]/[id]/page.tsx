@@ -66,7 +66,7 @@ export default async function Page({ params }: Props) {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 py-4 px-6 md:px-10">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 py-4 px-4 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
           <div>
@@ -154,7 +154,7 @@ function SearchProductButton({
 
     return (
       <Button size="xs" asChild>
-        <a href={`${shopPrice.url}/articulos/${productId}`} target="_blank">
+        <a href={`${shopPrice.url}/articulos/${productId}`} target="_blank" className="text-xs">
           Buscar
         </a>
       </Button>
@@ -163,7 +163,7 @@ function SearchProductButton({
 
   return (
     <Button size="xs" asChild>
-      <a href={shopPrice.url} target="_blank">
+      <a href={shopPrice.url} target="_blank" className="text-xs">
         Buscar
       </a>
     </Button>
@@ -215,7 +215,7 @@ async function ShopPrice({
 
   return (
     <div className="col-span-2">
-      <div className="flex gap-1 items-center">
+      <div className="flex gap-1 items-center overflow-auto">
         <div className="font-bold text-lg">RD${lowerPrice?.currentPrice}</div>
         {Number(lowerPrice?.currentPrice) < Number(lowerPrice?.regularPrice) ? (
           <div className="line-through text-lg">
