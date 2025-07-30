@@ -142,7 +142,7 @@ const base: Array<Synonym> = [
     { synonyms: ["apple", "manzana", "mansana"], query: ["apple:*", "manzan:*", "mansan:*"]},
     { synonyms: ["raspberry", "frambuesa", "raspb"], query: ["raspb:*", "frambue:*"]},
     { synonyms: ["pineapple", "pina"], query: ["pineapple:*", "pina:*"]},
-    { synonyms: ["funda", "sobre", "bolsa", "paquete", "paq", "pack"], query: ["funda", "sobre", "bolsa", "paquete", "pack:*"]},
+    { synonyms: ["funda", "sobre", "bolsa", "paquete", "paq", "pack", "bag"], query: ["funda", "sobre", "bolsa", "paquete", "pack:*", "bag"]},
     { synonyms: ["imp", "importado", "importada"], query: ["imp:*"]},
     { synonyms: ["leche", "milk", "alimento lacteo", "alim lacteo"], query: ["leche:*", "milk:*", "lacteo:*", "lactea:*"], id: "leche"},
     { synonyms: ["entero", "entera", "full"], query: ["enter:*", "full"], id: "entero"},
@@ -168,7 +168,8 @@ const base: Array<Synonym> = [
     { synonyms: ["himalaya", "sal rosada", "himalayan"], query: ["himalaya:*"], complex: ["sal", "pink"]},
     { synonyms: ["pimienta", "pimiento", "pepper"], query: ["pimient:*", "pepper"], id: "pimienta"},
     { synonyms: ["paprika", "pimenton"], query: ["paprika:*", "pimento:*"]},
-    { synonyms: ["pimiento variado", "pimiento tricolor", "pimientos tricolor", "pimientos variado"], query: ["pimient:* & variado:*", "pimient:* & tricolor:*"]},
+    { synonyms: ["colores", "tricolor"], query: ["colore:*", "tricolor:*"], id: "colores"},
+    { synonyms: ["pimiento variado", "pimientos variado"], query: ["pimient:* & variado:*"], complex: ["pimienta", "colores"]},
     { synonyms: ["sea", "marino", "marina", "de mar"], query: ["sea", "marino", "marina", "de & mar"]},
     { synonyms: ["coarse", "gruesa", "grueso"], query: ["coarse", "grues:*"]},
     { synonyms: ["greenland", "lucas perez"], query: ["greenland", "lucas & perez"]},
@@ -242,7 +243,7 @@ const base: Array<Synonym> = [
     { synonyms: ["menthol", "mentol"], query: ["mentho:*", "mentol:*"]},
     { synonyms: ["orange", "naranja", "mamey"], query: ["orange:*", "naranja:*", "mamey"]},
     { synonyms: ["marshmallow", "malvavisco", "malvabisco"], query: ["marshmall:*", "malvavisc:*", "malvabisc:*"]},
-    { synonyms: ["sirop", "jarabe"], query: ["sirop", "jarabe"]},
+    { synonyms: ["sirop", "jarabe", "syrop", "syrup"], query: ["sirop", "jarabe", "syrop", "syrup"]},
     { synonyms: ["potato", "papa"], query: ["potat:*", "papa:*"]},
     { synonyms: ["frie", "frita", "frito"], query: ["frie:*", "frit:*"]},
     { synonyms: ["sour", "agrio", "agria", "amargo", "amarga"], query: ["sour", "agri:*", "amarg:*"]},
@@ -254,7 +255,14 @@ const base: Array<Synonym> = [
     { synonyms: ["fibra", "integral"], query: ["fibra", "integral"]},
     { synonyms: ["galleta danesa", "galletas danesas", "galletas danesa", "galleta estilo danesa", "galleta de mantequilla"], query: ["galleta:* & danesa:*"], complex: ["galleta", "mantequilla"]},
     { synonyms: ["dietalat", "descremada", "descremado"], query: ["dietalat", "descremad:*"]},
-    { synonyms: ["turkey", "pavo"], query: ["turkey", "pavo"]}
+    { synonyms: ["turkey", "pavo"], query: ["turkey", "pavo"]},
+    { synonyms: ["gluten"], query: ["gluten"], id: "gluten"},
+    { synonyms: ["s gluten"], query: ["s & gluten"], complex: ["sin", "gluten"]},
+    { synonyms: ["salsa", "sauce"], query: ["salsa", "sauce"], id: "salsa"},
+    { synonyms: ["salsa de tomate", "salsa de tomates", "pasta de tomate", "pasta de tomates"], query: ["pasta & tomate"], complex: ["salsa", "tomate"]},
+    { synonyms: ["wheat", "trigo"], query: ["wheat", "trigo"]},
+    { synonyms: ["codito", "elbow"], query: ["codito:*", "elbow:*"]},
+    { synonyms: ["aunt jemima", "pearl milling company", "pearl milling"], query: ["aunt & jemima", "pearl & milling"]}
 ];
 
 function pluralizeWord(word: string) {
