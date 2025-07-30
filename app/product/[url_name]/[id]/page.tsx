@@ -219,7 +219,7 @@ async function ShopPrice({
         <div className="font-bold text-lg">RD${lowerPrice?.currentPrice}</div>
         {Number(lowerPrice?.currentPrice) < Number(lowerPrice?.regularPrice) ? (
           <div className="line-through text-lg">
-            RD${lowerPrice?.regularPrice}
+            ${lowerPrice?.regularPrice}
           </div>
         ) : null}
       </div>
