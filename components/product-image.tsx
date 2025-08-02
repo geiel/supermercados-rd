@@ -33,10 +33,21 @@ export function ProductImage(props: ImageProps) {
         if (
           e.currentTarget.naturalWidth === 384 &&
           e.currentTarget.naturalHeight === 384 &&
-          imageSrc.toString().startsWith("https://supermercadosnacional.com")
+          imageSrc.toString().startsWith("https://supermercadosnacional.com") &&
+          imageSrc.toString().includes("__")
         ) {
           setImageSrc(imageSrc.toString().replace(/__\d+(?=\.\w+$)/, ""));
         }
+
+        if (
+          e.currentTarget.naturalWidth === 384 &&
+          e.currentTarget.naturalHeight === 384 &&
+          imageSrc.toString().startsWith("https://supermercadosnacional.com") &&
+          !imageSrc.toString().includes("__")
+        ) {
+          setImageSrc(imageSrc.toString().replace("-1", "_-1"));
+        }
+        
       }}
       alt={props.alt}
       unoptimized
