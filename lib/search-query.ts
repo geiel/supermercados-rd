@@ -169,7 +169,7 @@ export function buildTsQueryV2(raw: string) {
       }
 
       if (singleWordSyn.complex) {
-        buckets.push([`(${buildComplexQuery(singleWordSyn)}) | (${singleWordSyn.query.join(" | ")})` ]);
+        buckets.push([`((${buildComplexQuery(singleWordSyn)}) | (${singleWordSyn.query.join(" | ")}))` ]);
         i += 1;
         continue;
       }

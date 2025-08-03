@@ -112,7 +112,7 @@ const base: Array<Synonym> = [
     { synonyms: ["with", "con", "al", "y"], query: ["with", "con", "al", "c", "y", "and"], id: "con"},
     { synonyms: ["sal", "salt"], query: ["sal", "salt:*"], id: "sal"},
     { synonyms: ["salted", "salada", "salado"], query: ["salted", "salad:*"], complex: ["con", "sal"]},
-    { synonyms: ["hazelnut", "avellana"], query: ["hazelnut:*", "avellana:*"]},
+    { synonyms: ["hazelnut", "avellana", "noisette"], query: ["hazelnut:*", "avellana:*"]},
     { synonyms: ["shelled", "pelado", "pelada"], query: ["shelled:*", "pelad:*"]},
     { synonyms: ["mix", "mixed", "mixto", "mixta", "mezcla"], query: ["mix:*", "mezcl:*"]},
     { synonyms: ["ring", "anilla", "anillo"], query: ["ring", "anill:*"]},
@@ -137,7 +137,7 @@ const base: Array<Synonym> = [
     { synonyms: ["avocado", "aguacate"], query: ["avocado:*", "aguacate:*"]},
     { synonyms: ["oil", "aceite"], query: ["oil:*", "aceite:*"]},
     { synonyms: ["cider", "sidra"], query: ["sider", "sidra"]},
-    { synonyms: ["walnut", "nuez", "nues", "nut"], query: ["wanut:*", "nue:*", "nut:*"]},
+    { synonyms: ["walnut", "nuez", "nues", "nut"], query: ["wanut:*", "nuez:*", "nues:*", "nut"]},
     { synonyms: ["cherry", "cereza", "ceresa"], query: ["cherry", "cerez:*", "ceres:*"]},
     { synonyms: ["grape", "uva"], query: ["grape:*", "uva:*"]},
     { synonyms: ["apple", "manzana", "mansana"], query: ["apple:*", "manzan:*", "mansan:*"]},
@@ -145,7 +145,7 @@ const base: Array<Synonym> = [
     { synonyms: ["pineapple", "pina"], query: ["pineapple:*", "pina:*"]},
     { synonyms: ["funda", "sobre", "bolsa", "paquete", "paq", "pack", "bag", "saco"], query: ["funda", "sobre", "bolsa", "paquete", "pack:*", "bag", "saco"]},
     { synonyms: ["imp", "importado", "importada"], query: ["imp:*"]},
-    { synonyms: ["leche", "milk", "alimento lacteo", "alim lacteo"], query: ["leche:*", "milk:*", "lacteo:*", "lactea:*"], id: "leche"},
+    { synonyms: ["leche", "milk", "alimento lacteo", "alim lacteo"], query: ["leche", "milk:*", "lacteo:*", "lactea:*"], id: "leche"},
     { synonyms: ["entero", "entera", "full", "whole"], query: ["enter:*", "full", "whole"], id: "entero"},
     { synonyms: ["leche entera", "leche liquida", "leche entero", "leche liquido"], query: ["leche & entera", "leche & liquida"], complex: ["leche", "liquido"] },
     { synonyms: ["fortigrow", "crecimiento", "fortificada"], query: ["forti:*", "crecimien:*"]},
@@ -187,7 +187,7 @@ const base: Array<Synonym> = [
     { synonyms: ["spaguetti", "espaguetti", "espagueti", "spaghetti", "spagetti", "espagheti"], query: ["espag:*", "spag:*"]},
     { synonyms: ["baking", "hornear"], query: ["baking:*", "hornear:*"]},
     { synonyms: ["edulcorante", "endulzante"], query: ["edulcorante", "endulzante"]},
-    { synonyms: ["sugar", "azucar", "sug"], query: ["azucar", "sug:*"], id: "azucar"},
+    { synonyms: ["sugar", "azucar", "sug"], query: ["azucar", "sug:*", "a"], id: "azucar"},
     { synonyms: ["azucar refinada", "azucar refino", "azucar refina", "azucar refinado"], query: ["azucar & refin:*"], complex: ["azucar", "white"]},
     { synonyms: ["diet", "dietetica", "dietetico", "dieta"], query: ["diet:*"], id: "diet"},
     { synonyms: ["stevia"], query: ["stevia"], complex: ["azucar", "diet"]},
@@ -248,7 +248,7 @@ const base: Array<Synonym> = [
     { synonyms: ["potato", "papa"], query: ["potat:*", "papa:*"]},
     { synonyms: ["frie", "frita", "frito"], query: ["frie:*", "frit:*"]},
     { synonyms: ["sour", "agrio", "agria", "amargo", "amarga"], query: ["sour", "agri:*", "amarg:*"], complex: ["sin", "azucar"]},
-    { synonyms: ["black", "negro", "negra", "moreno", "morena"], query: ["black", "negro:*", "negra:*", "morena:*", "moreno:*"]},
+    { synonyms: ["black", "negro", "negra", "moreno", "morena", "dark"], query: ["black", "negro:*", "negra:*", "morena:*", "moreno:*", "dark"]},
     { synonyms: ["blue", "azul"], query: ["blue", "azul:*"]},
     { synonyms: ["arveja", "chicharo", "green pea"], query: ["arveja", "chicharo", "green & pea"]},
     { synonyms: ["lentil", "lenteja"], query: ["lentil", "lenteja"]},
@@ -295,7 +295,12 @@ const base: Array<Synonym> = [
     { synonyms: ["sopita", "caldo"], query: ["sopita", "caldo"]},
     { synonyms: ["papita"], query: ["papita", "papa:* & frita:*"]},
     { synonyms: ["shrim", "shrimp", "camaron"], query: ["shrim:*", "camaron:*"]},
-    { synonyms: ["beef", "res"], query: ["beef", "res"]}
+    { synonyms: ["beef", "res"], query: ["beef", "res"]},
+    { synonyms: ["arequipe", "dulce de leche"], query: ["arequipe"], complex: ["dulce", "leche"] },
+    { synonyms: ["alpina", "alpe"], query: ["alpe", "alpina"]},
+    { synonyms: ["nib", "pepita", "punta"], query: ["nib", "pepita", "punta"]},
+    { synonyms: ["cafe", "coffee"], query: ["cafe", "coffee", "!cafe & espresso", "!cafe & mocha", "!cafe & cappuc:*", "!cafe & latte"]},
+    { synonyms: ["baldom"], query: ["baldom", "!baldom & ranchero"]}
 ];
 
 function pluralizeWord(word: string) {
