@@ -68,7 +68,7 @@ const base: Array<Synonym> = [
     { synonyms: ["tiny", "peq", "pequeno", "small"], query: ["tiny", "peq:*", "small"]},
     { synonyms: ["tea", "te"], query: ["tea", "te"]},
     { synonyms: ["iced", "frio", "fria"], query: ["iced:*", "fri:*"]},
-    { synonyms: ["lemon", "limon", "lima"], query: ["limon", "lima", "lemon"]},
+    { synonyms: ["lemon", "limon", "lima", "lime"], query: ["limon", "lima", "lemon", "lime"]},
     { synonyms: ["white", "blanco", "blanca"], query: ["white", "blanc:*"], id: "white"},
     { synonyms: ["filter", "filtro"], query: ["filtr:*", "filter"]},
     { synonyms: ["cookie", "galleta", "crisp", "gallet", "cooki"], query: ["cooki:*", "gallet:*", "crisp"], id: "galleta"},
@@ -221,10 +221,10 @@ const base: Array<Synonym> = [
     { synonyms: ["inut", "imperial nuts", "implerial nuts"], query: ["inut:*", "imperial:* & nut:*", "implerial:* & nut:*"]},
     { synonyms: ["cacao", "chocolate", "choco"], query: ["cacao", "cocoa", "choco:*"]},
     { synonyms: ["kitkat", "kit kat"], query: ["kit & kat", "kitkat"]},
-    { synonyms: ["mym", "m&m", "m m", "mm"], query: ["m&m", "m & m", "mm", "mym"]},
+    { synonyms: ["mym", "m&m", "m m", "mm"], query: ["m&m", "m <-> m", "mm", "mym"]},
     { synonyms: ["kiss", "beso", "besito", "kisse"], query: ["kiss:*", "beso:*", "besit:*"]},
     { synonyms: ["teddy", "osito", "bear"], query: ["tedd:*", "osit:*", "bear:*", "oso"]},
-    { synonyms: ["chicle", "goma de mascar", "goma mascar"], query: ["chicl:*", "goma & mascar"]},
+    { synonyms: ["chicle", "goma de mascar", "goma mascar", "chiclet"], query: ["chicl:*", "goma & mascar"]},
     { synonyms: ["chalaca", "caramelo barrilete"], query: ["caramelo & barrilete", "chalaca"]},
     { synonyms: ["style", "estilo"], query: ["style", "estilo"]},
     { synonyms: ["teeth", "diente"], query: ["teeth", "diente"]},
@@ -243,7 +243,7 @@ const base: Array<Synonym> = [
     { synonyms: ["lyptus", "eucalipto"], query: ["lyptu:*", "eucalipt:*"]},
     { synonyms: ["menthol", "mentol"], query: ["mentho:*", "mentol:*"]},
     { synonyms: ["orange", "naranja", "mamey"], query: ["orange:*", "naranja:*", "mamey"]},
-    { synonyms: ["marshmallow", "malvavisco", "malvabisco"], query: ["marshmall:*", "malvavisc:*", "malvabisc:*"]},
+    { synonyms: ["marshmallow", "malvavisco", "malvabisco", "marsh"], query: ["marsh:*", "malvavisc:*", "malvabisc:*"]},
     { synonyms: ["sirop", "jarabe", "syrop", "syrup"], query: ["sirop", "jarabe", "syrop", "syrup"]},
     { synonyms: ["potato", "papa"], query: ["potat:*", "papa:*"]},
     { synonyms: ["frie", "frita", "frito"], query: ["frie:*", "frit:*"]},
@@ -300,8 +300,15 @@ const base: Array<Synonym> = [
     { synonyms: ["alpina", "alpe"], query: ["alpe", "alpina"]},
     { synonyms: ["nib", "pepita", "punta"], query: ["nib", "pepita", "punta"]},
     { synonyms: ["cafe", "coffee"], query: ["cafe", "coffee", "!cafe & espresso", "!cafe & mocha", "!cafe & cappuc:*", "!cafe & latte"]},
-    { synonyms: ["baldom"], query: ["baldom", "!baldom & ranchero"]}
-];
+    { synonyms: ["baldom"], query: ["baldom", "!baldom & ranchero"]},
+    { synonyms: ["xbar", "x bar"], query: ["xbar", "x <-> bar"]},
+    { synonyms: ["dulce especial jomisardys", "dulce de leche jomisardys", "dulce leche jomisardys"], query: ["dulce & especial & jomisardys", "dulce & leche & jomisardys"]},
+    { synonyms: ["guandy"], query: ["guandy", "!guandy & tropical"]},
+    { synonyms: ["worm", "gusano", "glowworm", "gusanito", "caterpillar", "squiggle"], query: ["worm:*", "gusan:*", "glowworm", "caterpillar", "squiggle"]},
+    { synonyms: ["caramelo"], query: ["caramelo", "dulce & !caramelo", "menta & !caramelo"]},
+    { synonyms: ["papaya", "lechosa"], query: ["lechosa", "papaya"]},
+    { synonyms: ["snake", "culebra", "culebrita"], query: ["snake:*", "culebra:*"]}
+]; 
 
 function pluralizeWord(word: string) {
   if (

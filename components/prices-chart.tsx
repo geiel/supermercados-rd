@@ -162,7 +162,7 @@ export function PricesChart({
             />
             <Area
               dataKey="price"
-              type="step"
+              type="linear"
               fill="var(--color-price)"
               fillOpacity={0.4}
               stroke="var(--color-price)"

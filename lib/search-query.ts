@@ -162,7 +162,7 @@ export function buildTsQueryV2(raw: string) {
         const id2 = nextWordSyn.id;
         const complexSyn = baseV2.find(syn => syn.complex && areArraysEqualIgnoreOrder(syn.complex, [id1, id2]));
         if (complexSyn) {
-          buckets.push([`(${singleWordSyn.query.join(" | ")}) & ((${nextWordSyn.query.join(" | ")}) | (${complexSyn.query.join(" | ")}))`])
+          buckets.push([`(((${singleWordSyn.query.join(" | ")}) & (${nextWordSyn.query.join(" | ")})) | (${complexSyn.query.join(" | ")}))`])
           i += 2;
           continue;
         }

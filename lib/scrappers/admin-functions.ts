@@ -59,7 +59,7 @@ export async function getSimilarProducts(
     .innerJoin(
       sql`${products} AS p2`,
       sql`
-        ${products.categoryId} IN (6, 19, 17)
+        ${products.categoryId} IN (24, 12, 17)
         AND ${products.id} <> p2.id
         AND ${products.brandId} <> p2."brandId"
         AND similarity(
