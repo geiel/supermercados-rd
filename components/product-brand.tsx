@@ -1,0 +1,1 @@
+//Component to check in the name if it has the brand name and look it in the database

@@ -22,6 +22,7 @@ export async function getProductListBravo(categoryId: number, url: string) {
       "Accept-Language": "en-US,en;q=0.9",
       "X-Auth-Token":
         "dDfy25KA4AbcAIbTGrWHimB1eaiJnCAHqBO1cQlb113QtVsKOHlobtCzUh0FTdOPkLTSEl7Wn17TW0K2jIvoMybcp4zp7beQqdX1zxKqKb6yfZnKlF3hTDaIVZbi1OIB",
+      "Host": "bravova-api.superbravo.com.do"
     },
   });
 

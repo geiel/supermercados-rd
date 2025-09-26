@@ -29,7 +29,7 @@ const raw = JSON.stringify([
     operationName: "GetProductsByCategory",
     variables: {
       getProductsByCategoryInput: {
-        categoryReference: "11-41",
+        categoryReference: "11-54",
         categoryId: "null",
         clientId: "PLAZA_LAMA",
         storeReference: "PL08-D",
