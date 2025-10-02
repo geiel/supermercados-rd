@@ -39,11 +39,13 @@ export default function MergeProducts({
       image1: string | null;
       unit1: string;
       brand1Name: string;
+      deleted1: boolean | null;
       id2: number;
       name2: string;
       image2: string;
       unit2: string;
       brand2Name: string;
+      deleted2: boolean | null;
       sml: number;
     }[]
   >([]);
@@ -178,8 +180,13 @@ export default function MergeProducts({
                 key={product.id1}
                 className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
               >
-                <div>{product.brand1Name}</div>
-                <div className="font-semibold">{product.id1}</div>
+                <div className="flex justify-between">
+                  <div>
+                    <div>{product.brand1Name}</div>
+                    <div className="font-semibold">{product.id1}</div>
+                  </div>
+                  {product.deleted1 ? (<span className="text-red-500 font-bold">Eliminado</span>) : null}
+                </div>
                 <Link
                   href={`/product/${toSlug(product.name1)}/${product.id1}`}
                   className="flex flex-col gap-2"
@@ -203,8 +210,13 @@ export default function MergeProducts({
                 key={product.id2}
                 className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
               >
-                <div>{product.brand2Name}</div>
-                <div className="font-semibold">{product.id2}</div>
+                <div className="flex justify-between">
+                  <div>
+                    <div>{product.brand2Name}</div>
+                    <div className="font-semibold">{product.id2}</div>
+                  </div>
+                  {product.deleted2 ? (<span className="text-red-500 font-bold">Eliminado</span>) : null}
+                </div>
                 <Link
                   href={`/product/${toSlug(product.name2)}/${product.id2}`}
                   className="flex flex-col gap-2"

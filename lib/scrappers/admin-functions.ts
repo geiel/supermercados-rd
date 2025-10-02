@@ -42,12 +42,14 @@ export async function getSimilarProducts(
       name1: products.name,
       image1: products.image,
       unit1: products.unit,
+      deleted1: products.deleted,
       brand1Name: sql`b1.name`.as<string>(),
       id2: sql`p2.id`.as<number>(),
       name2: sql`p2.name`.as<string>(),
       image2: sql`p2.image`.as<string>(),
       unit2: sql`p2.unit`.as<string>(),
       brand2Name: sql`b2.name`.as<string>(),
+      deleted2: sql`p2.deleted`.as<boolean>(),
       sml: sql<number>`
         similarity(
           unaccent(lower(${products.name})),
@@ -59,7 +61,7 @@ export async function getSimilarProducts(
     .innerJoin(
       sql`${products} AS p2`,
       sql`
-        ${products.categoryId} IN (25, 26)
+        ${products.categoryId} IN (27)
         AND ${products.id} <> p2.id
         AND ${products.brandId} <> p2."brandId"
         AND similarity(

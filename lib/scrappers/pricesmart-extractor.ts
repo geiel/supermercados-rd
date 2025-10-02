@@ -16,9 +16,9 @@ import { formatUnit } from "./utils";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Licor-cerveza-y-vino-G10D08014/G10D08014",
+    url: "https://www.pricesmart.com/es-do/categoria/Hogar-H30D22/Cubiertos-y-manteleria-descartable-H30D05005/H30D05005",
     start: 0,
-    q: "G10D08014",
+    q: "H30D05005",
     fq: [],
     search_type: "category",
     rows: 100,
@@ -60,6 +60,7 @@ async function getProductList() {
             thumb_image: z.string(),
             slug: z.string(),
             pid: z.string(),
+            master_sku: z.string(),
             variants: z.array(
               z.object({
                 skuid: z.string(),
@@ -111,8 +112,8 @@ export async function getProductListPricesmart(categoryId: number) {
       price: {
         shopId: 5,
         productId: 0,
-        url: `https://www.pricesmart.com/es-do/producto/${p.slug}/${p.pid}`,
-        api: p.variants[0].skuid,
+        url: `https://www.pricesmart.com/es-do/producto/${p.slug}/${p.master_sku}`,
+        api: p.master_sku,
       },
     });
   });
