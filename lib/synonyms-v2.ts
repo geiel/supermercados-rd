@@ -465,7 +465,8 @@ const base: Array<Synonym> = [
     { synonyms: ["xtracool", "xtral cool"], query: ["xtracool", "xtral & cool"]},
     { synonyms: ["advanced", "avanzado"],query: ["advanced", "avanzado"]},
     { synonyms: ["cortaunas", "alicate para unas"], query: ["cortaunas", "alicate & unas"]},
-    { synonyms: ["charcoal", "carbon"], query: ["charcoal", "carbon"]}
+    { synonyms: ["charcoal", "carbon"], query: ["charcoal", "carbon"]},
+    { synonyms: ["loreal l oreal"], query: ["loreal l oreal"]}
 ]; 
 
 function pluralizeWord(word: string) {
