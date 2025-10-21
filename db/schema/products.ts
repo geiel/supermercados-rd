@@ -48,7 +48,7 @@ export const productsRelations = relations(products, ({ many, one }) => ({
   brand: one(productsBrands, {
     fields: [products.brandId],
     references: [productsBrands.id],
-  }),
+  })
 }));
 
 export const productsBrands = pgTable("products_brands", {
@@ -88,6 +88,7 @@ export const shops = pgTable("shops", {
 
 export const shopsRelations = relations(shops, ({ many }) => ({
   productPricesHistory: many(productsPricesHistory),
+  productsCurrentPrices: many(productsShopsPrices),
 }));
 
 export const productsShopsPrices = pgTable(

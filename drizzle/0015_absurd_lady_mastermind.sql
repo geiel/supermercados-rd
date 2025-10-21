@@ -1,0 +1,1 @@
+ALTER TABLE "list" ADD COLUMN "selectedShops" text[] DEFAULT ARRAY[]::text[] NOT NULL;

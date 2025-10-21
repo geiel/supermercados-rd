@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SearchBar } from "@/components/searchbar";
+import { Button } from "@/components/ui/button";
+import { NotepadText } from "lucide-react";
+import { LoginUserGoogle } from "@/lib/authentication";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,6 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -34,6 +39,14 @@ export default function RootLayout({
               <div>SupermercadosRD</div>
               <div className="w-full max-w-6xl">
                 <SearchBar />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon-lg" asChild>
+                  <Link href="/compare">
+                      <NotepadText />
+                  </Link>
+                </Button>
+                <Button onClick={LoginUserGoogle}>Login</Button>
               </div>
               <div />
             </div>

@@ -92,7 +92,14 @@ export default async function Page({ params }: Props) {
                     blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
                     className="max-w-none"
                   />
-                ) : null}
+                ) : <Image 
+                      src="/no-product-found.jpg" alt="image product not found" 
+                      unoptimized
+                      fill
+                      sizes="(max-width: 768px) 290px, 500px"
+                      placeholder="blur"
+                      blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                      className="max-w-none" />}
               </div>
             </div>
           </div>

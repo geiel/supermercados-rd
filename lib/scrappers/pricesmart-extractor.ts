@@ -16,16 +16,16 @@ import { formatUnit } from "./utils";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Hogar-H30D22/Cubiertos-y-manteleria-descartable-H30D05005/H30D05005",
-    start: 0,
-    q: "H30D05005",
+    url: "https://www.pricesmart.com/es-do/categoria/Salud-y-belleza-H20D09/H20D09",
+    start: 132,
+    q: "H20D09",
     fq: [],
     search_type: "category",
-    rows: 100,
+    rows: 12,
     account_id: "7024",
     auth_key: "ev7libhybjg5h1d1",
-    _br_uid_2: "uid=7086154559720:v=15.0:ts=1732413232358:hc=333",
-    request_id: 1757359717393,
+    _br_uid_2: "uid=8784892088507:v=15.0:ts=1748828472969:hc=588",
+    request_id: 1760361684690,
     domain_key: "pricesmart_bloomreach_io_es",
     fl: "pid,title,price,thumb_image,brand,slug,skuid,currency,fractionDigits,master_sku,sold_by_weight_DO,weight_DO,weight_uom_description_DO,sign_price_DO,price_per_uom_DO,uom_description_DO,availability_DO,price_DO,inventory_DO,inventory_DO,promoid_DO",
     view_id: "DO",
@@ -57,7 +57,7 @@ async function getProductList() {
           z.object({
             brand: z.string(),
             title: z.string(),
-            thumb_image: z.string(),
+            thumb_image: z.string().optional(),
             slug: z.string(),
             pid: z.string(),
             master_sku: z.string(),
