@@ -21,7 +21,8 @@ export function removeAccents(str: string) {
 export async function searchProducts(
   value: string,
   limit: number,
-  offset: number
+  offset: number,
+  orderByRanking: boolean
 ) {
   // const tsQuery = buildTsQuery(removeAccents(value));
   const tsQueryV2 = buildTsQueryV2(removeAccents(value));
@@ -35,10 +36,11 @@ export async function searchProducts(
                 id,
                 name,
                 deleted,
+                rank,
                 ts_rank(
                   name_unaccent_es || name_unaccent_en,
                   to_tsquery('spanish', unaccent(lower(${tsQueryV2}))) || to_tsquery('english', unaccent(lower(${tsQueryV2})))
-                ) AS rank
+                ) AS ts_rank
               FROM ${products}
               WHERE
                 name_unaccent_es @@ to_tsquery('spanish', unaccent(lower(${tsQueryV2})))
@@ -50,15 +52,17 @@ export async function searchProducts(
                 id,
                 name,
                 deleted,
+                rank,
                 similarity(unaccent(lower(name)), unaccent(lower(${value}))) AS sim
                 FROM ${products}
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
             )
         SELECT
             COALESCE(fts.id, fuzzy.id)      AS id,
-            COALESCE(rank, 0)               AS fts_rank,
+            COALESCE(ts_rank, 0)            AS fts_rank,
             COALESCE(sim, 0)                AS sim_score,
-            CASE WHEN rank IS NOT NULL THEN 1 ELSE 0 END AS is_exact,
+            COALESCE(fts.rank, fuzzy.rank)  AS product_rank,
+            CASE WHEN ts_rank IS NOT NULL THEN 1 ELSE 0 END AS is_exact,
             CASE WHEN unaccent(lower(name)) LIKE unaccent(lower(${value}))||'%' THEN 1 ELSE 0 END AS is_prefix,
             COUNT(*) OVER() AS total_count
         FROM fts
@@ -73,14 +77,21 @@ export async function searchProducts(
           AND fts.deleted IS NOT TRUE
           AND fuzzy.deleted IS NOT TRUE
         ORDER BY
-          is_exact   DESC,
-          is_prefix  DESC,
-          fts_rank   DESC,
-          sim_score  DESC,
-          COALESCE(fts.id, fuzzy.id) ASC
-        LIMIT ${limit}
-        OFFSET ${offset}
+          is_exact      DESC,
+          is_prefix     DESC,
     `;
+  
+  if (orderByRanking) {
+    query.append(sql` product_rank  DESC, `);
+  }
+
+  query.append(sql`
+      fts_rank      DESC,
+      sim_score     DESC,
+      COALESCE(fts.id, fuzzy.id) ASC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `)
 
   const res: { rows: { id: number; total_count: string}[] } = await db.execute(query);
   const productsResponse = await db.query.products.findMany({

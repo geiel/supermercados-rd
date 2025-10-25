@@ -58,7 +58,8 @@ export default async function Page({ params }: Props) {
   const relatedProducts = await searchProducts(
     sanitizeForTsQuery(product.name),
     16,
-    0
+    0,
+    false
   );
   relatedProducts.products.splice(
     relatedProducts.products.findIndex((i) => i.id === product.id),

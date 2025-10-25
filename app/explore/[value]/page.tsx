@@ -53,7 +53,8 @@ export default async function Page({ params, searchParams }: Props) {
   const productsAndTotal = await searchProducts(
     sanitizeForTsQuery(decodeURIComponent(value).trim()),
     15,
-    getOffset(page)
+    getOffset(page),
+    true
   );
 
   const filteredProducts = productsAndTotal.products.filter((product) => {
