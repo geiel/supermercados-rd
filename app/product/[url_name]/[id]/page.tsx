@@ -1,3 +1,4 @@
+import { AddListButton } from "@/components/add-list";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductImage } from "@/components/product-image";
@@ -67,7 +68,7 @@ export default async function Page({ params }: Props) {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 py-4 px-4 md:px-10">
+    <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
           <div>
@@ -78,7 +79,7 @@ export default async function Page({ params }: Props) {
           </div>
           <Unit unit={product.unit} className="font-bold" />
           <div className="px-4 py-8">
-            <div className="flex justify-center">
+            <div className="flex flex-col gap-4 justify-center items-center">
               <div className="h-[290px] w-[290px] md:h-[500px] md:w-[500px] relative">
                 {product.image ? (
                   <ProductImage
@@ -101,6 +102,9 @@ export default async function Page({ params }: Props) {
                       placeholder="blur"
                       blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
                       className="max-w-none" />}
+              </div>
+              <div>
+                <AddListButton productId={product.id} type="button" />
               </div>
             </div>
           </div>

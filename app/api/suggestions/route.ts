@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       desc(sql`${searchPhases.phrase} ILIKE ${value} || '%'`),
       desc(sql`similarity(${searchPhases.phrase}, ${value})`)
     )
-    .limit(limit ? Number(limit) : 10);
+    .limit(limit ? Number(limit) : 7);
 
   return Response.json(suggestions);
 }

@@ -26,7 +26,7 @@ type Synonym = WithId | WithComplex | BaseOnly;
 
 const base: Array<Synonym> = [
     { synonyms: ["congelado", "congelada", "frozen", "cong"], query: ["cong:*", "frozen:*"] },
-    { synonyms: ["sopa instantanea", "ramen"], query: ["sopa:* & instantanea:*", "ramen:*"] },
+    { synonyms: ["sopa instantanea", "ramen"], query: ["sopa:* & instantanea:*", "ramen"] },
     { synonyms: ["sin", "free", "zero", "non", "cero", "0"], query: ["sin", "s", "free:*", "zero", "non", "cero", "0", "libre"], id: "sin" },
     { synonyms: ["para", "for"], query: ["para", "for", "p"]},
     { synonyms: ["lactosa", "lacteo", "dairy"], query: ["lactosa:*", "lacteo:*", "dair:*"], id: "lact"},

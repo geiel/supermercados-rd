@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { refreshPhrases } from "@/lib/scrappers/admin-functions";
+import { Button } from "@/components/ui/button"
+import { refreshPhrases } from "@/lib/search-phrases";
 
 export default async function Page() {
   return (
