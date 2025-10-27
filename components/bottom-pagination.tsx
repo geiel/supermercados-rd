@@ -10,6 +10,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "./ui/pagination";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type PageItemProps = {
   currentPage: number;
@@ -38,7 +39,7 @@ export function BottomPagination({ items }: { items: number }) {
           pathname={pathname}
           totalPages={totalPages}
         />
-        <Test
+        <CurrentPageItem
           totalPages={totalPages}
           currentPage={currentPage}
           pathname={pathname}
@@ -53,7 +54,7 @@ export function BottomPagination({ items }: { items: number }) {
   );
 }
 
-function Test({
+function CurrentPageItem({
   totalPages,
   currentPage,
   pathname,
@@ -62,6 +63,8 @@ function Test({
   currentPage: number;
   pathname: string;
 }) {
+  const isMobile = useIsMobile();
+  const rederPages = isMobile ? 2 : 3;
   const items = [];
 
   for (let i = 1; i <= totalPages; i++) {
@@ -96,7 +99,7 @@ function Test({
     const differenceAfter = i - currentPage;
     const differenceBefore = currentPage - i;
 
-    if (differenceBefore >= 3) {
+    if (differenceBefore >= rederPages) {
       if (currentPage - 1 >= 3 && i === 2) {
         items.push(
           <PaginationItem key={"EllipsisBefore"}>
@@ -107,7 +110,7 @@ function Test({
       continue;
     }
 
-    if (differenceAfter >= 3) {
+    if (differenceAfter >= rederPages) {
       if (totalPages - currentPage >= 4 && i + 1 === totalPages) {
         items.push(
           <PaginationItem key={"EllipsisAfter"}>
