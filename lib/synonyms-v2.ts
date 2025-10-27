@@ -485,7 +485,9 @@ const base: Array<Synonym> = [
     { synonyms: ["toufanyan", "toufayan"], query: ["toufanyan", "toufayan"]},
     { synonyms: ["actii", "act ii"], query: ["actii", "act & ii"]},
     { synonyms: ["bib", "baked in brooklyn"], query: ["bib", "baked <-> in <-> brooklyn"]},
-    { synonyms: ["sosua", "checo"], query: ["sosua", "checo"]}
+    { synonyms: ["sosua", "checo"], query: ["sosua", "checo"]},
+    { synonyms: ["gillete", "gillette", "gilete", "gilette"], query: ["gillete", "gillette", "gilete", "gilette"]},
+    { synonyms: ["trudeau", "trudea"], query: ["trudeau", "trudea"]}
 ]; 
 
 function pluralizeWord(word: string) {
