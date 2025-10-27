@@ -37,6 +37,7 @@ export async function searchProducts(
                 name,
                 deleted,
                 rank,
+                relevance,
                 ts_rank(
                   name_unaccent_es || name_unaccent_en,
                   to_tsquery('spanish', unaccent(lower(${tsQueryV2}))) || to_tsquery('english', unaccent(lower(${tsQueryV2})))
@@ -58,10 +59,11 @@ export async function searchProducts(
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
             )
         SELECT
-            COALESCE(fts.id, fuzzy.id)      AS id,
-            COALESCE(ts_rank, 0)            AS fts_rank,
-            COALESCE(sim, 0)                AS sim_score,
-            COALESCE(fts.rank, fuzzy.rank)  AS product_rank,
+            COALESCE(fts.id, fuzzy.id)                AS id,
+            COALESCE(ts_rank, 0)                      AS fts_rank,
+            COALESCE(sim, 0)                          AS sim_score,
+            COALESCE(fts.rank, fuzzy.rank)            AS product_rank,
+            COALESCE(fts.relevance, 0)  AS product_relevance,
             CASE WHEN ts_rank IS NOT NULL THEN 1 ELSE 0 END AS is_exact,
             CASE WHEN unaccent(lower(name)) LIKE unaccent(lower(${value}))||'%' THEN 1 ELSE 0 END AS is_prefix,
             COUNT(*) OVER() AS total_count
@@ -82,7 +84,10 @@ export async function searchProducts(
     `;
   
   if (orderByRanking) {
-    query.append(sql` product_rank  DESC, `);
+    query.append(sql` 
+      product_relevance DESC,
+      product_rank  DESC, 
+    `);
   }
 
   query.append(sql`

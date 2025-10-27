@@ -48,7 +48,7 @@ export default async function Page() {
     const shops = Object.keys(groupByShop);
 
     return (
-        <div className="container mx-auto pb-4 max-w-4xl">
+        <div className="container mx-auto pb-4 px-2 max-w-4xl">
             <div className="flex flex-1 flex-col">
                 <div className="flex justify-between">
                     <div className="font-bold text-2xl">Lista</div>
@@ -84,8 +84,8 @@ export default async function Page() {
                                     />
                                 </div>
 
-                                <div>
-                                    {totalPrice}
+                                <div className="font-bold">
+                                    RD${totalPrice.toFixed(2)}
                                 </div>
                             </div>
                             <ProductItems products={products} listItems={list.items} />

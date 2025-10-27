@@ -24,7 +24,8 @@ export const products = pgTable(
       .notNull()
       .references(() => productsBrands.id),
     deleted: boolean().default(false),
-    rank: numeric()
+    rank: numeric(),
+    relevance: numeric()
   },
   (table) => ({
     uniqueProduct: unique("unique_product").on(

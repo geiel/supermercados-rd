@@ -1,13 +1,21 @@
-export default function Home() {
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+export default async function Home() {
+  
+
   return (
-    <div className="container mx-auto">
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <div className="grid auto-rows-min gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 60 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-xl bg-muted" />
-          ))}
+    <main className="container mx-auto">
+      <section>
+        <div>
+          Ofertas
+          <ScrollArea className="rounded-md border whitespace-nowrap">
+            <div className="flex w-max space-x-4 p-4">
+              
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

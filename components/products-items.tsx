@@ -6,7 +6,7 @@ import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } f
 import { Button } from "./ui/button"
 import React, { useTransition } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Drawer, DrawerContent, DrawerTrigger } from "./ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "./ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { updateItemAmount, deleteItem } from "@/lib/compare";
 import { ArrowRightSquare, Trash } from "lucide-react";
@@ -50,7 +50,7 @@ function ItemProductDialog({ product, listItems }: DialogDrawerProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Item asChild role="listItem">
+                <Item asChild role="listItem" variant="outline">
                     <ProductItemATag product={product} item={listItems.find(i => i.productId === product.id)} />
                 </Item>
             </DialogTrigger>
@@ -70,11 +70,14 @@ function ItemProductDrawer({ product, listItems }: DialogDrawerProps) {
     return (
         <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
-                <Item asChild role="listItem">
+                <Item asChild role="listItem" variant="outline">
                     <ProductItemATag product={product} item={listItems.find(i => i.productId === product.id)} />
                 </Item>
             </DrawerTrigger>
             <DrawerContent>
+                <DrawerHeader>
+                    <DrawerTitle>Acciones</DrawerTitle>
+                </DrawerHeader>
                 <ProductDetails product={product} item={listItems.find(i => i.productId === product.id)} onItemClose={() => setOpen(false)} />
             </DrawerContent>
         </Drawer>
@@ -125,7 +128,7 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                 <ItemContent className="flex flex-row items-center gap-2 text-center">
                     {item?.amount && item.amount > 1 ? ( <div> {item.amount}x </div>) : null}
                     <ItemDescription className="text-base font-semibold text-black">
-                        {price !== undefined ? `RD$${price}` : "Precio no disponible"}
+                        {price !== undefined ? `RD$${price}` : ""}
                     </ItemDescription>
                 </ItemContent>
             </a>
@@ -140,7 +143,7 @@ function ProductDetails({ product, item, onItemClose }: { product: Product, item
     const [amountUpdatePending, startUpdateTransition] = useTransition();
 
     const price = product.shopCurrentPrices[0]?.currentPrice
-    const formattedPrice = price !== undefined ? `RD$${price}` : "Precio no disponible"
+    const formattedPrice = price !== undefined ? `RD$${price}` : ""
 
     if (!item) {
         return null;
@@ -179,7 +182,7 @@ function ProductDetails({ product, item, onItemClose }: { product: Product, item
 
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 pb-4">
             <div className="flex flex-col items-center gap-4">
                 <div className="size-40 relative">
                     <ProductImage

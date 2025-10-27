@@ -8,11 +8,13 @@ import {
 } from "./ui/command";
 import { Command as CommandPrimitive } from "cmdk";
 import {
-  useState,
-  useRef,
+  Fragment,
   useCallback,
   type KeyboardEvent,
   useEffect,
+  useRef,
+  useState,
+  type ReactNode,
 } from "react";
 
 import { Skeleton } from "./ui/skeleton";
@@ -35,6 +37,123 @@ type AutoCompleteProps = {
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
+};
+
+const normalizeTerm = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "")
+    .toLowerCase()
+    .trim();
+
+const buildTokenCounts = (query: string) => {
+  const counts = new Map<string, number>();
+
+  query
+    .split(/\s+/)
+    .map(normalizeTerm)
+    .filter(Boolean)
+    .forEach((token) => {
+      counts.set(token, (counts.get(token) ?? 0) + 1);
+    });
+
+  return counts;
+};
+
+const getPrefixLength = (segment: string, normalizedTarget: string) => {
+  if (!normalizedTarget) {
+    return 0;
+  }
+
+  let normalizedSoFar = "";
+
+  for (let index = 0; index < segment.length; index++) {
+    const normalizedChar = normalizeTerm(segment[index]);
+
+    if (normalizedChar) {
+      normalizedSoFar += normalizedChar;
+    }
+
+    if (normalizedSoFar.length >= normalizedTarget.length) {
+      return index + 1;
+    }
+  }
+
+  return segment.length;
+};
+
+const renderHighlightedPhrase = (
+  phrase: string,
+  query: string
+): ReactNode => {
+  const tokenCounts = buildTokenCounts(query);
+  const orderedTokens = [...tokenCounts.keys()].sort(
+    (tokenA, tokenB) => tokenB.length - tokenA.length
+  );
+
+  if (orderedTokens.length === 0) {
+    return phrase;
+  }
+
+  return phrase.split(/(\s+)/).map((segment, index) => {
+    const key = `segment-${index}`;
+
+    if (!segment.trim()) {
+      return <Fragment key={key}>{segment}</Fragment>;
+    }
+
+    const normalizedSegment = normalizeTerm(segment);
+    if (!normalizedSegment) {
+      return <Fragment key={key}>{segment}</Fragment>;
+    }
+
+    const exactMatches = tokenCounts.get(normalizedSegment) ?? 0;
+    if (exactMatches > 0) {
+      tokenCounts.set(normalizedSegment, exactMatches - 1);
+      return <Fragment key={key}>{segment}</Fragment>;
+    }
+
+    let prefixToken: string | undefined;
+
+    for (const token of orderedTokens) {
+      const remaining = tokenCounts.get(token) ?? 0;
+      if (remaining === 0) {
+        continue;
+      }
+
+      if (normalizedSegment.startsWith(token)) {
+        prefixToken = token;
+        break;
+      }
+    }
+
+    if (prefixToken) {
+      const remaining = tokenCounts.get(prefixToken) ?? 0;
+      tokenCounts.set(prefixToken, Math.max(remaining - 1, 0));
+
+      const prefixLength = getPrefixLength(segment, prefixToken);
+      const prefix = segment.slice(0, prefixLength);
+      const suffix = segment.slice(prefixLength);
+
+      if (!suffix) {
+        return <Fragment key={key}>{segment}</Fragment>;
+      }
+
+      return (
+        <Fragment key={key}>
+          {prefix}
+          <span className="font-semibold text-primary">{suffix}</span>
+        </Fragment>
+      );
+    }
+
+    return (
+      <Fragment key={key}>
+        <span className="font-semibold text-primary">{segment}</span>
+      </Fragment>
+    );
+  });
 };
 
 export const AutoComplete = ({
@@ -174,32 +293,6 @@ export const AutoComplete = ({
                   value={inputValue}
                   className="hidden"
                 />
-                {/* {displaySuggestions[0].sml < 0.9 ? (
-                  <CommandItem
-                    key={"custom" + inputValue}
-                    value={inputValue}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }}
-                    onSelect={() =>
-                      handleSelectProduct({
-                        phrase: inputValue,
-                        sml: displaySuggestions[0].sml,
-                      })
-                    }
-                    className={cn("flex w-full items-center gap-2")}
-                  >
-                    {inputValue}
-                  </CommandItem>
-                ) : (
-                  <CommandItem
-                    key="hidden"
-                    value={inputValue}
-                    className="hidden"
-                  />
-                )} */}
-
                 {displaySuggestions.map((suggestion, key) => {
                   return (
                     <CommandItem
@@ -212,7 +305,12 @@ export const AutoComplete = ({
                       onSelect={() => handleSelectProduct(suggestion)}
                       className={cn("flex w-full items-center gap-2")}
                     >
-                      {suggestion.phrase}
+                      <span className="flex-1 whitespace-pre-wrap">
+                        {renderHighlightedPhrase(
+                          suggestion.phrase,
+                          inputValue
+                        )}
+                      </span>
                     </CommandItem>
                   );
                 })}
