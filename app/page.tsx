@@ -1,3 +1,5 @@
+export const revalidate = 86400;
+
 import { ProductImage } from "@/components/product-image";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Badge } from "@/components/ui/badge";
