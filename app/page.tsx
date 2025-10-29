@@ -1,4 +1,4 @@
-export const revalidate = 3600;
+export const revalidate = 0;
 
 import { ProductImage } from "@/components/product-image";
 import { TypographyH3 } from "@/components/typography-h3";
