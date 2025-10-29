@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 export async function addProductToUserList(productId: number) {
     const user = await getUser();
     if (!user) {
-        throw new Error("User not authenticated");
+        throw new Error("Usuario no autenticado.");
     }
 
     const userList = await db.query.list.findFirst({
@@ -31,7 +31,7 @@ export async function addProductToUserList(productId: number) {
 export async function updateListSelectedShops(listId: number, selectedShops: number[]) {
     const user = await getUser();
     if (!user) {
-        throw new Error("User not authenticated");
+        throw new Error("Usuario no autenticado.");
     }
 
     await db.update(list)
@@ -44,7 +44,7 @@ export async function updateListSelectedShops(listId: number, selectedShops: num
 export async function updateItemAmount(amount: number, itemId: number) {
     const user = await getUser();
     if (!user) {
-        throw new Error("User not authenticated");
+        throw new Error("Usuario no autenticado.");
     }
 
     await db.update(listItems).set({ amount })
@@ -56,7 +56,7 @@ export async function updateItemAmount(amount: number, itemId: number) {
 export async function deleteItem(itemId: number) {
     const user = await getUser();
     if (!user) {
-        throw new Error("User not authenticated");
+        throw new Error("Usuario no autenticado.");
     }
 
     await db.delete(listItems).where(eq(listItems.id, itemId));

@@ -6,6 +6,8 @@ import { useContext, useTransition } from "react";
 import { ListContext } from "./list-provider";
 import { addProductToUserList } from "@/lib/compare";
 import { Spinner } from "./ui/spinner";
+import { toast } from "sonner";
+import { go } from "@/lib/error-handler";
 
 type AddListButtonType = "icon" | "button";
 
@@ -28,7 +30,13 @@ export function AddListButton({ productId, type }: { productId: number; type: Ad
     return (
         <Button size={type === "button" ? "sm" : "icon-sm"} variant="outline" disabled={isPending} onClick={() => {
             startTransition(async () => {
-                await addProductToUserList(productId);
+                const { error } = await go(() => addProductToUserList(productId));
+
+                if (error) {
+                    toast.error((error as Error).message)
+                    return;
+                }
+
                 await context.mutate();
             })
         }}>

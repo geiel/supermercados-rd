@@ -3,10 +3,14 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SearchBar } from "@/components/searchbar";
 import { Button } from "@/components/ui/button";
-import { NotepadText, User } from "lucide-react";
-import { LoginUserGoogle } from "@/lib/authentication";
+import { LogIn, LogOut, NotepadText, User } from "lucide-react";
+import { LoginUserGoogle, LogOutUser } from "@/lib/authentication";
 import Link from "next/link";
 import ListItemsProvider from "@/components/list-provider";
+import { getUser } from "@/lib/supabase";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Toaster } from "@/components/ui/sonner";
+import Image from "next/image";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,8 +32,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
-    
     <html lang="en">
       <ListItemsProvider>
         <body
@@ -38,7 +42,11 @@ export default function RootLayout({
           <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="px-2 py-2 container mx-auto">
               <div className="flex h-14 items-center gap-2 md:gap-4">
-                <div className="flex-none">RD</div>
+                <div className="flex-none">
+                  <Link href="/">
+                    <Image src="/logo.svg" width={50} height={50} alt="Logo" />
+                  </Link>
+                </div>
                 <div className="mt-1 grow">
                   <div className="w-full">
                     <div className="flex justify-center">
@@ -54,17 +62,48 @@ export default function RootLayout({
                         <NotepadText />
                     </Link>
                   </Button>
-                  <Button onClick={LoginUserGoogle} size="icon-lg">
-                    <User />
-                  </Button>
+                  <LogInLogOut />
                 </div>
                 <div />
               </div>
             </div>
           </header>
           {children}
+          <Toaster richColors position="top-right" />
         </body>
       </ListItemsProvider>
     </html>
   );
+}
+
+async function LogInLogOut() {
+  const user = await getUser();
+
+  if (!user) {
+    return (
+      <Button onClick={LoginUserGoogle} size="icon-lg">
+        <LogIn />
+      </Button>
+    )
+  }
+
+  const userName = user.user_metadata.name;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon-lg">
+          <User />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-40" align="end">
+        <DropdownMenuLabel>{userName ? userName : 'Mi Cuenta'}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={LogOutUser}>
+          <LogOut />
+          Salir
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
