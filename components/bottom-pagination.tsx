@@ -1,6 +1,10 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import {
+  usePathname,
+  useSearchParams,
+  type ReadonlyURLSearchParams,
+} from "next/navigation";
 import {
   Pagination,
   PaginationContent,
@@ -16,13 +20,14 @@ type PageItemProps = {
   currentPage: number;
   pathname: string;
   totalPages: number;
+  searchParams: ReadonlyURLSearchParams;
 };
 
 export function BottomPagination({ items }: { items: number }) {
   const pathname = usePathname();
-  const searchParam = useSearchParams();
+  const searchParams = useSearchParams();
 
-  const page = searchParam.get("page");
+  const page = searchParams.get("page");
   const currentPage = Boolean(page) && !isNaN(Number(page)) ? Number(page) : 1;
 
   const totalPages = Math.ceil(items / 15);
@@ -38,16 +43,19 @@ export function BottomPagination({ items }: { items: number }) {
           currentPage={currentPage}
           pathname={pathname}
           totalPages={totalPages}
+          searchParams={searchParams}
         />
         <CurrentPageItem
           totalPages={totalPages}
           currentPage={currentPage}
           pathname={pathname}
+          searchParams={searchParams}
         />
         <NextPageItem
           currentPage={currentPage}
           pathname={pathname}
           totalPages={totalPages}
+          searchParams={searchParams}
         />
       </PaginationContent>
     </Pagination>
@@ -58,10 +66,12 @@ function CurrentPageItem({
   totalPages,
   currentPage,
   pathname,
+  searchParams,
 }: {
   totalPages: number;
   currentPage: number;
   pathname: string;
+  searchParams: ReadonlyURLSearchParams;
 }) {
   const isMobile = useIsMobile();
   const rederPages = isMobile ? 2 : 3;
@@ -72,7 +82,7 @@ function CurrentPageItem({
       items.push(
         <PaginationItem key={1}>
           <PaginationLink
-            href={`${pathname}?page=${1}`}
+            href={buildHref(pathname, searchParams, 1)}
             isActive={currentPage === 1}
           >
             1
@@ -86,7 +96,7 @@ function CurrentPageItem({
       items.push(
         <PaginationItem key={totalPages}>
           <PaginationLink
-            href={`${pathname}?page=${totalPages}`}
+            href={buildHref(pathname, searchParams, totalPages)}
             isActive={currentPage === totalPages}
           >
             {totalPages}
@@ -125,7 +135,7 @@ function CurrentPageItem({
     items.push(
       <PaginationItem key={i}>
         <PaginationLink
-          href={`${pathname}?page=${i}`}
+          href={buildHref(pathname, searchParams, i)}
           isActive={currentPage === i}
         >
           {i}
@@ -137,26 +147,53 @@ function CurrentPageItem({
   return <>{items}</>;
 }
 
-function NextPageItem({ currentPage, pathname, totalPages }: PageItemProps) {
+function NextPageItem({
+  currentPage,
+  pathname,
+  totalPages,
+  searchParams,
+}: PageItemProps) {
   if (currentPage === totalPages) {
     return null;
   }
 
   return (
     <PaginationItem>
-      <PaginationNext href={`${pathname}?page=${currentPage + 1}`} />
+      <PaginationNext
+        href={buildHref(pathname, searchParams, currentPage + 1)}
+      />
     </PaginationItem>
   );
 }
 
-function PreviusPageItem({ currentPage, pathname }: PageItemProps) {
+function PreviusPageItem({ currentPage, pathname, searchParams }: PageItemProps) {
   if (currentPage === 1) {
     return null;
   }
 
   return (
     <PaginationItem>
-      <PaginationPrevious href={`${pathname}?page=${currentPage - 1}`} />
+      <PaginationPrevious
+        href={buildHref(pathname, searchParams, currentPage - 1)}
+      />
     </PaginationItem>
   );
+}
+
+function buildHref(
+  pathname: string,
+  searchParams: ReadonlyURLSearchParams,
+  page: number
+) {
+  const params = new URLSearchParams(searchParams.toString());
+
+  if (page <= 1) {
+    params.delete("page");
+  } else {
+    params.set("page", String(page));
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `${pathname}?${queryString}` : pathname;
 }

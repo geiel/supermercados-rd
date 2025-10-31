@@ -22,7 +22,8 @@ export async function searchProducts(
   value: string,
   limit: number,
   offset: number,
-  orderByRanking: boolean
+  orderByRanking: boolean,
+  shopIds?: number[]
 ) {
   // const tsQuery = buildTsQuery(removeAccents(value));
   const tsQueryV2 = buildTsQueryV2(removeAccents(value));
@@ -75,13 +76,21 @@ export async function searchProducts(
             FROM ${productsShopsPrices}
             WHERE ${productsShopsPrices.productId} = COALESCE(fts.id, fuzzy.id)
             AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
-          )
-          AND fts.deleted IS NOT TRUE
-          AND fuzzy.deleted IS NOT TRUE
-        ORDER BY
-          is_exact      DESC,
-          is_prefix     DESC,
     `;
+  
+  if (shopIds && shopIds.length > 0) {
+    query.append(sql`
+      AND ${productsShopsPrices.shopId} IN (${sql.join(shopIds, sql`,`)})
+    `)
+  }
+
+  query.append(sql`)
+      AND fts.deleted IS NOT TRUE
+      AND fuzzy.deleted IS NOT TRUE
+    ORDER BY
+      is_exact      DESC,
+      is_prefix     DESC,
+  `)
   
   if (orderByRanking) {
     query.append(sql` 

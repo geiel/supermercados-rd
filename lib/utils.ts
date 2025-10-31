@@ -37,3 +37,11 @@ export function isNumeric(value: string): boolean {
   const n = Number(value);
   return value.trim() !== "" && !isNaN(n) && isFinite(n);
 }
+
+export function getShopsIds(shops: string | undefined | null) {
+  if (!shops) {
+    return [];
+  }
+
+  return shops.split(",").map(shop => shop.replace(/\D/g, "")).map(Number);
+} 

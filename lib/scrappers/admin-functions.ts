@@ -58,7 +58,7 @@ export async function getSimilarProducts(
     .innerJoin(
       sql`${products} AS p2`,
       sql`
-        ${products.categoryId} IN (3)
+        ${products.categoryId} IN (15)
         AND ${products.id} <> p2.id
         AND ${products.brandId} <> p2."brandId"
         AND similarity(
@@ -79,7 +79,7 @@ export async function getSimilarProducts(
 
         eq(sql`p2."categoryId"`, categoryId),
         // eq(products.unit, sql`p2.unit`),
-        eq(sql`p2."brandId"`, 30),
+        eq(sql`p2."brandId"`, 69),
         notInArray(sql`p2.id`, ignoredProducts),
         notInArray(products.id, ignoredBaseProducts)
         // eq(sql`ps1."shopId"`, 2),

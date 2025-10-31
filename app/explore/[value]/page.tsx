@@ -3,7 +3,7 @@ import { productsSelect, productsShopsPrices } from "@/db/schema";
 import Image from "next/image";
 import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
-import { sanitizeForTsQuery, toSlug } from "@/lib/utils";
+import { getShopsIds, sanitizeForTsQuery, toSlug } from "@/lib/utils";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
@@ -18,7 +18,10 @@ import { AddListButton } from "@/components/add-list";
 
 type Props = {
   params: Promise<{ value: string }>;
-  searchParams: Promise<{ page: string | undefined }>;
+  searchParams: Promise<{ 
+    page: string | undefined;
+    shop_ids: string | undefined
+  }>;
 };
 
 export async function generateMetadata({ params }: Props) {
@@ -47,13 +50,15 @@ function getOffset(page: string | undefined): number {
 
 export default async function Page({ params, searchParams }: Props) {
   const { value } = await params;
-  const { page } = await searchParams;
+  const { page, shop_ids } = await searchParams;
 
+  const shopsIds = getShopsIds(shop_ids);
   const productsAndTotal = await searchProducts(
     sanitizeForTsQuery(decodeURIComponent(value).trim()),
     15,
     getOffset(page),
-    true
+    true,
+    shopsIds
   );
 
   const filteredProducts = productsAndTotal.products.filter((product) => {
@@ -93,8 +98,7 @@ export default async function Page({ params, searchParams }: Props) {
   );
 
   return (
-    <div className="container mx-auto pb-4">
-      <div className="flex flex-1 flex-col gap-4">
+    <>
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
           {filteredProducts.map((product) => (
             <div
@@ -129,8 +133,7 @@ export default async function Page({ params, searchParams }: Props) {
           ))}
         </div>
         <BottomPagination items={productsAndTotal.total} />
-      </div>
-    </div>
+    </>
   );
 }
 

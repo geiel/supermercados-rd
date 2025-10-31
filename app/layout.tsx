@@ -35,43 +35,43 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <ListItemsProvider>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="px-2 py-2 container mx-auto">
-              <div className="flex h-14 items-center gap-2 md:gap-4">
-                <div className="flex-none">
-                  <Link href="/">
-                    <Image src="/logo.svg" width={50} height={50} alt="Logo" />
-                  </Link>
-                </div>
-                <div className="mt-1 grow">
-                  <div className="w-full">
-                    <div className="flex justify-center">
-                      <div className="w-full max-w-6xl">
-                        <SearchBar />
+          <ListItemsProvider>
+            <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="px-2 py-2 container mx-auto">
+                <div className="flex h-14 items-center gap-2 md:gap-4">
+                  <div className="flex-none">
+                    <Link href="/">
+                      <Image src="/logo.svg" width={50} height={50} alt="Logo" />
+                    </Link>
+                  </div>
+                  <div className="mt-1 grow">
+                    <div className="w-full">
+                      <div className="flex justify-center">
+                        <div className="w-full max-w-6xl">
+                          <SearchBar />
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <div className="flex gap-2 flex-none">
+                    <Button variant="outline" size="icon-lg" asChild>
+                      <Link href="/compare">
+                          <NotepadText />
+                      </Link>
+                    </Button>
+                    <LogInLogOut />
+                  </div>
+                  <div />
                 </div>
-                <div className="flex gap-2 flex-none">
-                  <Button variant="outline" size="icon-lg" asChild>
-                    <Link href="/compare">
-                        <NotepadText />
-                    </Link>
-                  </Button>
-                  <LogInLogOut />
-                </div>
-                <div />
               </div>
-            </div>
-          </header>
-          {children}
-          <Toaster richColors position="top-right" />
+            </header>
+            {children}
+            <Toaster richColors position="top-right" />
+          </ListItemsProvider>
         </body>
-      </ListItemsProvider>
     </html>
   );
 }
