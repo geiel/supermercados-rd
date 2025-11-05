@@ -29,12 +29,12 @@ const raw = JSON.stringify([
     operationName: "GetProductsByCategory",
     variables: {
       getProductsByCategoryInput: {
-        categoryReference: "11-46",
-        filters: { categories: ["Cereales"]},
+        categoryReference: "11-42",
+        // filters: { categories: ["Cereales"]},
         categoryId: "null",
         clientId: "PLAZA_LAMA",
         storeReference: "PL08-D",
-        currentPage: 1,
+        currentPage: 3,
         pageSize: 500,
         googleAnalyticsSessionId: "",
       },

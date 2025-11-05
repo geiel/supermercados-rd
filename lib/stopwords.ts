@@ -7,6 +7,7 @@ export const PERMITED_STOP_WORDS = [
   "y",
   "sabor",
   "la",
+  "nosotras",
 ];
 
 export const UNIT = ["unidades", "und"];

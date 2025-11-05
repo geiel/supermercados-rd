@@ -16,6 +16,7 @@ import { sirena } from "@/lib/scrappers/sirena";
 import { searchProducts } from "@/lib/search-query";
 import { sanitizeForTsQuery } from "@/lib/utils";
 import Image from "next/image";
+import { Suspense } from "react";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -141,7 +142,9 @@ export default async function Page({ params }: Props) {
 
         <section className="flex flex-col gap-2">
           <div className="font-bold text-2xl">Historial de precios</div>
-          <PricesChart priceHistory={product.pricesHistory} currentPrices={product.shopCurrentPrices} />
+          <Suspense>
+            <PricesChart priceHistory={product.pricesHistory} currentPrices={product.shopCurrentPrices} />
+          </Suspense>
         </section>
 
         <section className="flex flex-col gap-2">

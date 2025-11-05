@@ -5,11 +5,12 @@ import { getUser } from "./supabase";
 import { list, listItems } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { ErrorMessage } from "./error-messages";
 
 export async function addProductToUserList(productId: number) {
     const user = await getUser();
     if (!user) {
-        throw new Error("Usuario no autenticado.");
+        return { data: null, error: ErrorMessage.UserAuth }
     }
 
     const userList = await db.query.list.findFirst({
@@ -26,12 +27,13 @@ export async function addProductToUserList(productId: number) {
     }
 
     await db.insert(listItems).values({ listId, productId });
+    return { data: "ok" }
 }
 
 export async function updateListSelectedShops(listId: number, selectedShops: number[]) {
     const user = await getUser();
     if (!user) {
-        throw new Error("Usuario no autenticado.");
+        return { data: null, error: ErrorMessage.UserAuth }
     }
 
     await db.update(list)
@@ -39,27 +41,30 @@ export async function updateListSelectedShops(listId: number, selectedShops: num
             .where(eq(list.id, listId));
 
     revalidatePath("/compare");
+    return { data: "ok" }
 }
 
 export async function updateItemAmount(amount: number, itemId: number) {
     const user = await getUser();
     if (!user) {
-        throw new Error("Usuario no autenticado.");
+        return { data: null, error: ErrorMessage.UserAuth }
     }
 
     await db.update(listItems).set({ amount })
             .where(eq(listItems.id, itemId))
     
-    revalidatePath("/compare");    
+    revalidatePath("/compare");
+    return { data: "ok" }
 }
 
 export async function deleteItem(itemId: number) {
     const user = await getUser();
     if (!user) {
-        throw new Error("Usuario no autenticado.");
+        return { data: null, error: ErrorMessage.UserAuth }
     }
 
     await db.delete(listItems).where(eq(listItems.id, itemId));
 
     revalidatePath("/compare");
+    return { data: "ok" }
 }

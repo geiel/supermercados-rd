@@ -158,8 +158,9 @@ function ProductDetails({ product, item, onItemClose }: { product: Product, item
             return updated
         })
 
-        startUpdateTransition(() => 
-            updateItemAmount(nextQuantity, item.id))
+        startUpdateTransition(() => {
+            updateItemAmount(nextQuantity, item.id)
+        })
     }
 
     const handleIncrease = async () => {
@@ -171,8 +172,9 @@ function ProductDetails({ product, item, onItemClose }: { product: Product, item
             return updated
         })
 
-        startUpdateTransition(() => 
-            updateItemAmount(nextQuantity, item.id))
+        startUpdateTransition(() => {
+            updateItemAmount(nextQuantity, item.id)
+        })
     }
 
     const handleDeleteItemFromList = async () => {
