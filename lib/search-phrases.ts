@@ -1,150 +1,230 @@
 "use server";
 
 import { db } from "@/db";
-import { PERMITED_STOP_WORDS, STOP_WORDS, UNIT } from "./stopwords";
-import { isNumeric } from "./utils";
-import { searchPhases } from "@/db/schema";
+import { products, productsBrands, searchPhases } from "@/db/schema";
+import { STOP_WORDS } from "./stopwords";
+import { sanitizeForTsQuery } from "./utils";
+import { sql } from "drizzle-orm";
 
+const SPECIAL_BRAND_IDS = new Set([80, 19, 69, 30]);
+const SIMILARITY_THRESHOLD = 0.4;
+const BATCH_SIZE = 100;
 
-function tokenizeAndFilter(title: string): string[] {
-  const noAccents = title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/n\u0303/g, "ñ")
-    .replace(/[\u0300-\u036f]/g, "");
+type ProductWithBrand = Awaited<ReturnType<typeof fetchProductBatch>>[number];
 
-  const protectedFractions = noAccents.replace(/(\d+\/\d+)/g, "::$1::");
-  const clean = protectedFractions.replace(/[^a-z0-9%/áéíóúñü\s:]/g, " ");
-  const unwrapped = clean.replace(/::/g, "");
+const STOP_WORDS_SOURCE = STOP_WORDS as string | string[];
+const rawStopWords =
+  typeof STOP_WORDS_SOURCE === "string"
+    ? STOP_WORDS_SOURCE.split(/\s+/)
+    : STOP_WORDS_SOURCE;
 
-  const tokens = unwrapped.split(/\s+/).filter((tok) => tok.trim() !== "");
-
-  return tokens.filter((tok) => !new Set(STOP_WORDS).has(tok));
-}
-
-function generateNgrams(tokens: string[]): Set<string> {
-  const out = new Set<string>();
-
-  // 1) Unigrams
-  for (const t of tokens) {
-    if (PERMITED_STOP_WORDS.includes(t)) {
-      continue;
-    }
-
-    if (isNumeric(t)) {
-      continue;
-    }
-
-    if (t.includes("/")) {
-      continue;
-    }
-
-    out.add(t);
-  }
-
-  // 2) Adjacent bigrams
-  for (let i = 0; i < tokens.length - 1; i++) {
-    if (
-      tokens[i] === tokens[i + 1] ||
-      PERMITED_STOP_WORDS.includes(tokens[i + 1]) ||
-      (isNumeric(tokens[1]) && isNumeric(tokens[i + 1])) ||
-      isNumeric(tokens[i + 1])
-    ) {
-      continue;
-    }
-
-    if (!isNumeric(tokens[i]) && UNIT.includes(tokens[i + 1])) {
-      continue;
-    }
-
-    out.add(tokens[i] + " " + tokens[i + 1]);
-  }
-
-  // 3) Adjacent trigrams
-  for (let i = 0; i < tokens.length - 2; i++) {
-    if (
-      tokens[i] === tokens[i + 1] ||
-      tokens[i] === tokens[i + 2] ||
-      tokens[i + 1] === tokens[i + 2] ||
-      PERMITED_STOP_WORDS.includes(tokens[i + 2]) ||
-      (isNumeric(tokens[1]) && isNumeric(tokens[i + 1])) ||
-      (isNumeric(tokens[i + 1]) && isNumeric(tokens[i + 2]))
-    ) {
-      continue;
-    }
-
-    if (!isNumeric(tokens[i + 1]) && UNIT.includes(tokens[i + 2])) {
-      continue;
-    }
-
-    out.add(tokens[i] + " " + tokens[i + 1] + " " + tokens[i + 2]);
-  }
-
-  // 4) Adjacent 4-grams
-  for (let i = 0; i < tokens.length - 3; i++) {
-    const t1 = tokens[i];
-    const t2 = tokens[i + 1];
-    const t3 = tokens[i + 2];
-    const t4 = tokens[i + 3];
-
-    if (isNumeric(t4)) {
-      continue;
-    }
-    if (PERMITED_STOP_WORDS.includes(t4)) {
-      continue;
-    }
-    const quartet = [t1, t2, t3, t4];
-    const uniqueCount = new Set(quartet).size;
-    if (uniqueCount < 4) {
-      continue;
-    }
-
-    if (!isNumeric(t3) && UNIT.includes(t4)) {
-      continue;
-    }
-
-    out.add(`${t1} ${t2} ${t3} ${t4}`);
-  }
-
-  return out;
-}
-
-function extractSearchPhrases(productName: string): string[] {
-  const contentTokens = tokenizeAndFilter(productName);
-  const phraseSet = generateNgrams(contentTokens);
-  return Array.from(phraseSet);
-}
+const STOP_WORD_SET = new Set(
+  rawStopWords.map((word) => normalizeToken(word)).filter(Boolean)
+);
 
 export async function refreshPhrases() {
-  console.log("[INFO] Start inserting");
+  console.log("[INFO] Start refreshing search phrases");
 
-  const products = await db.query.products.findMany({
-    columns: { name: true },
-  });
-  const total = products.length;
+  const total = await countProducts();
   console.log(`[INFO] Found ${total} products to process.`);
 
-  const BATCH_SIZE = 300;
+  let processed = 0;
 
-  for (let offset = 0; offset < total; offset += BATCH_SIZE) {
-    const batch = products.slice(offset, offset + BATCH_SIZE);
+  while (true) {
+    const batch = await fetchProductBatch(processed, BATCH_SIZE);
+    if (batch.length === 0) {
+      break;
+    }
 
-    await Promise.all(
-      batch.map(async (product) => {
-        const phrases = extractSearchPhrases(product.name);
-        for (const phrase of phrases) {
-          await db
-            .insert(searchPhases)
-            .values({ phrase })
-            .onConflictDoNothing();
-        }
-      })
-    );
+    for (const product of batch) {
+      const phrases = await buildPhrasesForProduct(product);
+      if (phrases.length === 0) {
+        continue;
+      }
 
-    const done = Math.min(offset + BATCH_SIZE, total);
-    const pct = (done / total) * 100;
+      await db
+        .insert(searchPhases)
+        .values(phrases.map((phrase) => ({ phrase })))
+        .onConflictDoNothing();
+    }
+
+    processed += batch.length;
+    const pct = total === 0 ? 100 : (processed / total) * 100;
     console.log(
-      `[INFO] ${done}/${total} products processed (${pct.toFixed(1)}%)`
+      `[INFO] ${processed}/${total} products processed (${pct.toFixed(1)}%)`
     );
   }
+
+  console.log("[INFO] Search phrases refresh complete");
+}
+
+async function buildPhrasesForProduct(product: ProductWithBrand) {
+  const brand = await resolveBrand(product);
+  const description = buildDescriptionWithoutBrand(product.name, brand);
+  if (!description) {
+    return [];
+  }
+
+  const truncated = truncateAtStopword(description);
+  return buildPhraseVariants(description, truncated, brand);
+}
+
+function buildPhraseVariants(
+  description: string,
+  truncated: string,
+  brand: string | null
+) {
+  const phrases = new Set<string>();
+  const normalizedDescription = normalizeWhitespace(description);
+
+  if (normalizedDescription) {
+    phrases.add(normalizedDescription);
+  }
+
+  if (brand && normalizedDescription) {
+    const normalizedBrand = normalizeWhitespace(brand);
+    phrases.add(`${normalizedDescription} ${normalizedBrand}`.trim());
+    phrases.add(`${normalizedBrand} ${normalizedDescription}`.trim());
+  }
+
+  if (truncated) {
+    phrases.add(normalizeWhitespace(truncated));
+  }
+
+  return Array.from(phrases).filter(Boolean);
+}
+
+async function resolveBrand(product: ProductWithBrand) {
+  if (!product.brand) {
+    return null;
+  }
+
+  if (!SPECIAL_BRAND_IDS.has(product.brandId)) {
+    return normalizePhrase(product.brand.name);
+  }
+
+  const inferred = await findBestBrandMatch(product.name);
+  if (!inferred || inferred.similarity < SIMILARITY_THRESHOLD) {
+    return null;
+  }
+
+  return normalizePhrase(inferred.name);
+}
+
+async function findBestBrandMatch(productName: string) {
+  const searchTerm = sanitizeForTsQuery(productName);
+  if (!searchTerm) {
+    return null;
+  }
+
+  const query = sql`
+    SELECT
+      id,
+      name,
+      similarity(unaccent(lower(name)), unaccent(lower(${productName}))) AS sim
+    FROM ${productsBrands}
+    WHERE to_tsvector('simple', unaccent(lower(name))) @@ plainto_tsquery('simple', unaccent(lower(${searchTerm})))
+    ORDER BY sim DESC
+    LIMIT 1
+  `;
+
+  const response: { rows: { id: number; name: string; sim: number }[] } =
+    await db.execute(query);
+
+  const match = response.rows[0];
+  if (!match) {
+    return null;
+  }
+
+  return {
+    id: match.id,
+    name: match.name,
+    similarity: Number(match.sim),
+  };
+}
+
+function buildDescriptionWithoutBrand(productName: string, brand: string | null) {
+  const normalizedName = normalizePhrase(productName);
+  if (!brand) {
+    return normalizedName;
+  }
+
+  let description = normalizedName;
+  const escapedBrand = escapeRegExp(brand);
+  if (escapedBrand) {
+    description = description.replace(new RegExp(`\\b${escapedBrand}\\b`, "g"), " ");
+  }
+
+  for (const token of brand.split(" ")) {
+    if (!token) continue;
+    const escapedToken = escapeRegExp(token);
+    description = description.replace(new RegExp(`\\b${escapedToken}\\b`, "g"), " ");
+  }
+
+  return normalizeWhitespace(description);
+}
+
+function truncateAtStopword(description: string) {
+  if (!description) return "";
+
+  const tokens = description.split(/\s+/);
+  const kept: string[] = [];
+
+  for (const token of tokens) {
+    const normalized = normalizeToken(token);
+    if (!normalized) {
+      continue;
+    }
+
+    if (STOP_WORD_SET.has(normalized)) {
+      break;
+    }
+
+    kept.push(token);
+  }
+
+  return normalizeWhitespace(kept.join(" "));
+}
+
+async function countProducts() {
+  const result: { rows: { value: number }[] } = await db.execute(
+    sql`SELECT COUNT(*)::int AS value FROM ${products}`
+  );
+
+  const row = result.rows[0];
+  return row ? Number(row.value) : 0;
+}
+
+async function fetchProductBatch(offset: number, limit: number) {
+  return db.query.products.findMany({
+    offset,
+    limit,
+    orderBy: (product, { asc }) => asc(product.id),
+    with: { brand: true },
+  });
+}
+
+function normalizePhrase(value: string) {
+  return normalizeWhitespace(
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+  );
+}
+
+function normalizeWhitespace(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function normalizeToken(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

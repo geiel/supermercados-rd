@@ -1,7 +1,6 @@
 import { db } from "@/db";
 import { products, productsShopsPrices } from "@/db/schema";
 import { sql } from "drizzle-orm";
-import { synonyms } from "./synonyms";
 import { baseV2 } from "./synonyms-v2";
 
 type SynonymFull = {
@@ -223,64 +222,9 @@ function buildComplexQuery(synonyms: SynonymFull) {
 }
 
 
-function areArraysEqualIgnoreOrder(arr1: string[], arr2: string[]) {
+export function areArraysEqualIgnoreOrder(arr1: string[], arr2: string[]) {
   return (
     arr1.length === arr2.length &&
     [...arr1].sort().every((val, idx) => val === [...arr2].sort()[idx])
   );
-}
-
-export function buildTsQuery(raw: string) {
-  const norm = removeAccents(raw.trim().toLowerCase());
-  const words = norm.split(/\s+/);
-
-  const buckets: string[][] = [];
-  for (let i = 0; i < words.length; ) {
-    const w = words[i];
-    const next = words[i + 1];
-    const twoKey = next ? `${w} & ${next}` : null;
-    const threeKey =
-      next && words[i + 2] ? `${w} & ${next} & ${words[i + 2]}` : null;
-
-    if (threeKey && synonyms[threeKey]) {
-      const syns = getDeepSynonyms([threeKey, ...Array.from(new Set(getDeepSynonyms(synonyms[threeKey])))]);
-      buckets.push(syns);
-      i += 3;
-    } else if (twoKey && synonyms[twoKey]) {
-      const syns = getDeepSynonyms([twoKey, ...Array.from(new Set(getDeepSynonyms(synonyms[twoKey])))]);
-      buckets.push(syns);
-      i += 2;
-    } else {
-      buckets.push([w, ...Array.from(new Set(getDeepSynonyms(synonyms[w])))]);
-      i += 1;
-    }
-  }
-
-  return buckets
-    .map((bucket) => {
-      if (bucket.length === 1) return bucket[0];
-      return `(${bucket.join(" | ")})`;
-    })
-    .join(" & ");
-}
-
-function getDeepSynonyms(deepSynonyms: string[] | undefined) {
-  if (!deepSynonyms) {
-    return [];
-  }
-
-  return deepSynonyms.map((syn) => {
-    if (!syn.includes(" & ")) {
-      return syn;
-    }
-
-    const parts = syn.split(" & ");
-    parts.forEach(part => {
-      if (synonyms[part]) {
-        syn = syn.replace(part, `(${part} | ${synonyms[part].join(" | ")})`);
-      }
-    })
-
-    return syn;
-  });
 }
