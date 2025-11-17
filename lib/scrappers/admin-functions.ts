@@ -31,8 +31,27 @@ export async function getSimilarProducts(
   categoryId: number,
   ignoredProducts: number[],
   ignoredBaseProducts: number[],
+  ignoredWords: string[] = [],
   threshold = 0.1
 ) {
+  const normalize = (word: string) =>
+    word
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+
+  const sanitizedIgnoredWords = ignoredWords
+    .map(normalize)
+    .filter((word) => word.length > 0);
+
+  const ignoredWordConditions = sanitizedIgnoredWords.map((word) =>
+    and(
+      sql`unaccent(lower(${products.name})) NOT LIKE ${`%${word}%`}`,
+      sql`unaccent(lower(p2.name)) NOT LIKE ${`%${word}%`}`
+    )
+  );
+
   const duplicates = await db
     .select({
       id1: products.id,
@@ -53,6 +72,7 @@ export async function getSimilarProducts(
           unaccent(lower(p2.name))
         )
       `.as("sml"),
+      totalSimilar: sql<number>`COUNT(*) OVER ()`.as("totalSimilar"),
     })
     .from(products)
     .innerJoin(
@@ -81,7 +101,8 @@ export async function getSimilarProducts(
         // eq(products.unit, sql`p2.unit`),
         eq(sql`p2."brandId"`, 69),
         notInArray(sql`p2.id`, ignoredProducts),
-        notInArray(products.id, ignoredBaseProducts)
+        notInArray(products.id, ignoredBaseProducts),
+        ...ignoredWordConditions
         // eq(sql`ps1."shopId"`, 2),
         // not(eq(shopPrice1.shopId, 3)),
 

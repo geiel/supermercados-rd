@@ -34,7 +34,7 @@ const raw = JSON.stringify([
         categoryId: "null",
         clientId: "PLAZA_LAMA",
         storeReference: "PL08-D",
-        currentPage: 3,
+        currentPage: 4,
         pageSize: 500,
         googleAnalyticsSessionId: "",
       },

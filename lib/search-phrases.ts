@@ -128,10 +128,10 @@ async function findBestBrandMatch(productName: string) {
     LIMIT 1
   `;
 
-  const response: { rows: { id: number; name: string; sim: number }[] } =
-    await db.execute(query);
+  const response =
+    await db.execute<{ id: number; name: string; sim: number }>(query);
 
-  const match = response.rows[0];
+  const match = response[0];
   if (!match) {
     return null;
   }
@@ -187,11 +187,11 @@ function truncateAtStopword(description: string) {
 }
 
 async function countProducts() {
-  const result: { rows: { value: number }[] } = await db.execute(
+  const result = await db.execute<{ value: number }>(
     sql`SELECT COUNT(*)::int AS value FROM ${products}`
   );
 
-  const row = result.rows[0];
+  const row = result[0];
   return row ? Number(row.value) : 0;
 }
 

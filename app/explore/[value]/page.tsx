@@ -15,6 +15,7 @@ import { searchProducts } from "@/lib/search-query";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { Unit } from "@/components/unit";
 import { AddListButton } from "@/components/add-list";
+import { getUser } from "@/lib/supabase";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -53,12 +54,17 @@ export default async function Page({ params, searchParams }: Props) {
   const { page, shop_ids } = await searchParams;
 
   const shopsIds = getShopsIds(shop_ids);
+
+  const user = await getUser();
+  const canSeeHiddenProducts = user?.email?.toLowerCase() === "geielpeguero@gmail.com";
+
   const productsAndTotal = await searchProducts(
     sanitizeForTsQuery(decodeURIComponent(value).trim()),
     15,
     getOffset(page),
     true,
-    shopsIds
+    shopsIds,
+    canSeeHiddenProducts
   );
 
   const filteredProducts = productsAndTotal.products.filter((product) => {
@@ -127,6 +133,7 @@ export default async function Page({ params, searchParams }: Props) {
                   productId={product.id}
                   unit={product.unit}
                   categoryId={product.categoryId}
+                  showHiddenPrices={canSeeHiddenProducts}
                 />
               </Link>
             </div>
@@ -172,10 +179,12 @@ async function Price({
   productId,
   unit,
   categoryId,
+  showHiddenPrices,
 }: {
   productId: number;
   unit: string;
   categoryId: number;
+  showHiddenPrices: boolean;
 }) {
   const lowerPrice = await db.query.productsShopsPrices.findFirst({
     columns: {
@@ -183,11 +192,16 @@ async function Price({
       regularPrice: true,
     },
     where: (priceTable, { isNotNull, eq, and, or, isNull }) =>
-      and(
-        isNotNull(priceTable.currentPrice),
-        eq(priceTable.productId, productId),
-        or(isNull(priceTable.hidden), eq(priceTable.hidden, false))
-      ),
+      showHiddenPrices
+        ? and(
+            isNotNull(priceTable.currentPrice),
+            eq(priceTable.productId, productId)
+          )
+        : and(
+            isNotNull(priceTable.currentPrice),
+            eq(priceTable.productId, productId),
+            or(isNull(priceTable.hidden), eq(priceTable.hidden, false))
+          ),
     orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
   });
 

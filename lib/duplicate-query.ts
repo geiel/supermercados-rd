@@ -81,11 +81,11 @@ export async function findDuplicateProducts(
               LIMIT 10
           `;
 
-    const response: { rows: Product[] } = await db.execute(query);
+    const response = await db.execute<Product>(query);
 
     duplicateProducts.push({
       product: product,
-      similars: response.rows,
+      similars: response,
     });
   }
 

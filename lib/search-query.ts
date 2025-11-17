@@ -22,7 +22,8 @@ export async function searchProducts(
   limit: number,
   offset: number,
   orderByRanking: boolean,
-  shopIds?: number[]
+  shopIds?: number[],
+  includeHiddenProducts = false
 ) {
   // const tsQuery = buildTsQuery(removeAccents(value));
   const tsQueryV2 = buildTsQueryV2(removeAccents(value));
@@ -74,16 +75,22 @@ export async function searchProducts(
             SELECT 1
             FROM ${productsShopsPrices}
             WHERE ${productsShopsPrices.productId} = COALESCE(fts.id, fuzzy.id)
-            AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
     `;
   
   if (shopIds && shopIds.length > 0) {
     query.append(sql`
       AND ${productsShopsPrices.shopId} IN (${sql.join(shopIds, sql`,`)})
-    `)
+    `);
   }
 
-  query.append(sql`)
+  if (!includeHiddenProducts) {
+    query.append(sql`
+      AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
+    `);
+  }
+
+  query.append(sql`
+      )
       AND fts.deleted IS NOT TRUE
       AND fuzzy.deleted IS NOT TRUE
     ORDER BY
@@ -106,12 +113,12 @@ export async function searchProducts(
     OFFSET ${offset}
   `)
 
-  const res: { rows: { id: number; total_count: string}[] } = await db.execute(query);
+  const rows = await db.execute<{ id: number; total_count: string }>(query);
   const productsResponse = await db.query.products.findMany({
     where: (products, { inArray }) =>
       inArray(
         products.id,
-        res.rows.map((r) => r.id)
+        rows.map((r) => r.id)
       ),
     with: {
       shopCurrentPrices: true,
@@ -120,11 +127,11 @@ export async function searchProducts(
   });
 
   const byId = new Map(productsResponse.map((p) => [p.id, p]));
-  const orderedProducts = res.rows.map((r) => byId.get(r.id)!);
+  const orderedProducts = rows.map((r) => byId.get(r.id)!);
 
   return {
     products: orderedProducts,
-    total: res.rows.length > 0 ? Number(res.rows[0].total_count) : 0,
+    total: rows.length > 0 ? Number(rows[0].total_count) : 0,
   };
 }
 

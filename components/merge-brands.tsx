@@ -47,6 +47,7 @@ export default function MergeProducts({
       brand2Name: string;
       deleted2: boolean | null;
       sml: number;
+      totalSimilar: number;
     }[]
   >([]);
   const [parentProductId, setParentProductId] = useState("");
@@ -55,13 +56,55 @@ export default function MergeProducts({
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [ignoredProducts, setIgnoredProducts] = useState<number[]>([]);
   const [ignoreBaseProducts, setIgnoreBaseProducts] = useState<number[]>([]);
+  const [pendingSimilarCount, setPendingSimilarCount] = useState<number | null>(
+    null
+  );
+  const [ignoredWords, setIgnoredWords] = useState<string[]>([]);
+  const [ignoredWordInput, setIgnoredWordInput] = useState("");
 
   useEffect(() => {
     const ignoredProductsFromStorage = localStorage.getItem("ignoredProducts");
     if (ignoredProductsFromStorage) {
-      setIgnoredProducts(JSON.parse(ignoredProductsFromStorage));
+      try {
+        const parsed = JSON.parse(ignoredProductsFromStorage);
+        if (Array.isArray(parsed)) {
+          setIgnoredProducts(parsed);
+        }
+      } catch (error) {
+        console.error("Failed to parse ignoredProducts", error);
+      }
+    }
+
+    const ignoredWordsFromStorage = localStorage.getItem("ignoredWords");
+    if (ignoredWordsFromStorage) {
+      try {
+        const parsed = JSON.parse(ignoredWordsFromStorage);
+        if (Array.isArray(parsed)) {
+          setIgnoredWords(parsed);
+        }
+      } catch (error) {
+        console.error("Failed to parse ignoredWords", error);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (ignoredProducts.length === 0) {
+      localStorage.removeItem("ignoredProducts");
+      return;
+    }
+
+    localStorage.setItem("ignoredProducts", JSON.stringify(ignoredProducts));
+  }, [ignoredProducts]);
+
+  useEffect(() => {
+    if (ignoredWords.length === 0) {
+      localStorage.removeItem("ignoredWords");
+      return;
+    }
+
+    localStorage.setItem("ignoredWords", JSON.stringify(ignoredWords));
+  }, [ignoredWords]);
 
   async function searchProducts() {
     setLoading(true);
@@ -82,13 +125,16 @@ export default function MergeProducts({
 
   async function searchSimilarProducts() {
     setLoadingSimilar(true);
-    setSimilarProducts(
-      await getSimilarProducts(
-        Number(cateogoryId),
-        ignoredProducts,
-        ignoreBaseProducts
-      )
+    const response = await getSimilarProducts(
+      Number(cateogoryId),
+      ignoredProducts,
+      ignoreBaseProducts,
+      ignoredWords
     );
+
+
+    setSimilarProducts(response);
+    setPendingSimilarCount(response.length > 0 ? response[0].totalSimilar : 0);
 
     // setSimilarProducts(await getGlobalSimilarProducts(ignoredProducts));
     setLoadingSimilar(false);
@@ -108,10 +154,32 @@ export default function MergeProducts({
     }
 
     if (db) {
-      setIgnoredProducts((ignoredProducts) => [...ignoredProducts, productId]);
-      localStorage.setItem("ignoredProducts", JSON.stringify([...ignoredProducts, productId]));
+      setIgnoredProducts((prev) => {
+        if (prev.includes(productId)) {
+          return prev;
+        }
+
+        return [...prev, productId];
+      });
     }
-    setSimilarProducts(similarProducts.filter((_, i) => i !== index));
+    setSimilarProducts((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function addIgnoredWord() {
+    const sanitizedWord = ignoredWordInput.trim().toLowerCase();
+
+    if (!sanitizedWord) {
+      return;
+    }
+
+    setIgnoredWords((prev) =>
+      prev.includes(sanitizedWord) ? prev : [...prev, sanitizedWord]
+    );
+    setIgnoredWordInput("");
+  }
+
+  function removeIgnoredWord(word: string) {
+    setIgnoredWords((prev) => prev.filter((w) => w !== word));
   }
 
   return (
@@ -134,6 +202,39 @@ export default function MergeProducts({
         </Button>
       </div>
 
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <Input
+            value={ignoredWordInput}
+            onChange={(event) => setIgnoredWordInput(event.target.value)}
+            placeholder="Palabra clave a ignorar"
+          />
+          <Button onClick={addIgnoredWord} disabled={!ignoredWordInput.trim()}>
+            Agregar palabra
+          </Button>
+        </div>
+        {ignoredWords.length ? (
+          <div className="flex flex-wrap gap-2">
+            {ignoredWords.map((word) => (
+              <Badge
+                key={word}
+                variant="secondary"
+                className="flex items-center gap-1 px-3 py-1 text-sm"
+              >
+                {word}
+                <button
+                  type="button"
+                  className="text-xs font-semibold"
+                  onClick={() => removeIgnoredWord(word)}
+                  aria-label={`Eliminar palabra ${word}`}
+                >
+                  x
+                </button>
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <div className="flex gap-2">
         <Input
           type="number"
@@ -168,13 +269,26 @@ export default function MergeProducts({
           Buscar similares
         </Button>
         <div>
-          <Button onClick={() => setIgnoredProducts([])}>Reset</Button>
+          <Button
+            onClick={() => {
+              setIgnoredProducts([]);
+              setPendingSimilarCount(null);
+            }}
+          >
+            Reset
+          </Button>
         </div>
+        {pendingSimilarCount !== null ? (
+          <div className="self-center text-sm text-muted-foreground">
+            Productos pendientes por comparar:{" "}
+            <span className="font-semibold">{pendingSimilarCount}</span>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex">
         <div className="grid grid-cols-3">
-          {similarProducts.map((product, index) => (
+          {similarProducts.map((product, originalIndex) => (
             <>
               <div
                 key={product.id1}
@@ -239,18 +353,24 @@ export default function MergeProducts({
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => removeItem(index, product.id2, false, false)}
+                  onClick={() =>
+                    removeItem(originalIndex, product.id2, false, false)
+                  }
                 >
                   Ignorar
                 </Button>
                 <Button
-                  onClick={() => removeItem(index, product.id2, true, false)}
+                  onClick={() =>
+                    removeItem(originalIndex, product.id2, true, false)
+                  }
                 >
                   Ignorar DB
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => removeItem(index, product.id1, false, true)}
+                  onClick={() =>
+                    removeItem(originalIndex, product.id1, false, true)
+                  }
                 >
                   Ignorar Base
                 </Button>
