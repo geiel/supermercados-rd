@@ -18,9 +18,11 @@ import {
 } from "react";
 
 import { Skeleton } from "./ui/skeleton";
+import { Button } from "./ui/button";
 
 import { cn } from "@/lib/utils";
 import { productsSelect } from "@/db/schema";
+import { ArrowUpLeft } from "lucide-react";
 
 type ProductSuggestion = {
   phrase: string;
@@ -218,6 +220,15 @@ export const AutoComplete = ({
     [isOpen, suggestions, onSearch]
   );
 
+  const applySuggestionToInput = useCallback(
+    (phrase: string) => {
+      setInputValue(phrase);
+      onInputChange?.(phrase);
+      inputRef.current?.focus();
+    },
+    [onInputChange]
+  );
+
   const handleSelectProduct = useCallback(
     (selectedSuggestion: ProductSuggestion) => {
       setInputValue(selectedSuggestion.phrase);
@@ -277,7 +288,7 @@ export const AutoComplete = ({
             isOpen ? "block" : "hidden"
           )}
         >
-          <CommandList className="rounded-lg ring-1 ring-slate-200">
+          <CommandList className="rounded-lg ring-1 ring-slate-200 max-h-[400px] overflow-y-auto">
             {isLoading ? (
               <CommandPrimitive.Loading>
                 <div className="p-1">
@@ -305,12 +316,24 @@ export const AutoComplete = ({
                       onSelect={() => handleSelectProduct(suggestion)}
                       className={cn("flex w-full items-center gap-2")}
                     >
-                      <span className="flex-1 whitespace-pre-wrap">
+                      <span className="flex-1 whitespace-pre-wrap text-left">
                         {renderHighlightedPhrase(
                           suggestion.phrase,
                           inputValue
                         )}
                       </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          applySuggestionToInput(suggestion.phrase);
+                        }}
+                      >
+                        <ArrowUpLeft className="size-5" />
+                      </Button>
                     </CommandItem>
                   );
                 })}

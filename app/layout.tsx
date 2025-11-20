@@ -58,7 +58,7 @@ export default function RootLayout({
                   </div>
                   <div className="flex gap-2 flex-none">
                     <Button variant="outline" size="icon-lg" asChild>
-                      <Link href="/compare">
+                      <Link href="/lists">
                           <NotepadText />
                       </Link>
                     </Button>

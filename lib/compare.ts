@@ -40,7 +40,7 @@ export async function updateListSelectedShops(listId: number, selectedShops: num
             .set({ selectedShops: selectedShops.map(id => (id + "")) })
             .where(eq(list.id, listId));
 
-    revalidatePath("/compare");
+    revalidatePath("/lists");
     return { data: "ok" }
 }
 
@@ -53,7 +53,7 @@ export async function updateItemAmount(amount: number, itemId: number) {
     await db.update(listItems).set({ amount })
             .where(eq(listItems.id, itemId))
     
-    revalidatePath("/compare");
+    revalidatePath("/lists");
     return { data: "ok" }
 }
 
@@ -65,6 +65,6 @@ export async function deleteItem(itemId: number) {
 
     await db.delete(listItems).where(eq(listItems.id, itemId));
 
-    revalidatePath("/compare");
+    revalidatePath("/lists");
     return { data: "ok" }
 }

@@ -19,6 +19,8 @@ function convertToGrams(quantity: number, unit: string): number {
 
 function convertToMilliliters(quantity: number, unit: string): number {
   switch (unit.toUpperCase()) {
+    case "CC":
+      return quantity;
     case "ML":
       return quantity;
     case "CL":
@@ -106,6 +108,7 @@ export function PricePerUnit({
     unitOnly !== "UND" &&
     unitOnly !== "KG" &&
     unitOnly !== "ML" &&
+    unitOnly !== "CC" &&
     unitOnly !== "LT" &&
     unitOnly !== "CL" &&
     unitOnly !== "GL"
@@ -123,6 +126,7 @@ export function PricePerUnit({
 
   if (
     unitOnly === "ML" ||
+    unitOnly === "CC" ||
     unitOnly === "LT" ||
     unitOnly === "CL" ||
     unitOnly === "GL"

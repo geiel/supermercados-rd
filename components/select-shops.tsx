@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Toggle } from "./ui/toggle";
 import { updateListSelectedShops } from "@/lib/compare";
 import { Spinner } from "./ui/spinner";
+import { Badge } from "./ui/badge";
 
 type SelectShopsProps = { 
     shops: shopsSelect[], 
@@ -26,7 +27,10 @@ export function SelectShops({ shops, listId, initialSelectedShops }: SelectShops
         return (
             <Drawer open={open} onOpenChange={setOpen}>
                 <DrawerTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button className="relative" variant="outline" size="icon">
+                        <div className="absolute top-[-5px] right-[-5px] z-50">
+                            <Badge className="h-5 min-w-5 rounded-full px-1 font-mono tabular-nums" variant="destructive">{initialSelectedShops.length}</Badge>
+                        </div>
                         <Store />
                     </Button>
                 </DrawerTrigger>
@@ -43,7 +47,10 @@ export function SelectShops({ shops, listId, initialSelectedShops }: SelectShops
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button className="relative" variant="outline" size="icon">
+                    <div className="absolute top-[-5px] right-[-5px] z-50">
+                        <Badge className="h-5 min-w-5 rounded-full px-1 font-mono tabular-nums" variant="destructive">{initialSelectedShops.length}</Badge>
+                    </div>
                     <Store />
                 </Button>
             </DialogTrigger>
