@@ -31,6 +31,7 @@ export default function SignIn() {
         toast.error(result.error);
       }
     } catch (error) {
+      console.log(error);
       toast.error("An error occurred during login");
     } finally {
       setIsLoading(false);
@@ -42,6 +43,7 @@ export default function SignIn() {
     try {
       await LoginUserGoogle();
     } catch (error) {
+      console.log(error);
       toast.error("Failed to start Google sign-in");
       setIsGoogleLoading(false);
     }
