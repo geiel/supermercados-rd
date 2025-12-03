@@ -23,7 +23,8 @@ export async function searchProducts(
   offset: number,
   orderByRanking: boolean,
   shopIds?: number[],
-  includeHiddenProducts = false
+  includeHiddenProducts = false,
+  onlySupermarketProducts = false
 ) {
   // const tsQuery = buildTsQuery(removeAccents(value));
   const tsQueryV2 = buildTsQueryV2(removeAccents(value));
@@ -38,6 +39,7 @@ export async function searchProducts(
                 name,
                 deleted,
                 rank,
+                "brandId",
                 relevance,
                 ts_rank(
                   name_unaccent_es || name_unaccent_en,
@@ -55,6 +57,7 @@ export async function searchProducts(
                 name,
                 deleted,
                 rank,
+                "brandId",
                 similarity(unaccent(lower(name)), unaccent(lower(${value}))) AS sim
                 FROM ${products}
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
@@ -88,6 +91,20 @@ export async function searchProducts(
       AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
     `);
   }
+
+  if (onlySupermarketProducts) {
+    const supermarketBrandIds = [28, 54, 9, 77, 80, 69, 19, 30];
+    const supermarketNameKeywords = ["bravo", "lider", "wala", "selection", "gold"];
+    const keywordConditions = supermarketNameKeywords.map((keyword) =>
+      sql`unaccent(name) ~* ('\\y' || ${keyword} || '\\y')`
+    );
+
+    query.append(sql`
+      AND COALESCE(fts."brandId", fuzzy."brandId") IN (${sql.join(supermarketBrandIds, sql`,`)})
+      AND (${sql.join(keywordConditions, sql` OR `)})
+    `);
+  }
+
 
   query.append(sql`
       )

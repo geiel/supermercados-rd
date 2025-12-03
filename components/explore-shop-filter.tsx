@@ -4,6 +4,8 @@ import useSWR from "swr";
 import type { shopsSelect } from "@/db/schema";
 import { ExploreShopFilterClient } from "./explore-shop-filter-client";
 import { SelectedShopBadge } from "./selected-shop-badge";
+import { ExploreSupermarketToggle } from "./explore-supermarket-toggle";
+import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 
 type ExploreShopFilterProps = {
   selectedShopIds?: number[];
@@ -38,7 +40,14 @@ export function ExploreShopFilter({ selectedShopIds }: ExploreShopFilterProps) {
         </p>
       ) : null}
 
-      <ExploreShopFilterClient shops={shops} selectedShopIds={selectedShopIds} />
+      <ScrollArea>
+        <div className="flex space-x-2 items-center">
+          <ExploreShopFilterClient shops={shops} selectedShopIds={selectedShopIds} />
+
+          <ExploreSupermarketToggle />
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
 
       <SelectedShopBadge shopIds={selectedShopIds} shops={shops} />
     </div>

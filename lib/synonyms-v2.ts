@@ -359,7 +359,7 @@ const base: Array<Synonym> = [
     { synonyms: ["ruby red", "toronja", "grapefruit", "pompelmo"], query: ["ruby & red", "toronja", "grapefruit", "pompelmo"]},
     { synonyms: ["oceanspray", "ocean spray"], query: ["oceanspray", "ocean & spray"]},
     { synonyms: ["gatorade", "gatorlyte"], query: ["gatorade", "gatorlyte"]},
-    { synonyms: ["jugo ya", "ya jugo"], query: ["jugo & ya", "naranya", "naranjaya", "mangoya", "pinaya", "chinolaya", "tropicalya", "fresaya", "guanabanaya", "morisonandoya", "limonya", "cerezaya", "champolaya"]},
+    { synonyms: ["jugo ya", "ya jugo"], query: ["naranya", "naranjaya", "mangoya", "pinaya", "chinolaya", "tropicalya", "fresaya", "guanabanaya", "morisonandoya", "limonya", "cerezaya", "champolaya"]},
     { synonyms: ["champola", "guanabana"], query: ["champola", "guanabana"]},
     { synonyms: ["fruit punch", "coctel de frutas"], query: ["fruit & punch", "coctel & fruta*"]},
     { synonyms: ["s bernardo", "san bernardo", "sanbernardo"], query: ["san & bernardo", "s & bernardo", "sanbernardo"]},
@@ -555,6 +555,8 @@ const base: Array<Synonym> = [
     { synonyms: ["hrs", "hour", "hora"], query: ["hrs", "hour", "hora"]},
     { synonyms: ["per", "permanente"], query: ["per", "permanente"]},
     { synonyms: ["cooper", "cobre"], query: ["cooper", "cobre"]},
+    { synonyms: ["parbolizado", "parboiled", "vaporizado"], query: ["parbolizad:*", "parboiled", "vaporizad:*"]},
+    { synonyms: ["jasmine", "jazmin"], query: ["jasmine", "jazmin"]},
 ]; 
 
 function pluralizeWord(word: string) {

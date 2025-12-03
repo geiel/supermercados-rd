@@ -21,7 +21,8 @@ type Props = {
   params: Promise<{ value: string }>;
   searchParams: Promise<{ 
     page: string | undefined;
-    shop_ids: string | undefined
+    shop_ids: string | undefined,
+    only_shop_products: string | undefined
   }>;
 };
 
@@ -51,7 +52,7 @@ function getOffset(page: string | undefined): number {
 
 export default async function Page({ params, searchParams }: Props) {
   const { value } = await params;
-  const { page, shop_ids } = await searchParams;
+  const { page, shop_ids, only_shop_products } = await searchParams;
 
   const shopsIds = getShopsIds(shop_ids);
 
@@ -64,7 +65,8 @@ export default async function Page({ params, searchParams }: Props) {
     getOffset(page),
     true,
     shopsIds,
-    canSeeHiddenProducts
+    canSeeHiddenProducts,
+    only_shop_products ? true : false
   );
 
   const filteredProducts = productsAndTotal.products.filter((product) => {
