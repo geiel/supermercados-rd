@@ -48,7 +48,7 @@ export async function fetchProductShopUrls({
       ? and(...(conditions.filter(Boolean) as SQL<unknown>[]))
       : undefined;
 
-  let query = db
+  const baseQuery = db
     .select({
       productId: productsShopsPrices.productId,
       shopId: productsShopsPrices.shopId,
@@ -67,9 +67,7 @@ export async function fetchProductShopUrls({
     .limit(limit)
     .offset(offset);
 
-  if (whereClause) {
-    query = query.where(whereClause);
-  }
+  const query = whereClause ? baseQuery.where(whereClause) : baseQuery;
 
   return query;
 }
