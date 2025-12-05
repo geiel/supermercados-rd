@@ -27,6 +27,7 @@ export type NacionalUpdateResult =
 const NACIONAL_SHOP_ID = 2;
 const DEFAULT_LIMIT = 1;
 const NACIONAL_BASE_URL = "https://supermercadosnacional.com";
+const CONCURRENCY = 5;
 
 const SEARCH_HEADERS: Record<string, string> = {
   "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:145.0) Gecko/20100101 Firefox/145.0",
@@ -62,6 +63,10 @@ function getSlugFromUrl(url: string) {
   }
 }
 
+function stripNumericSuffix(slug: string) {
+  return slug.replace(/-\d+$/, "");
+}
+
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -84,18 +89,51 @@ function findMatchingUrls(html: string, currentUrl: string, productName: string)
   const currentSlug = getSlugFromUrl(currentUrl);
   const fallbackSlug = toSlug(productName);
 
-  const matches = new Set<string>();
+  const targetBases = new Set([
+    stripNumericSuffix(currentSlug),
+    stripNumericSuffix(fallbackSlug),
+  ]);
+  const matches = new Map<string, { priority: number; index: number }>();
 
-  $(".product-item-link").each((_, element) => {
+  $(".product-item-link").each((index, element) => {
     const href = $(element).attr("href");
-    if (!href) return;
+    if (!href) {
+      return;
+    }
 
-    if (matchesSlug(href, currentSlug) || matchesSlug(href, fallbackSlug)) {
-      matches.add(new URL(href, NACIONAL_BASE_URL).toString());
+    if (!matchesSlug(href, currentSlug) && !matchesSlug(href, fallbackSlug)) {
+      return;
+    }
+
+    let normalizedPath: string | null = null;
+    try {
+      normalizedPath = normalizePath(new URL(href, NACIONAL_BASE_URL).pathname);
+    } catch {
+      normalizedPath = null;
+    }
+
+    if (!normalizedPath) {
+      return;
+    }
+
+    const basePath = stripNumericSuffix(normalizedPath);
+    if (!targetBases.has(basePath)) {
+      return;
+    }
+
+    const hasNumericSuffix = basePath !== normalizedPath;
+    const priority = hasNumericSuffix ? 1 : 0;
+    const absoluteUrl = new URL(href, NACIONAL_BASE_URL).toString();
+    const existing = matches.get(absoluteUrl);
+
+    if (!existing || existing.priority > priority) {
+      matches.set(absoluteUrl, { priority, index });
     }
   });
 
-  return Array.from(matches);
+  return Array.from(matches.entries())
+    .sort((a, b) => a[1].priority - b[1].priority || a[1].index - b[1].index)
+    .map(([url]) => url);
 }
 
 async function fetchSearchPage(productName: string) {
@@ -187,13 +225,11 @@ export async function updateNacionalProducts(
 
   const results: NacionalUpdateResult[] = [];
 
-  for (const row of filteredRows) {
-    const result = await processRow(row);
-    results.push(result);
+  for (let i = 0; i < filteredRows.length; i += CONCURRENCY) {
+    const batch = filteredRows.slice(i, i + CONCURRENCY);
+    const batchResults = await Promise.all(batch.map((row) => processRow(row)));
+    results.push(...batchResults);
   }
 
   return results;
 }
-
-// Run with default limit=1 for quick testing.
-// await updateNacionalProducts();

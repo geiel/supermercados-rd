@@ -99,7 +99,7 @@ export async function getSimilarProducts(
 
         eq(sql`p2."categoryId"`, categoryId),
         // eq(products.unit, sql`p2.unit`),
-        eq(sql`p2."brandId"`, 69),
+        eq(sql`p2."brandId"`, 30),
         notInArray(sql`p2.id`, ignoredProducts),
         notInArray(products.id, ignoredBaseProducts),
         ...ignoredWordConditions

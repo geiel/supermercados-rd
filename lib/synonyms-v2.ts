@@ -67,7 +67,7 @@ const base: Array<Synonym> = [
     { synonyms: ["sesamo", "sesame", "ajonjoli"], query: ["sesam:*", "ajonjoli"] },
     { synonyms: ["ezekiel", "ezequiel"], query: ["ezeki:*", "ezequi:*"]},
     { synonyms: ["decaffeinato", "descafeinado", "decaffeinato", "decafeinado", "descaf", "decaf"], query: ["decaf:*", "descaf:*"] },
-    { synonyms: ["big", "grande", "largo", "larga", "large"], query: ["big:*", "grande:*", "largo", "larga", "large"], id: "largo" },
+    { synonyms: ["big", "grande", "largo", "larga", "large"], query: ["big:*", "grande:*", "largo", "larga", "large", "l"], id: "largo" },
     { synonyms: ["tiny", "peq", "pequeno", "small"], query: ["tiny", "peq:*", "small"]},
     { synonyms: ["tea", "te"], query: ["tea", "te"]},
     { synonyms: ["iced", "frio", "fria"], query: ["iced:*", "fri:*"]},
@@ -187,7 +187,7 @@ const base: Array<Synonym> = [
     { synonyms: ["cour cereale", "cuor di cereale"], query: ["cereal:*"]},
     { synonyms: ["musclemilk", "muscle milk"], query: ["musclemilk:*", "muscle & milk"]},
     { synonyms: ["bioeva", "bio eva"], query: ["bioeva:*", "bio & eva"]},
-    { synonyms: ["medie", "mediano", "mediana"], query: ["medie", "median:*"]},
+    { synonyms: ["medie", "mediano", "mediana"], query: ["medie", "median:*", "m"]},
     { synonyms: ["ketchup", "catchup", "cachu"], query: ["ketchup", "catchup", "cachu"]},
     { synonyms: ["lasagne", "lasagna", "lasana"], query: ["lasagn:*", "lasana"]},
     { synonyms: ["linguine", "linguini"], query: ["linguin:*"]},
@@ -557,6 +557,9 @@ const base: Array<Synonym> = [
     { synonyms: ["cooper", "cobre"], query: ["cooper", "cobre"]},
     { synonyms: ["parbolizado", "parboiled", "vaporizado"], query: ["parbolizad:*", "parboiled", "vaporizad:*"]},
     { synonyms: ["jasmine", "jazmin"], query: ["jasmine", "jazmin"]},
+    { synonyms: ["vaporup", "vaporub", "vaporu"], query: ["vaporup", "vaporub", "vaporu"]},
+    { synonyms: ["balm", "balsamo"], query: ["balm", "balsamo"]},
+    { synonyms: ["thin", "fino", "fina", "delgado", "delgada"], query: ["thin", "fin:*", "delgad:*"]},
 ]; 
 
 function pluralizeWord(word: string) {

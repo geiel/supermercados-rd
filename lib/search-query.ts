@@ -93,8 +93,8 @@ export async function searchProducts(
   }
 
   if (onlySupermarketProducts) {
-    const supermarketBrandIds = [28, 54, 9, 77, 80, 69, 19, 30];
-    const supermarketNameKeywords = ["bravo", "lider", "wala", "selection", "gold"];
+    const supermarketBrandIds = [28, 54, 9, 77, 80, 69, 19, 30, 2527];
+    const supermarketNameKeywords = ["bravo", "lider", "wala", "selection", "gold", "zerca"];
     const keywordConditions = supermarketNameKeywords.map((keyword) =>
       sql`unaccent(name) ~* ('\\y' || ${keyword} || '\\y')`
     );

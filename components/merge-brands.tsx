@@ -289,17 +289,16 @@ export default function MergeProducts({
       <div className="flex">
         <div className="grid grid-cols-3">
           {similarProducts.map((product, originalIndex) => (
-            <>
-              <div
-                key={product.id1}
-                className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
-              >
+            <div key={`${product.id1}-${product.id2}`} className="contents">
+              <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]">
                 <div className="flex justify-between">
                   <div>
                     <div>{product.brand1Name}</div>
                     <div className="font-semibold">{product.id1}</div>
                   </div>
-                  {product.deleted1 ? (<span className="text-red-500 font-bold">Eliminado</span>) : null}
+                  {product.deleted1 ? (
+                    <span className="text-red-500 font-bold">Eliminado</span>
+                  ) : null}
                 </div>
                 <Link
                   href={`/product/${toSlug(product.name1)}/${product.id1}`}
@@ -320,16 +319,15 @@ export default function MergeProducts({
                   <div className="font-semibold">{product.name1}</div>
                 </Link>
               </div>
-              <div
-                key={product.id2}
-                className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
-              >
+              <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]">
                 <div className="flex justify-between">
                   <div>
                     <div>{product.brand2Name}</div>
                     <div className="font-semibold">{product.id2}</div>
                   </div>
-                  {product.deleted2 ? (<span className="text-red-500 font-bold">Eliminado</span>) : null}
+                  {product.deleted2 ? (
+                    <span className="text-red-500 font-bold">Eliminado</span>
+                  ) : null}
                 </div>
                 <Link
                   href={`/product/${toSlug(product.name2)}/${product.id2}`}
@@ -350,32 +348,43 @@ export default function MergeProducts({
                   <div className="font-semibold">{product.name2}</div>
                 </Link>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <Button
-                  variant="outline"
-                  onClick={() =>
-                    removeItem(originalIndex, product.id2, false, false)
-                  }
+                  variant="secondary"
+                  onClick={() => {
+                    setParentProductId(product.id1.toString());
+                    setChildProductId(product.id2.toString());
+                  }}
                 >
-                  Ignorar
+                  Usar IDs en formulario
                 </Button>
-                <Button
-                  onClick={() =>
-                    removeItem(originalIndex, product.id2, true, false)
-                  }
-                >
-                  Ignorar DB
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() =>
-                    removeItem(originalIndex, product.id1, false, true)
-                  }
-                >
-                  Ignorar Base
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      removeItem(originalIndex, product.id2, false, false)
+                    }
+                  >
+                    Ignorar
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      removeItem(originalIndex, product.id2, true, false)
+                    }
+                  >
+                    Ignorar DB
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() =>
+                      removeItem(originalIndex, product.id1, false, true)
+                    }
+                  >
+                    Ignorar Base
+                  </Button>
+                </div>
               </div>
-            </>
+            </div>
           ))}
         </div>
       </div>
