@@ -13,6 +13,7 @@ import {
 import { Button } from "./ui/button";
 import { ChevronDown } from "lucide-react";
 import { shopsSelect } from "@/db/schema";
+import { Spinner } from "./ui/spinner";
 
 type ExploreShopFilterClientProps = {
   shops: shopsSelect[];
@@ -26,7 +27,7 @@ export function ExploreShopFilterClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const buildHref = useCallback(
     (shopId: number, shouldSelect: boolean) => {
@@ -80,8 +81,16 @@ export function ExploreShopFilterClient({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          Supermercados <ChevronDown />
+        <Button variant="outline" disabled={isPending} aria-busy={isPending}>
+          {isPending ? (
+            <>
+              <Spinner /> Supermercados
+            </>
+          ) : (
+            <>
+              Supermercados <ChevronDown />
+            </>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
@@ -92,6 +101,7 @@ export function ExploreShopFilterClient({
             key={shop.id}
             checked={selectedShopIds?.includes(shop.id)}
             onCheckedChange={(value) => handleCheckedChange(value, shop.id)}
+            disabled={isPending}
           >
             {shop.name}
           </DropdownMenuCheckboxItem>

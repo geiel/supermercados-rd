@@ -16,13 +16,15 @@ import { PricePerUnit } from "@/components/price-per-unit";
 import { Unit } from "@/components/unit";
 import { AddListButton } from "@/components/add-list";
 import { getUser } from "@/lib/supabase";
+import { normalizeUnitFiltersForSearch, parseUnitFilterParam } from "@/utils/unit-filter";
 
 type Props = {
   params: Promise<{ value: string }>;
   searchParams: Promise<{ 
     page: string | undefined;
     shop_ids: string | undefined,
-    only_shop_products: string | undefined
+    only_shop_products: string | undefined,
+    unit_filter: string | undefined,
   }>;
 };
 
@@ -52,12 +54,14 @@ function getOffset(page: string | undefined): number {
 
 export default async function Page({ params, searchParams }: Props) {
   const { value } = await params;
-  const { page, shop_ids, only_shop_products } = await searchParams;
+  const { page, shop_ids, only_shop_products, unit_filter } = await searchParams;
 
   const shopsIds = getShopsIds(shop_ids);
 
   const user = await getUser();
   const canSeeHiddenProducts = user?.email?.toLowerCase() === "geielpeguero@gmail.com";
+
+  const unitFilters = normalizeUnitFiltersForSearch(parseUnitFilterParam(unit_filter));
 
   const productsAndTotal = await searchProducts(
     sanitizeForTsQuery(decodeURIComponent(value).trim()),
@@ -66,7 +70,8 @@ export default async function Page({ params, searchParams }: Props) {
     true,
     shopsIds,
     canSeeHiddenProducts,
-    only_shop_products ? true : false
+    only_shop_products ? true : false,
+    unitFilters
   );
 
   const filteredProducts = productsAndTotal.products.filter((product) => {

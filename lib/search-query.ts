@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { products, productsShopsPrices } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { baseV2 } from "./synonyms-v2";
+import { expandUnitFilter } from "./unit-utils";
 
 type SynonymFull = {
     synonyms: string[];
@@ -24,10 +25,32 @@ export async function searchProducts(
   orderByRanking: boolean,
   shopIds?: number[],
   includeHiddenProducts = false,
-  onlySupermarketProducts = false
+  onlySupermarketProducts = false,
+  unitsFilter: string[] = []
 ) {
-  // const tsQuery = buildTsQuery(removeAccents(value));
+  
   const tsQueryV2 = buildTsQueryV2(removeAccents(value));
+  const normalizedUnitsFilter = Array.from(
+    new Set(
+      unitsFilter.flatMap((unit) => {
+        const expanded = expandUnitFilter(unit);
+
+        return expanded.flatMap((variant) => {
+          const match = variant.match(/^1\s+(.+)$/);
+          if (match) {
+            const baseUnit = match[1].trim();
+            return baseUnit ? [variant, baseUnit] : [variant];
+          }
+          return [variant];
+        });
+      })
+    )
+  );
+
+  const hasUnitFilter = normalizedUnitsFilter.length > 0;
+  const unitsArray = hasUnitFilter
+    ? sql`ARRAY[${sql.join(normalizedUnitsFilter.map((u) => sql`${u}`), sql`, `)}]`
+    : null;
 
   console.log(tsQueryV2);
 
@@ -40,6 +63,7 @@ export async function searchProducts(
                 deleted,
                 rank,
                 "brandId",
+                unit,
                 relevance,
                 ts_rank(
                   name_unaccent_es || name_unaccent_en,
@@ -50,6 +74,7 @@ export async function searchProducts(
                 name_unaccent_es @@ to_tsquery('spanish', unaccent(lower(${tsQueryV2})))
                 OR
                 name_unaccent_en @@ to_tsquery('english', unaccent(lower(${tsQueryV2})))
+                ${hasUnitFilter && unitsArray ? sql`AND unit = ANY(${unitsArray})` : sql``}
             ),
             fuzzy AS (
                 SELECT
@@ -58,9 +83,11 @@ export async function searchProducts(
                 deleted,
                 rank,
                 "brandId",
+                unit,
                 similarity(unaccent(lower(name)), unaccent(lower(${value}))) AS sim
                 FROM ${products}
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
+                ${hasUnitFilter && unitsArray ? sql`AND unit = ANY(${unitsArray})` : sql``}
             )
         SELECT
             COALESCE(fts.id, fuzzy.id)                AS id,
@@ -110,6 +137,7 @@ export async function searchProducts(
       )
       AND fts.deleted IS NOT TRUE
       AND fuzzy.deleted IS NOT TRUE
+      ${hasUnitFilter && unitsArray ? sql`AND COALESCE(fts.unit, fuzzy.unit) = ANY(${unitsArray})` : sql``}
     ORDER BY
       is_exact      DESC,
       is_prefix     DESC,

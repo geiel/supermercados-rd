@@ -6,6 +6,8 @@ import { ExploreShopFilterClient } from "./explore-shop-filter-client";
 import { SelectedShopBadge } from "./selected-shop-badge";
 import { ExploreSupermarketToggle } from "./explore-supermarket-toggle";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
+import { ExploreUnitFilter } from "./explore-unit-filter";
+import { SelectedUnitBadge } from "./selected-unit-badge";
 
 type ExploreShopFilterProps = {
   selectedShopIds?: number[];
@@ -44,12 +46,17 @@ export function ExploreShopFilter({ selectedShopIds }: ExploreShopFilterProps) {
         <div className="flex space-x-2 items-center">
           <ExploreShopFilterClient shops={shops} selectedShopIds={selectedShopIds} />
 
+          <ExploreUnitFilter />
+
           <ExploreSupermarketToggle />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
-      <SelectedShopBadge shopIds={selectedShopIds} shops={shops} />
+      <div className="flex flex-wrap gap-2">
+        <SelectedShopBadge shopIds={selectedShopIds} shops={shops} />
+        <SelectedUnitBadge />
+      </div>
     </div>
   );
 }

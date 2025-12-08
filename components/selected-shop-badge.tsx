@@ -62,20 +62,16 @@ export function SelectedShopBadge({ shopIds, shops }: SelectedShopBadgeProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {selectedShops.map((shop) => (
-        <div
+        <button
           key={shop.id}
-          className="flex items-center gap-2 rounded-full border border-muted-foreground/30 bg-muted/40 px-3 py-1 text-sm"
+          type="button"
+          onClick={() => handleRemove(shop.id)}
+          className="group flex items-center gap-2 rounded-full border border-muted-foreground/30 bg-muted/40 px-3 py-1 text-sm transition-colors hover:bg-muted-foreground/10"
+          aria-label={`Quitar ${shop.name} del filtro`}
         >
-          <span>{shop.name}</span>
-          <button
-            type="button"
-            onClick={() => handleRemove(shop.id)}
-            className="rounded-full p-0.5 transition-colors hover:bg-muted-foreground/10"
-            aria-label={`Quitar ${shop.name} del filtro`}
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
+          <span className="text-left">{shop.name}</span>
+          <X className="h-3.5 w-3.5 shrink-0 opacity-70 transition-opacity group-hover:opacity-100" />
+        </button>
       ))}
     </div>
   );
