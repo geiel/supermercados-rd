@@ -1,6 +1,6 @@
 const UNIT_FILTER_DELIMITER = ",";
 
-export function parseUnitFilterParam(raw: string | null): string[] {
+export function parseUnitFilterParam(raw: string | null | undefined): string[] {
   if (!raw) return [];
 
   const delimiter = raw.includes(UNIT_FILTER_DELIMITER) ? UNIT_FILTER_DELIMITER : "/";
