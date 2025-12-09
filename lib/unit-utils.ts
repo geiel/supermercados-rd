@@ -148,6 +148,8 @@ export function expandUnitFilter(unitRaw: string): string[] {
       const pounds = fluidOunces / OUNCES_IN_POUND;
       addUnit(variants, pounds, "LB");
       addUnit(variants, Math.round(pounds), "LB");
+      const bucketPounds = roundToStep(pounds, 4);
+      addUnit(variants, bucketPounds, "LB");
     }
   }
 

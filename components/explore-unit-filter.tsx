@@ -89,8 +89,6 @@ export function ExploreUnitFilter() {
     [selectedUnits, updateUnits]
   );
 
-  const buttonLabel = isLoading
-    ? "Cargando unidades...": "Unidades";
   const isBusy = isLoading || isPending;
 
   return (
@@ -99,11 +97,11 @@ export function ExploreUnitFilter() {
         <Button variant="outline" disabled={isBusy} aria-busy={isBusy}>
           {isBusy ? (
             <>
-              <Spinner className="mr-1" /> {buttonLabel}
+              <Spinner /> Unidades
             </>
           ) : (
             <>
-              {buttonLabel} <ChevronDown />
+              Unidades <ChevronDown />
             </>
           )}
         </Button>
