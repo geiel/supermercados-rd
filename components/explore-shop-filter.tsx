@@ -23,7 +23,7 @@ const fetcher = async (url: string) => {
   return (await response.json()) as shopsSelect[];
 };
 
-export function ExploreShopFilter({ selectedShopIds }: ExploreShopFilterProps) {
+export function ExploreFilters({ selectedShopIds }: ExploreShopFilterProps) {
   const {
     data: shopsData,
     error,

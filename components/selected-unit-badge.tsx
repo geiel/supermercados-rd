@@ -25,7 +25,7 @@ export function SelectedUnitBadge() {
   const params = useParams<{ value?: string }>();
   const [, startTransition] = useTransition();
 
-  const searchValue = params?.value ? decodeURIComponent(params.value) : "";
+  const searchValue = params?.value ? params.value : "";
 
   const selectedUnits = Array.from(
     new Set(parseUnitFilterParam(searchParams.get("unit_filter")))

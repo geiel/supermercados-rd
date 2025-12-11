@@ -130,7 +130,7 @@ const base: Array<Synonym> = [
     { synonyms: ["kid", "nino", "nina"], query: ["kid:*", "nino", "nina"]},
     { synonyms: ["activia", "dannon"], query: ["activia", "dannon"]},
     { synonyms: ["org", "organico", "organica", "orgain"], query: ["org:*"]},
-    { synonyms: ["margarina", "mantequilla", "butter"], query: ["margarin:*", "mantequilla", "butte:*"], id: "mantequilla"},
+    { synonyms: ["margarina", "mantequilla", "butter", "manteca"], query: ["margarin:*", "mantequilla", "butte:*", "manteca"], id: "mantequilla"},
     { synonyms: ["vanilla", "vainilla"], query: ["vanilla:*", "vainilla:*"]},
     { synonyms: ["peach", "durazno", "melocoton"], query: ["peach:*", "durazno", "melocoton:*"]},
     { synonyms: ["pastel", "bizcocho", "biscocho"], query: ["pastel", "bizcocho:*", "biscocho:*"]},
@@ -565,6 +565,10 @@ const base: Array<Synonym> = [
     { synonyms: ["a h", "arm hammer"], query: ["a & h", "arm & hammer"]},
     { synonyms: ["viajero", "travel"], query: ["viajero", "travel"]},
     { synonyms: ["secret", "secreto", "secreta"], query: ["secret:*"]},
+    { synonyms: ["shea", "karite"], query: ["shea", "karite"]},
+    { synonyms: ["noche", "night", "nocturno", "nocturna"], query: ["noche", "night", "nocturn:*"]},
+    { synonyms: ["instituto espanol", "inst espanol"], query: ["instituto & espanol", "inst & espanol"]},
+    { synonyms: ["antitusiva", "antitussive", "antitusivo", "contra la tos", "contra tos"], query: ["antitusiv:*", "antitussive", "contra & la & tos", "contra & tos"]},
 ]; 
 
 function pluralizeWord(word: string) {

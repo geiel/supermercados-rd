@@ -30,7 +30,7 @@ const fetcher = async (url: string) => {
 
 export function ExploreUnitFilter() {
   const params = useParams<{ value?: string }>();
-  const searchValue = params?.value ? decodeURIComponent(params.value) : "";
+  const searchValue = params?.value ? params.value : "";
 
   const searchParams = useSearchParams();
   const router = useRouter();
