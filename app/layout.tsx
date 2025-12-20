@@ -11,6 +11,7 @@ import { getUser } from "@/lib/supabase";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
 import Image from "next/image";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,6 +71,7 @@ export default function RootLayout({
             </header>
             {children}
             <Toaster richColors position="top-right" />
+            <SpeedInsights />
           </ListItemsProvider>
         </body>
     </html>

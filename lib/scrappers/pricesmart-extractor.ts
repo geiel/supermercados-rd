@@ -16,9 +16,9 @@ import { formatUnit } from "./utils";
 
 const raw = JSON.stringify([
   {
-    url: "https://www.pricesmart.com/es-do/categoria/Alimentos-G10D03/Granos-y-pasta-G10D35013/G10D35013",
-    start: 24,
-    q: "G10D35013",
+    url: "https://www.pricesmart.com/es-do/categoria/Bebe-B10D27/B10D27",
+    start: 36,
+    q: "B10D27",
     fq: [],
     search_type: "category",
     rows: 12,

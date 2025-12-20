@@ -51,7 +51,7 @@ function buildSearchUrl(productName: string) {
 }
 
 function normalizePath(path: string) {
-  return path.replace(/^\//, "").replace(/\/$/, "");
+  return path.replace(/^\//, "").replace(/\/$/, "").replace(/\.html?$/i, "");
 }
 
 function getSlugFromUrl(url: string) {
@@ -75,7 +75,7 @@ function matchesSlug(href: string, expectedSlug: string) {
   try {
     const path = normalizePath(new URL(href, NACIONAL_BASE_URL).pathname);
     const slugRegex = new RegExp(
-      `^${escapeRegex(expectedSlug)}(?:-\\d+)?$`,
+      `^${escapeRegex(expectedSlug)}(?:-[a-z0-9]+)*$`,
       "i"
     );
     return slugRegex.test(path);
@@ -88,11 +88,19 @@ function findMatchingUrls(html: string, currentUrl: string, productName: string)
   const $ = cheerio.load(html);
   const currentSlug = getSlugFromUrl(currentUrl);
   const fallbackSlug = toSlug(productName);
+  const hasEnye = /ñ/i.test(productName.normalize("NFC"));
 
-  const targetBases = new Set([
-    stripNumericSuffix(currentSlug),
-    stripNumericSuffix(fallbackSlug),
-  ]);
+  const targetBases = new Set<string>();
+  if (currentSlug) {
+    targetBases.add(stripNumericSuffix(currentSlug));
+  }
+  if (!currentSlug || hasEnye) {
+    targetBases.add(stripNumericSuffix(fallbackSlug));
+  }
+
+  if (targetBases.size === 0) {
+    return [];
+  }
   const matches = new Map<string, { priority: number; index: number }>();
 
   $(".product-item-link").each((index, element) => {
@@ -101,7 +109,10 @@ function findMatchingUrls(html: string, currentUrl: string, productName: string)
       return;
     }
 
-    if (!matchesSlug(href, currentSlug) && !matchesSlug(href, fallbackSlug)) {
+    const hasSlugMatch = Array.from(targetBases).some((base) =>
+      matchesSlug(href, base)
+    );
+    if (!hasSlugMatch) {
       return;
     }
 
@@ -117,7 +128,10 @@ function findMatchingUrls(html: string, currentUrl: string, productName: string)
     }
 
     const basePath = stripNumericSuffix(normalizedPath);
-    if (!targetBases.has(basePath)) {
+    const isBaseMatch = Array.from(targetBases).some(
+      (base) => basePath === base || basePath.startsWith(`${base}-`)
+    );
+    if (!isBaseMatch) {
       return;
     }
 

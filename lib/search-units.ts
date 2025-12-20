@@ -3,28 +3,33 @@ import { db } from "@/db";
 import { buildTsQueryV2, removeAccents } from "./search-query";
 import { products } from "@/db/schema";
 import { EQUIVALENCE_TOLERANCE, Measurement, parseUnit } from "./unit-utils";
+import { sanitizeForTsQuery } from "./utils";
 
 export type UnitWithCount = { label: string; value: string; count: number };
 
 export async function searchUnits(value: string): Promise<UnitWithCount[]> {
   if (!value.trim()) return [];
 
-  const tsQueryV2 = buildTsQueryV2(removeAccents(value));
-
+  const tsQueryV2 = buildTsQueryV2(removeAccents(sanitizeForTsQuery(value.trim())));
+  
   const query = sql`
         WITH
             fts AS (
                 SELECT id, unit
                 FROM ${products}
                 WHERE
-                name_unaccent_es @@ to_tsquery('spanish', unaccent(lower(${tsQueryV2})))
-                OR
-                name_unaccent_en @@ to_tsquery('english', unaccent(lower(${tsQueryV2})))
+                (
+                    name_unaccent_es @@ to_tsquery('spanish', unaccent(lower(${tsQueryV2})))
+                    OR
+                    name_unaccent_en @@ to_tsquery('english', unaccent(lower(${tsQueryV2})))
+                )
+                AND COALESCE(deleted, FALSE) = FALSE
             ),
             fuzzy AS (
                 SELECT id, unit
                 FROM ${products}
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
+                AND deleted IS NOT TRUE
             ),
             combined AS (
                 SELECT DISTINCT id, unit FROM fts

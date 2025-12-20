@@ -165,5 +165,17 @@ export function expandUnitFilter(unitRaw: string): string[] {
     addUnit(variants, Math.round(liters), "LT");
   }
 
+  const grams = parsed.measurement === "weight" ? parsed.base : null;
+  if (grams) {
+    addUnit(variants, grams, "GR");
+    addUnit(variants, Math.round(grams), "GR");
+    addUnit(variants, roundToStep(grams, 50), "GR"); // common package rounding (e.g. 1800g)
+
+    const kilograms = grams / 1000;
+    addUnit(variants, kilograms, "KG");
+    addUnit(variants, roundToStep(kilograms, 0.25), "KG");
+    addUnit(variants, Math.round(kilograms), "KG");
+  }
+
   return Array.from(variants);
 }
