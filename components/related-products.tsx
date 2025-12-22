@@ -9,12 +9,13 @@ import Link from "next/link";
 import { toSlug } from "@/lib/utils";
 import { PricePerUnit } from "./price-per-unit";
 import { Unit } from "./unit";
+import { ProductBrand } from "./product-brand";
 
 export function RelatedProducts({
   relatedProducts,
 }: {
   relatedProducts: Array<
-    productsSelect & { brand: productsBrandsSelect } & {
+    productsSelect & { brand: productsBrandsSelect, possibleBrand: productsBrandsSelect | null } & {
       shopCurrentPrices: productsShopsPrices[];
     }
   >;
@@ -48,7 +49,7 @@ export function RelatedProducts({
             </div>
             <Unit unit={relatedProduct.unit} />
             <div>
-              <div className="font-bold">{relatedProduct.brand.name}</div>
+              <ProductBrand brand={relatedProduct.brand} possibleBrand={relatedProduct.possibleBrand} type="related" />
               {relatedProduct.name}
             </div>
             <CheapestPrice

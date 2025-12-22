@@ -140,8 +140,16 @@ export async function searchProducts(
       ${hasUnitFilter && unitsArray ? sql`AND COALESCE(fts.unit, fuzzy.unit) = ANY(${unitsArray})` : sql``}
     ORDER BY
       is_exact      DESC,
-      is_prefix     DESC,
   `)
+
+  if (hasUnitFilter) {
+    const unitsOrderArray = sql`ARRAY[${sql.join(unitsFilter.map((u) => sql`${u}`), sql`, `)}]`;
+    query.append(sql`
+      COALESCE(array_position(${unitsOrderArray}, COALESCE(fts.unit, fuzzy.unit)), ${unitsFilter.length + 1}) ASC,
+    `);
+  }
+
+  query.append(sql` is_prefix DESC, `);
   
   if (orderByRanking) {
     query.append(sql` 
@@ -168,6 +176,7 @@ export async function searchProducts(
     with: {
       shopCurrentPrices: true,
       brand: true,
+      possibleBrand: true,
     },
   });
 

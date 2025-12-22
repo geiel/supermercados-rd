@@ -17,6 +17,7 @@ import { Unit } from "@/components/unit";
 import { AddListButton } from "@/components/add-list";
 import { getUser } from "@/lib/supabase";
 import { normalizeUnitFiltersForSearch, parseUnitFilterParam } from "@/utils/unit-filter";
+import { ProductBrand } from "@/components/product-brand";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -132,7 +133,7 @@ export default async function Page({ params, searchParams }: Props) {
                 </div>
                 <Unit unit={product.unit} />
                 <div>
-                  <div className="font-bold">{product.brand.name}</div>
+                  <ProductBrand brand={product.brand} possibleBrand={product.possibleBrand} type="explore" />
                   {product.name}
                 </div>
                 <ShopExclusive shopPrices={product.shopCurrentPrices} />

@@ -25,7 +25,8 @@ export const products = pgTable(
       .references(() => productsBrands.id),
     deleted: boolean().default(false),
     rank: numeric(),
-    relevance: numeric()
+    relevance: numeric(),
+    possibleBrandId: integer().references(() => productsBrands.id),
   },
   (table) => ({
     uniqueProduct: unique("unique_product").on(
@@ -50,7 +51,11 @@ export const productsRelations = relations(products, ({ many, one }) => ({
   brand: one(productsBrands, {
     fields: [products.brandId],
     references: [productsBrands.id],
-  })
+  }),
+  possibleBrand: one(productsBrands, {
+    fields: [products.possibleBrandId],
+    references: [productsBrands.id],
+  }),
 }));
 
 export const productsBrands = pgTable("products_brands", {

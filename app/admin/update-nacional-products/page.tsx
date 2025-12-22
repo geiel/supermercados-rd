@@ -5,6 +5,7 @@ import {
 } from "@/lib/scrappers/update-nacional-products";
 import { revalidatePath } from "next/cache";
 import { UpdateNacionalProductsClient } from "./client";
+import { validateAdminUser } from "@/lib/authentication";
 
 type RunUpdateResponse = {
   results: NacionalUpdateResult[];
@@ -23,6 +24,7 @@ export default function Page() {
   ): Promise<RunUpdateResponse> {
     "use server";
 
+    await validateAdminUser();
     const parsedLimit = Number(limit);
     const safeLimit =
       Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 1;
@@ -57,6 +59,7 @@ export default function Page() {
   }): Promise<ManualUpdateResponse> {
     "use server";
 
+    await validateAdminUser();
     try {
       await updateProductShopUrl({ productId, shopId, url });
       revalidatePath("/admin/update-nacional-products");

@@ -1,6 +1,7 @@
 import { AddListButton } from "@/components/add-list";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
+import { ProductBrand } from "@/components/product-brand";
 import { ProductImage } from "@/components/product-image";
 import { RelatedProducts } from "@/components/related-products";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export default async function Page({ params }: Props) {
         orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
       },
       brand: true,
+      possibleBrand: true,
       pricesHistory: true,
     },
   });
@@ -79,9 +81,7 @@ export default async function Page({ params }: Props) {
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
           <div>
-            {product.brand ? (
-              <div className="font-bold text-2xl">{product.brand.name}</div>
-            ) : null}
+            <ProductBrand brand={product.brand} possibleBrand={product.possibleBrand} type="product" />
             <div className="text-xl">{product.name}</div>
           </div>
           <Unit unit={product.unit} className="font-bold" />
