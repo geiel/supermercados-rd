@@ -55,7 +55,7 @@ export async function validateAdminUser() {
     const supabase = await createClient()
     const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !user || user.email !== process.env.ADMIN_EMAIL) {
+    if (error || !user || user.id !== process.env.ADMIN_ID) {
         redirect('/');
     }
 }

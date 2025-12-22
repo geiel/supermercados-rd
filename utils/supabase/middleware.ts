@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user.data.user?.email !== process.env.ADMIN_EMAIL && request.nextUrl.pathname.startsWith("/admin")) {
+  if (user.data.user?.id !== process.env.ADMIN_ID && request.nextUrl.pathname.startsWith("/admin")) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
