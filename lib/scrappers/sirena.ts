@@ -67,9 +67,11 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
 }
 
 async function processByProductShopPrice(
-  productShopPrice: productsShopsPrices
+  productShopPrice: productsShopsPrices,
+  ignoreTimeValidation = false
 ) {
   if (
+    !ignoreTimeValidation &&
     productShopPrice.updateAt &&
     isLessThan12HoursAgo(productShopPrice.updateAt)
   ) {

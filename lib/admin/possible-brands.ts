@@ -7,7 +7,7 @@ import { and, eq, inArray, isNull, not, notInArray, or, sql } from "drizzle-orm"
 const CANDIDATE_BRAND_IDS = [80, 30, 69, 19];
 const AUTO_ASSIGN_IGNORED_BRAND_IDS = [
   10, 105, 149, 150, 1711, 208, 246, 351, 433, 675, 684, 818, 854, 963, 964,
-  1187, 1422, 1478, 1492, 1523, 1544, 1739, 1782, 1980,
+  1187, 1422, 1478, 1492, 1523, 1544, 1739, 1782, 1980, 517
 ];
 
 export type BrandAssignmentCandidate = {
@@ -214,7 +214,7 @@ export async function fetchBrandAssignmentCandidates(): Promise<
         or(eq(products.deleted, false), isNull(products.deleted))
       )
     )
-    .orderBy(products.id).limit(100);
+    .orderBy(products.id).limit(10);
 }
 
 export async function autoAssignPossibleBrands(): Promise<AutoAssignSummary> {
@@ -231,10 +231,7 @@ export async function autoAssignPossibleBrands(): Promise<AutoAssignSummary> {
         isNull(products.possibleBrandId),
         or(eq(products.deleted, false), isNull(products.deleted))
       )
-    ).limit(50);
-
-
-  console.log("Auto-assign candidates count:", candidates.length);
+    )
 
   if (candidates.length === 0) {
     return {
@@ -253,11 +250,7 @@ export async function autoAssignPossibleBrands(): Promise<AutoAssignSummary> {
     .from(productsBrands)
     .where(notInArray(productsBrands.id, AUTO_ASSIGN_IGNORED_BRAND_IDS));
 
-  console.log("brands for matching count:", brands.length);
-
   const index = buildBrandIndex(brands);
-
-  console.log("Brand index size:", index.size);
 
   const updates: { productId: number; brandId: number }[] = [];
   let unmatchedCount = 0;
@@ -265,8 +258,6 @@ export async function autoAssignPossibleBrands(): Promise<AutoAssignSummary> {
 
   for (const candidate of candidates) {
     const { match, matchCount } = findBrandMatch(candidate.name, index);
-
-    console.log(`Candidate ID=${candidate.id} Name="${candidate.name}" => MatchCount=${matchCount} MatchedBrand=${match ? match.name : "null"}`);
     if (!match) {
       unmatchedCount += 1;
       continue;
@@ -281,8 +272,6 @@ export async function autoAssignPossibleBrands(): Promise<AutoAssignSummary> {
       brandId: match.id,
     });
   }
-
-  console.log("Prepared updates count:", updates.length);
 
   await applyPossibleBrandUpdates(updates);
 

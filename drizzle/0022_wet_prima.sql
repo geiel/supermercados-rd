@@ -1,0 +1,1 @@
+ALTER TABLE "todays_deals" ADD CONSTRAINT "todays_deals_productId_products_id_fk" FOREIGN KEY ("productId") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;

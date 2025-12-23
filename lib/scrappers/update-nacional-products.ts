@@ -3,9 +3,7 @@
 import {
   ProductShopUrlRow,
   fetchProductShopUrls,
-  updateProductShopUrl,
 } from "@/lib/admin/product-urls";
-import { toSlug } from "@/lib/utils";
 import * as cheerio from "cheerio";
 
 type BaseResult = {
@@ -54,99 +52,62 @@ function normalizePath(path: string) {
   return path.replace(/^\//, "").replace(/\/$/, "").replace(/\.html?$/i, "");
 }
 
+function getLastPathSegment(path: string) {
+  const normalized = normalizePath(path);
+  if (!normalized) return "";
+  const segments = normalized.split("/");
+  return segments[segments.length - 1] ?? "";
+}
+
 function getSlugFromUrl(url: string) {
   try {
     const parsed = new URL(url);
-    return normalizePath(parsed.pathname);
+    return getLastPathSegment(parsed.pathname);
   } catch {
-    return normalizePath(url);
+    return getLastPathSegment(url);
   }
 }
 
-function stripNumericSuffix(slug: string) {
-  return slug.replace(/-\d+$/, "");
-}
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function matchesSlug(href: string, expectedSlug: string) {
-  try {
-    const path = normalizePath(new URL(href, NACIONAL_BASE_URL).pathname);
-    const slugRegex = new RegExp(
-      `^${escapeRegex(expectedSlug)}(?:-[a-z0-9]+)*$`,
-      "i"
-    );
-    return slugRegex.test(path);
-  } catch {
-    return false;
-  }
-}
-
-function findMatchingUrls(html: string, currentUrl: string, productName: string) {
+function findMatchingUrls(html: string, currentUrl: string) {
   const $ = cheerio.load(html);
   const currentSlug = getSlugFromUrl(currentUrl);
-  const fallbackSlug = toSlug(productName);
-  const hasEnye = /ñ/i.test(productName.normalize("NFC"));
 
-  const targetBases = new Set<string>();
-  if (currentSlug) {
-    targetBases.add(stripNumericSuffix(currentSlug));
-  }
-  if (!currentSlug || hasEnye) {
-    targetBases.add(stripNumericSuffix(fallbackSlug));
-  }
-
-  if (targetBases.size === 0) {
+  if (!currentSlug) {
     return [];
   }
-  const matches = new Map<string, { priority: number; index: number }>();
+  const expectedSlug = currentSlug.toLowerCase();
+  const matches = new Map<string, number>();
 
   $(".product-item-link").each((index, element) => {
     const href = $(element).attr("href");
     if (!href) {
       return;
     }
-
-    const hasSlugMatch = Array.from(targetBases).some((base) =>
-      matchesSlug(href, base)
-    );
-    if (!hasSlugMatch) {
-      return;
-    }
-
-    let normalizedPath: string | null = null;
+    let normalizedPath = "";
     try {
-      normalizedPath = normalizePath(new URL(href, NACIONAL_BASE_URL).pathname);
+      normalizedPath = normalizePath(
+        new URL(href, NACIONAL_BASE_URL).pathname
+      );
     } catch {
-      normalizedPath = null;
+      normalizedPath = normalizePath(href);
     }
 
     if (!normalizedPath) {
       return;
     }
 
-    const basePath = stripNumericSuffix(normalizedPath);
-    const isBaseMatch = Array.from(targetBases).some(
-      (base) => basePath === base || basePath.startsWith(`${base}-`)
-    );
-    if (!isBaseMatch) {
+    if (!normalizedPath.toLowerCase().includes(expectedSlug)) {
       return;
     }
 
-    const hasNumericSuffix = basePath !== normalizedPath;
-    const priority = hasNumericSuffix ? 1 : 0;
     const absoluteUrl = new URL(href, NACIONAL_BASE_URL).toString();
-    const existing = matches.get(absoluteUrl);
-
-    if (!existing || existing.priority > priority) {
-      matches.set(absoluteUrl, { priority, index });
+    if (!matches.has(absoluteUrl)) {
+      matches.set(absoluteUrl, index);
     }
   });
 
   return Array.from(matches.entries())
-    .sort((a, b) => a[1].priority - b[1].priority || a[1].index - b[1].index)
+    .sort((a, b) => a[1] - b[1])
     .map(([url]) => url);
 }
 
@@ -177,7 +138,7 @@ async function processRow(row: ProductShopUrlRow): Promise<NacionalUpdateResult>
 
   try {
     const html = await fetchSearchPage(row.productName);
-    const matches = findMatchingUrls(html, row.url, row.productName);
+    const matches = findMatchingUrls(html, row.url);
 
     if (matches.length === 0) {
       console.log(
@@ -186,24 +147,8 @@ async function processRow(row: ProductShopUrlRow): Promise<NacionalUpdateResult>
       return { ...baseResult, status: "not_found" };
     }
 
-    if (matches.length === 1) {
-      const matchedUrl = matches[0];
-
-      await updateProductShopUrl({
-        productId: row.productId,
-        shopId: row.shopId,
-        url: matchedUrl,
-      });
-
-      console.log(
-        `[Nacional URL Updater] Updated productId=${row.productId} to url=${matchedUrl}`
-      );
-
-      return { ...baseResult, status: "updated", matchedUrl };
-    }
-
     console.log(
-      `[Nacional URL Updater] Found multiple matches for productId=${row.productId}: ${matches.join(
+      `[Nacional URL Updater] Found matches for productId=${row.productId}: ${matches.join(
         ", "
       )}`
     );

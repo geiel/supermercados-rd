@@ -1,0 +1,1 @@
+ALTER TABLE "todays_deals" ADD COLUMN "possibleBrandName" text;

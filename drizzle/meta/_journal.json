@@ -148,6 +148,20 @@
       "when": 1766436335048,
       "tag": "0020_absurd_wolverine",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1766444920968,
+      "tag": "0021_black_frank_castle",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1766526202661,
+      "tag": "0022_wet_prima",
+      "breakpoints": true
     }
   ]
 }

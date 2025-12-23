@@ -17,6 +17,7 @@ import { sirena } from "@/lib/scrappers/sirena";
 import { searchProducts } from "@/lib/search-query";
 import { getUser } from "@/lib/supabase";
 import { sanitizeForTsQuery } from "@/lib/utils";
+import { MessageCircleWarning } from "lucide-react";
 import Image from "next/image";
 import { Suspense } from "react";
 
@@ -144,6 +145,13 @@ export default async function Page({ params }: Props) {
               </div>
             </div>
           ))}
+
+          <div className="mt-4 flex items-center space-x-2">
+            <MessageCircleWarning size={20} />
+            <small className="text-sm leading-none font-medium">
+              Estos precios están disponibles online y pueden variar en la tienda.
+            </small>
+          </div>
         </section>
 
         <section className="flex flex-col gap-2">

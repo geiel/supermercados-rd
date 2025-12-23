@@ -242,8 +242,8 @@ export function UpdateNacionalProductsClient({
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">Actualizar URLs de Nacional</h1>
         <p className="text-sm text-muted-foreground">
-          Busca coincidencias en Nacional (shopId=2) y aplica coincidencias únicas
-          automáticamente. Si hay varias coincidencias, selecciónalas aquí mismo.
+          Busca coincidencias en Nacional (shopId=2) y selecciona manualmente la URL
+          correcta antes de actualizar.
         </p>
       </div>
 
@@ -329,7 +329,7 @@ export function UpdateNacionalProductsClient({
           <CardHeader>
             <CardTitle>Selecciona la URL correcta</CardTitle>
             <CardDescription>
-              Escoge la coincidencia correcta para los productos con múltiples resultados.
+              Escoge la coincidencia correcta para los productos con resultados.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -402,13 +402,13 @@ export function UpdateNacionalProductsClient({
       {updated.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Actualizados automáticamente</CardTitle>
+            <CardTitle>Actualizados manualmente</CardTitle>
             <CardDescription>
-          Coincidencias únicas aplicadas sin intervención manual.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {updated.map((item) => (
+              URLs aplicadas después de seleccionar la coincidencia correcta.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {updated.map((item) => (
               <div
                 key={`${item.productId}-${item.shopId}`}
                 className="flex flex-col gap-2 rounded-md border border-border bg-card/40 p-3 sm:flex-row sm:items-center sm:justify-between"

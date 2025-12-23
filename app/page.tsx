@@ -9,6 +9,8 @@ import { db } from "@/db";
 import { toSlug } from "@/lib/utils";
 import Link from "next/link";
 
+const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
+
 export default async function Home() {
   const todaysDeals = await db.query.todaysDeals.findMany({
     orderBy: (deals, { desc }) => [desc(deals.dropPercentage), desc(deals.rank)]
@@ -48,7 +50,7 @@ export default async function Home() {
                   </div>
                   <Unit unit={deal.unit} />
                   <div>
-                    <div className="font-bold">{deal.brandName}</div>
+                    <BrandName name={deal.brandName} possibleName={deal.possibleBrandName} />
                     {deal.name}
                   </div>
                   <div className="font-bold text-lg">RD${deal.priceToday}</div>
@@ -61,4 +63,16 @@ export default async function Home() {
       </section>
     </main>
   );
+}
+
+function BrandName({ name, possibleName }: { name: string; possibleName: string | null }) {
+  if (!possibleName) {
+    return <div className="font-bold">{name}</div>;
+  }
+
+  if (SUPERMARKET_BRAND_NAMES.includes(name)) {
+    return <div className="font-bold">{possibleName}</div>;
+  }
+
+  return <div className="font-bold">{name}</div>;
 }
