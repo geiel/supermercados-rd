@@ -7,6 +7,7 @@ import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
 import { db } from "@/db";
+import { sql } from "drizzle-orm";
 
 async function main() {
 
@@ -42,6 +43,10 @@ async function main() {
     }
     await new Promise((r) => setTimeout(r, 800));
   }
+
+  console.log("[INFO] Start running refresh deals function");
+  await db.execute(sql`SELECT public.refresh_todays_deals()`);
+  console.log("[INFO] refresh deals completed");
 
   process.exit(0);
 }

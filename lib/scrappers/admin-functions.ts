@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   products,
   productsBrands,
+  productsGroups,
   productsPricesHistory,
   productsShopsPrices,
 } from "@/db/schema";
@@ -75,6 +76,7 @@ export async function adminMergeProduct(
     })
     .where(eq(productsShopsPrices.productId, childProductId));
 
+  await db.delete(productsGroups).where(eq(productsGroups.productId, childProductId));
   await db.delete(products).where(eq(products.id, childProductId));
 }
 

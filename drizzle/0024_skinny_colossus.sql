@@ -1,0 +1,1 @@
+ALTER TABLE "complex_categories" ADD COLUMN "showHomePage" boolean DEFAULT false NOT NULL;

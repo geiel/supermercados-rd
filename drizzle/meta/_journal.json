@@ -162,6 +162,20 @@
       "when": 1766526202661,
       "tag": "0022_wet_prima",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1766600904139,
+      "tag": "0023_silky_jack_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1766601803235,
+      "tag": "0024_skinny_colossus",
+      "breakpoints": true
     }
   ]
 }

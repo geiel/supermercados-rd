@@ -26,6 +26,10 @@ type ComboboxProps = {
   emptyMessage: string;
   placeholder?: string;
   onValueChange?: (value: Option) => void;
+  value?: string;
+  defaultValue?: string;
+  className?: string;
+  contentClassName?: string;
 };
 
 export function Combobox({
@@ -33,9 +37,15 @@ export function Combobox({
   placeholder,
   emptyMessage,
   onValueChange,
+  value,
+  defaultValue,
+  className,
+  contentClassName,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState("");
+  const [internalValue, setInternalValue] = React.useState(defaultValue ?? "");
+  const isControlled = typeof value !== "undefined";
+  const selectedValue = isControlled ? value : internalValue;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -44,15 +54,15 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className={cn("w-[200px] justify-between", className)}
         >
-          {value
-            ? options.find((option) => option.value === value)?.label
+          {selectedValue
+            ? options.find((option) => option.value === selectedValue)?.label
             : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className={cn("w-[200px] p-0", contentClassName)}>
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandList>
@@ -61,15 +71,16 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue);
+                  value={option.label}
+                  onSelect={() => {
+                    const nextValue =
+                      selectedValue === option.value ? "" : option.value;
+                    if (!isControlled) {
+                      setInternalValue(nextValue);
+                    }
                     setOpen(false);
 
-                    const option = options.find(
-                      (option) => option.value === currentValue
-                    );
-                    if (option && onValueChange) {
+                    if (onValueChange) {
                       onValueChange(option);
                     }
                   }}
@@ -77,7 +88,9 @@ export function Combobox({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      selectedValue === option.value
+                        ? "opacity-100"
+                        : "opacity-0"
                     )}
                   />
                   {option.label}

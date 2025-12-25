@@ -85,7 +85,7 @@ const base: Array<Synonym> = [
     { synonyms: ["frosted", "azucarado", "azucarada"], query: ["frosted", "azucarad:*"] },
     { synonyms: ["spray", "aerosol", "rociador", "espray"], query: ["spray", "aerosol", "rociador", "espray"] },
     { synonyms: ["virgin", "virgen"], query: ["virgin", "virgen"] },
-    { synonyms: ["molido", "en polvo", "molida", "fina", "fino", "fine", "grinder"], query: ["molid:*", "polvo", "fina", "fino", "fine", "grinder"] },
+    { synonyms: ["molido", "en polvo", "molida", "fina", "fino", "fine", "grinder"], query: ["molido", "molida", "polvo", "fina", "fino", "fine", "grinder"] },
     { synonyms: ["shredded", "rallado", "rallada", "shred"], query: ["shred:*", "rallad:*"]},
     { synonyms: ["artisian", "artesana", "artesanal", "handmade"], query: ["artisian", "artesan:*", "handmade"] },
     { synonyms: ["blue", "azul"], query: ["blue", "azul"]},

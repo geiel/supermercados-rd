@@ -113,41 +113,41 @@ export default async function Page({ params, searchParams }: Props) {
 
   return (
     <>
-        <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
-          {filteredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative"
-            >
-              <div className="absolute top-2 right-2 z-10">
-                <AddListButton productId={product.id} type="icon" />
-              </div>
-              <Link
-                href={`/product/${toSlug(product.name)}/${product.id}`}
-                className="flex flex-col gap-2"
-              >
-                <div className="flex justify-center">
-                  <div className="h-[220px] w-[220px] relative">
-                    <ExploreImage product={product} />
-                  </div>
-                </div>
-                <Unit unit={product.unit} />
-                <div>
-                  <ProductBrand brand={product.brand} possibleBrand={product.possibleBrand} type="explore" />
-                  {product.name}
-                </div>
-                <ShopExclusive shopPrices={product.shopCurrentPrices} />
-                <Price
-                  productId={product.id}
-                  unit={product.unit}
-                  categoryId={product.categoryId}
-                  showHiddenPrices={canSeeHiddenProducts}
-                />
-              </Link>
+      <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
+        {filteredProducts.map((product) => (
+          <div
+            key={product.id}
+            className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative"
+          >
+            <div className="absolute top-2 right-2 z-10">
+              <AddListButton productId={product.id} type="icon" />
             </div>
-          ))}
-        </div>
-        <BottomPagination items={productsAndTotal.total} />
+            <Link
+              href={`/product/${toSlug(product.name)}/${product.id}`}
+              className="flex flex-col gap-2"
+            >
+              <div className="flex justify-center">
+                <div className="h-[220px] w-[220px] relative">
+                  <ExploreImage product={product} />
+                </div>
+              </div>
+              <Unit unit={product.unit} />
+              <div>
+                <ProductBrand brand={product.brand} possibleBrand={product.possibleBrand} type="explore" />
+                {product.name}
+              </div>
+              <ShopExclusive shopPrices={product.shopCurrentPrices} />
+              <Price
+                productId={product.id}
+                unit={product.unit}
+                categoryId={product.categoryId}
+                showHiddenPrices={canSeeHiddenProducts}
+              />
+            </Link>
+          </div>
+        ))}
+      </div>
+      <BottomPagination items={productsAndTotal.total} />
     </>
   );
 }
