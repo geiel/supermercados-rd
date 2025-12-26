@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { ProductImage } from "./product-image";
 import { complexCategories, complexCategoriesGroups, products, productsGroups, productsShopsPrices } from "@/db/schema";
+import Link from "next/link";
+import { toSlug } from "@/lib/utils";
 
 export async function ExploreSection() {
     const categories = await db.query.complexCategories.findMany({
@@ -23,7 +25,11 @@ export async function ExploreSection() {
                                 <CardHeader>
                                     <div className="flex justify-between items-center">
                                         <CardTitle>{category.name}</CardTitle>
-                                        <Button variant="link">Ver mas</Button>
+                                        <Button variant="link" asChild>
+                                            <Link href={`categories/${category.humanNameId}`}>
+                                                Ver mas
+                                            </Link>
+                                        </Button>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="px-4">
@@ -88,7 +94,7 @@ async function ComplexCategoryPreview({ complexCategoryId }: { complexCategoryId
     return (
         <div className="grid grid-cols-2 gap-2">
             {productsPreview.map(price => (
-                <div key={price.productId} className="flex flex-col gap-2 max-w-full bg-white p-2 rounded">
+                <Link key={price.productId} href={`/product/${toSlug(price.product.name)}/${price.productId}`} className="flex flex-col gap-2 max-w-full bg-white p-2 rounded">
                     <div className="flex justify-center">
                         <div className="h-[130px] w-[130px] relative">
                             {price.product.image ? (
@@ -109,7 +115,7 @@ async function ComplexCategoryPreview({ complexCategoryId }: { complexCategoryId
                     </div>
                     <div className="truncate">{price.product.name}</div>
                     <div className="font-bold text-lg">RD${price.currentPrice}</div>
-                </div>
+                </Link>
             ))}
         </div>
     )

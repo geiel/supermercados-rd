@@ -5,7 +5,8 @@ import { relations } from "drizzle-orm";
 export const groups = pgTable("groups", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: text().notNull(),
-    description: text()
+    description: text(),
+    humanNameId: text().unique().notNull(),
 });
 
 export const groupsRelations = relations(groups, ({ many }) => ({
@@ -26,7 +27,8 @@ export const complexCategories = pgTable("complex_categories", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: text().notNull(),
     description: text(),
-    showHomePage: boolean().notNull().default(false)
+    showHomePage: boolean().notNull().default(false),
+    humanNameId: text().unique().notNull()
 });
 
 export const complexCategoriesRelations = relations(complexCategories, ({ many }) => ({

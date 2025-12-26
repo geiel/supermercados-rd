@@ -1,0 +1,2 @@
+ALTER TABLE "complex_categories" ADD COLUMN "humanNameId" text NOT NULL;--> statement-breakpoint
+ALTER TABLE "complex_categories" ADD CONSTRAINT "complex_categories_humanNameId_unique" UNIQUE("humanNameId");
