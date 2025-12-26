@@ -7,6 +7,7 @@ import {
   productsGroups,
   productsPricesHistory,
   productsShopsPrices,
+  todaysDeals,
 } from "@/db/schema";
 import { eq, sql, and, inArray, notInArray } from "drizzle-orm";
 import { searchProducts } from "@/lib/search-query";
@@ -76,6 +77,7 @@ export async function adminMergeProduct(
     })
     .where(eq(productsShopsPrices.productId, childProductId));
 
+  await db.delete(todaysDeals).where(eq(todaysDeals.productId, childProductId));
   await db.delete(productsGroups).where(eq(productsGroups.productId, childProductId));
   await db.delete(products).where(eq(products.id, childProductId));
 }

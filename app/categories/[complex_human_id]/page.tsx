@@ -21,7 +21,7 @@ export default async function Page({ params }: Props) {
         where: (category, { eq }) => eq(category.humanNameId, complex_human_id),
         with: {
             complexCategoryGroups: {
-                limit: 5
+                limit: 50 //Change this to load when scrolling
             }
         }
     });
