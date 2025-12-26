@@ -1,11 +1,10 @@
 "use client";
 
-import { LayoutProps } from "@/.next/types/app/explore/[value]/page";
 import { ExploreFilters } from "@/components/explore-shop-filter";
 import { getShopsIds } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 
-export default function ExploreLayout({ children }: LayoutProps) {
+export default function ExploreLayout({ children }: LayoutProps<"/explore/[value]">) {
     const searchParams = useSearchParams();
 
     return (
