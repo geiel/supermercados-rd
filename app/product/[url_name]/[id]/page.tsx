@@ -18,6 +18,7 @@ import { searchProducts } from "@/lib/search-query";
 import { getUser } from "@/lib/supabase";
 import { sanitizeForTsQuery } from "@/lib/utils";
 import { MessageCircleWarning } from "lucide-react";
+import { Metadata } from "next";
 import Image from "next/image";
 import { Suspense } from "react";
 
@@ -25,7 +26,7 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await db.query.products.findFirst({
     columns: { name: true, unit: true },

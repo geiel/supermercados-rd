@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "scrape": "tsx jobs/scrape-all.ts",
     "scrape-deals": "tsx jobs/scrape-deals.ts"
   },
@@ -34,13 +34,13 @@
     "drizzle-orm": "^0.43.1",
     "drizzle-zod": "^0.7.1",
     "lucide-react": "^0.503.0",
-    "next": "15.3.6",
+    "next": "16.1.1",
     "next-themes": "^0.4.6",
     "pluralize": "^8.0.0",
     "postgres": "^3.4.5",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "recharts": "^2.15.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "swr": "^2.3.6",
     "tailwind-merge": "^3.2.0",
@@ -48,20 +48,25 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.15.1",
     "@types/pluralize": "^0.0.33",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
     "drizzle-kit": "^0.31.0",
     "eslint": "^9",
-    "eslint-config-next": "15.3.6",
+    "eslint-config-next": "16.1.1",
     "pg": "^8.16.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",
     "tw-animate-css": "^1.2.8",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.7",
+      "@types/react-dom": "19.2.3"
+    }
   }
 }

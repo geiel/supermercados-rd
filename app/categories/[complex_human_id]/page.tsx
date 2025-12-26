@@ -6,7 +6,7 @@ import { Unit } from "@/components/unit";
 import { db } from "@/db";
 import { groups, products, productsGroups, productsShopsPrices } from "@/db/schema";
 import { toSlug } from "@/lib/utils";
-import { and, asc, eq, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -40,8 +40,10 @@ export default async function Page({ params }: Props) {
 }
 
 async function GroupCard({ groupId, complexGroupHumanId }: { groupId: number, complexGroupHumanId: string }) {
+    const minCurrentPrice = sql<number>`min(${productsShopsPrices.currentPrice})`;
+
     const groupProducts = await db
-        .selectDistinctOn([products.id], {
+        .select({
             groupId: groups.id,
             groupName: groups.name,
             groupHumanId: groups.humanNameId,
@@ -49,7 +51,7 @@ async function GroupCard({ groupId, complexGroupHumanId }: { groupId: number, co
             productName: products.name,
             productImage: products.image,
             productUnit: products.unit,
-            currentPrice: productsShopsPrices.currentPrice,
+            currentPrice: minCurrentPrice.as("currentPrice"),
         })
         .from(groups)
         .innerJoin(productsGroups, eq(productsGroups.groupId, groups.id))
@@ -66,7 +68,16 @@ async function GroupCard({ groupId, complexGroupHumanId }: { groupId: number, co
             )
         )
         .where(eq(groups.id, groupId))
-        .orderBy(asc(products.id), asc(productsShopsPrices.currentPrice))
+        .groupBy(
+            groups.id,
+            groups.name,
+            groups.humanNameId,
+            products.id,
+            products.name,
+            products.image,
+            products.unit
+        )
+        .orderBy(asc(minCurrentPrice))
         .limit(10);
 
     if (groupProducts.length === 0) {

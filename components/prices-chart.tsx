@@ -16,7 +16,7 @@ import { isToday } from "@/lib/utils";
 const chartConfig = {
   price: {
     label: "Precio",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
     icon: DollarSign,
   },
 } satisfies ChartConfig;

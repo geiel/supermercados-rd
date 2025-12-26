@@ -16,10 +16,7 @@ const nextConfig: NextConfig = {
         hostname: "bravova-resources.superbravo.com.do",
       },
     ],
-  },
-  experimental: {
-    reactCompiler: true,
-  },
+  }
 };
 
 export default nextConfig;

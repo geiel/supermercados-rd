@@ -18,6 +18,7 @@ import { AddListButton } from "@/components/add-list";
 import { getUser } from "@/lib/supabase";
 import { normalizeUnitFiltersForSearch, parseUnitFilterParam } from "@/utils/unit-filter";
 import { ProductBrand } from "@/components/product-brand";
+import { Metadata } from "next";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -29,7 +30,7 @@ type Props = {
   }>;
 };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { value } = await params;
   return {
     title: decodeURIComponent(value),
