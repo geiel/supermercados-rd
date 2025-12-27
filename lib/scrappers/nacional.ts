@@ -53,6 +53,17 @@ async function processByProductShopPrice(
   }
 
   const $ = cheerio.load(html);
+
+  const title = 
+    $('meta[property="og:title"]').attr("content")?.trim() ??
+    $("title").first().text().trim();
+  
+  if (title.includes("404 Página no encontrada")) {
+    processErrorLog(scrapper, productShopPrice, "Producto no encontrado");
+    await hideProductPrice(productShopPrice);
+    return;
+  }
+
   const finalPrice = $('span[data-price-type="finalPrice"]').attr(
     "data-price-amount"
   );
@@ -61,8 +72,7 @@ async function processByProductShopPrice(
   );
 
   if (!finalPrice) {
-    processErrorLog(scrapper, productShopPrice);
-    await hideProductPrice(productShopPrice);
+    processErrorLog(scrapper, productShopPrice, `titulo: ${title}`);
     return;
   }
 
