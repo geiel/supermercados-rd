@@ -10,6 +10,8 @@ import { Unit } from "@/components/unit";
 import { ProductBrand } from "@/components/product-brand";
 import { alias } from "drizzle-orm/pg-core";
 import { PricePerUnit } from "@/components/price-per-unit";
+import { Badge } from "@/components/ui/badge";
+import { TypographyH3 } from "@/components/typography-h3";
 
 type Props = {
   params: Promise<{ group_human_id: string }>;
@@ -34,6 +36,8 @@ export default async function Page({ params }: Props) {
         .selectDistinctOn([products.id], {
             groupId: groups.id,
             groupName: groups.name,
+            groupCheaperProductId: groups.cheaperProductId,
+            groupBestValueProductId: groups.bestValueProductId,
             productId: products.id,
             productName: products.name,
             productImage: products.image,
@@ -66,42 +70,66 @@ export default async function Page({ params }: Props) {
         return null;
     }
 
+    const sortedGroupProducts = [...groupProducts].sort((a, b) => {
+        const aHasBadge = a.groupCheaperProductId === a.productId || a.groupBestValueProductId === a.productId;
+        const bHasBadge = b.groupCheaperProductId === b.productId || b.groupBestValueProductId === b.productId;
+
+        if (aHasBadge === bHasBadge) return 0;
+        return aHasBadge ? -1 : 1;
+    });
+
     return (
-        <div className="container mx-auto px-2 pb-2">
+        <div className="container mx-auto px-2 pb-2 space-y-4">
+            <TypographyH3>{sortedGroupProducts[0].groupName}</TypographyH3>
             <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
-                {groupProducts.map(groupProduct => (
-                    <div
-                        key={groupProduct.productId}
-                        className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative"
-                    >
-                        <div className="absolute top-2 right-2 z-10">
-                            <AddListButton productId={groupProduct.productId} type="icon" />
-                        </div>
-                        <Link
-                            href={`/product/${toSlug(groupProduct.productName)}/${groupProduct.productId}`}
-                            className="flex flex-col gap-2"
+                {sortedGroupProducts.map((groupProduct) => {
+                    const isCheaper = groupProduct.groupCheaperProductId === groupProduct.productId;
+                    const isBestValue = groupProduct.groupBestValueProductId === groupProduct.productId;
+
+                    return (
+                        <div
+                            key={groupProduct.productId}
+                            className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative"
                         >
-                            <div className="flex justify-center">
-                                <div className="h-[220px] w-[220px] relative">
-                                    <ExploreCategoryImage product={groupProduct} />
+                            {(isCheaper || isBestValue) ? (
+                                <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1">
+                                    {isCheaper ? (
+                                        <Badge className="bg-emerald-600 text-white border-transparent">Mas barato</Badge>
+                                    ) : null}
+                                    {isBestValue ? (
+                                        <Badge className="bg-amber-500 text-white border-transparent">Mejor valor</Badge>
+                                    ) : null}
                                 </div>
+                            ) : null}
+                            <div className="absolute top-2 right-2 z-10">
+                                <AddListButton productId={groupProduct.productId} type="icon" />
                             </div>
-                            <Unit unit={groupProduct.productUnit} />
-                            <div>
-                                <ProductBrand brand={groupProduct.productBrand} possibleBrand={groupProduct.possibleBrand} type="explore" />
-                                {groupProduct.productName}
-                            </div>
-                            <div>
-                                <div className="font-bold text-lg pt-1">RD${groupProduct.currentPrice}</div>
-                                <PricePerUnit
-                                    unit={groupProduct.productUnit}
-                                    price={Number(groupProduct.currentPrice)}
-                                    categoryId={groupProduct.productCategory}
-                                />
-                            </div>
-                        </Link>
-                    </div>
-                ))}
+                            <Link
+                                href={`/product/${toSlug(groupProduct.productName)}/${groupProduct.productId}`}
+                                className="flex flex-col gap-2"
+                            >
+                                <div className="flex justify-center">
+                                    <div className="h-[220px] w-[220px] relative">
+                                        <ExploreCategoryImage product={groupProduct} />
+                                    </div>
+                                </div>
+                                <Unit unit={groupProduct.productUnit} />
+                                <div>
+                                    <ProductBrand brand={groupProduct.productBrand} possibleBrand={groupProduct.possibleBrand} type="explore" />
+                                    {groupProduct.productName}
+                                </div>
+                                <div>
+                                    <div className="font-bold text-lg pt-1">RD${groupProduct.currentPrice}</div>
+                                    <PricePerUnit
+                                        unit={groupProduct.productUnit}
+                                        price={Number(groupProduct.currentPrice)}
+                                        categoryId={groupProduct.productCategory}
+                                    />
+                                </div>
+                            </Link>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     )

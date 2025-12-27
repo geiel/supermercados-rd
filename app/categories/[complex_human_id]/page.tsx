@@ -1,4 +1,5 @@
 import { ProductImage } from "@/components/product-image";
+import { TypographyH3 } from "@/components/typography-h3";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ScrollFade from "@/components/ui/scroll-fade";
@@ -8,6 +9,7 @@ import { groups, products, productsGroups, productsShopsPrices } from "@/db/sche
 import { toSlug } from "@/lib/utils";
 import { and, asc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 type Props = {
@@ -26,10 +28,15 @@ export default async function Page({ params }: Props) {
         }
     });
 
+    if (!complexCategory) {
+        redirect("/");
+    }
+
     return (
         <div className="container mx-auto px-2">
             <div className="space-y-2">
-                {complexCategory?.complexCategoryGroups.map(group => (
+                <TypographyH3>{complexCategory.name}</TypographyH3>
+                {complexCategory.complexCategoryGroups.map(group => (
                     <Suspense key={group.groupId}>
                         <GroupCard groupId={group.groupId} complexGroupHumanId={complex_human_id} />
                     </Suspense>

@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { and, asc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { TypographyH3 } from "./typography-h3";
 import ScrollFade from "./ui/scroll-fade";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { ProductImage } from "./product-image";
 import { complexCategories, complexCategoriesGroups, products, productsGroups, productsShopsPrices } from "@/db/schema";
@@ -21,16 +21,19 @@ export async function ExploreSection() {
                 <ScrollFade>
                     <div className="flex space-x-4">
                         {categories.map(category => (
-                            <Card className="w-80 bg-muted/60 border-none py-4" key={category.id}>
+                            <Card className="w-84 bg-muted/60 border-none py-4" key={category.id}>
                                 <CardHeader>
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle>{category.name}</CardTitle>
+                                    <CardTitle>{category.name}</CardTitle>
+                                    <CardDescription>
+                                        Mas barato en el Nacional hoy.
+                                    </CardDescription>
+                                    <CardAction>
                                         <Button variant="link" asChild>
                                             <Link href={`categories/${category.humanNameId}`}>
                                                 Ver mas
                                             </Link>
                                         </Button>
-                                    </div>
+                                    </CardAction>
                                 </CardHeader>
                                 <CardContent className="px-4">
                                     <ComplexCategoryPreview complexCategoryId={category.id} />

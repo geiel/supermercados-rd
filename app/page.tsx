@@ -12,15 +12,99 @@ import { db } from "@/db";
 import { toSlug } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
 export default function Home() {
   return (
-    <main className="container mx-auto p-2 space-y-4">
+    <main className="container mx-auto p-2 space-y-6">
       <Suspense fallback={<TodaysDealsSkeleton />}>
         <TodaysDealsSection />
       </Suspense>
+
+      <section>
+        <div className="space-y-4">
+          <TypographyH3>Ofertas por supermercados</TypographyH3>
+          
+          <ScrollFade>
+            <div className="flex gap-4">
+              <Button className="h-30 w-42" variant="outline">
+                <Image
+                    src={`/supermarket-logo/bravo.png`}
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="w-[70px] h-auto"
+                    alt="logo bravo"
+                    unoptimized
+                  />
+              </Button>
+
+              <Button className="h-30 w-42" variant="outline">
+                <Image
+                    src={`/supermarket-logo/jumbo.webp`}
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="w-[70px] h-auto"
+                    alt="logo bravo"
+                    unoptimized
+                  />
+              </Button>
+
+              <Button className="h-30 w-42" variant="outline">
+                <Image
+                    src={`/supermarket-logo/sirena.png`}
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="w-[70px] h-auto"
+                    alt="logo bravo"
+                    unoptimized
+                  />
+              </Button>
+
+              <Button className="h-30 w-42" variant="outline">
+                <Image
+                    src={`/supermarket-logo/nacional.webp`}
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="w-[70px] h-auto"
+                    alt="logo bravo"
+                    unoptimized
+                  />
+              </Button>
+
+              <Button className="h-30 w-42" variant="outline">
+                <Image
+                    src={`/supermarket-logo/plaza_lama.png`}
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="w-[70px] h-auto"
+                    alt="logo bravo"
+                    unoptimized
+                  />
+              </Button>
+
+              <Button className="h-30 w-42" variant="outline">
+                <Image
+                    src={`/supermarket-logo/pricesmart.png`}
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="w-[70px] h-auto"
+                    alt="logo bravo"
+                    unoptimized
+                  />
+              </Button>
+            </div>
+          </ScrollFade>
+        </div>
+      </section>
 
       <Suspense fallback={<ExploreSectionSkeleton />}>
         <ExploreSection />

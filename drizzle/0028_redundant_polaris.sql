@@ -1,0 +1,1 @@
+ALTER TABLE "groups" ADD COLUMN "showSearch" boolean DEFAULT true NOT NULL;

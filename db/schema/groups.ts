@@ -7,6 +7,9 @@ export const groups = pgTable("groups", {
     name: text().notNull(),
     description: text(),
     humanNameId: text().unique().notNull(),
+    cheaperProductId: integer().references(() => products.id),
+    bestValueProductId: integer().references(() => products.id),
+    showSearch: boolean().notNull().default(true)
 });
 
 export const groupsRelations = relations(groups, ({ many }) => ({
