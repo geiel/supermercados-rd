@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import {
+  groups as groupsTable,
   productsGroups,
   productsSelect,
   productsShopsPrices,
@@ -30,6 +31,7 @@ import { TypographyH3 } from "@/components/typography-h3";
 import { Button } from "@/components/ui/button";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 
 type Props = {
   searchParams: Promise<{
@@ -81,6 +83,62 @@ async function addProductToGroup(formData: FormData) {
     .onConflictDoNothing();
 
   revalidatePath("/admin/group-products");
+}
+
+async function createGroup(formData: FormData) {
+  "use server";
+
+  await validateAdminUser();
+  const name = String(formData.get("groupName") ?? "").trim();
+  const returnParams = String(formData.get("returnParams") ?? "");
+
+  if (!name) {
+    return;
+  }
+
+  const baseSlug = toSlug(name);
+  if (!baseSlug) {
+    return;
+  }
+
+  let slug = baseSlug;
+  let suffix = 1;
+
+  while (true) {
+    const existing = await db.query.groups.findFirst({
+      columns: {
+        id: true,
+      },
+      where: (groups, { eq }) => eq(groups.humanNameId, slug),
+    });
+
+    if (!existing) {
+      break;
+    }
+
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  const insertedGroups = await db
+    .insert(groupsTable)
+    .values({
+      name,
+      humanNameId: slug,
+    })
+    .returning({ id: groupsTable.id });
+
+  const newGroupId = insertedGroups[0]?.id;
+  const params = new URLSearchParams(returnParams);
+
+  if (newGroupId) {
+    params.set("groupId", String(newGroupId));
+  }
+
+  params.delete("page");
+
+  const query = params.toString();
+  redirect(query ? `/admin/group-products?${query}` : "/admin/group-products");
 }
 
 async function removeProductFromGroup(formData: FormData) {
@@ -141,10 +199,13 @@ export default async function Page({ searchParams }: Props) {
   if (!trimmedValue) {
     return (
       <div className="container mx-auto pb-4 pt-4">
+        
+
         <div className="flex flex-1 flex-col gap-4">
           <TypographyH3>Asignar productos a grupo</TypographyH3>
           <GroupProductsToolbar
             groups={groups}
+            createGroup={createGroup}
             initialValue={searchValue}
             initialGroupId={resolvedGroupId}
           />
@@ -182,6 +243,7 @@ export default async function Page({ searchParams }: Props) {
           <TypographyH3>Asignar productos a grupo</TypographyH3>
           <GroupProductsToolbar
             groups={groups}
+            createGroup={createGroup}
             initialValue={searchValue}
             initialGroupId={resolvedGroupId}
           />
@@ -242,6 +304,7 @@ export default async function Page({ searchParams }: Props) {
         <TypographyH3>Asignar productos a grupo</TypographyH3>
         <GroupProductsToolbar
           groups={groups}
+          createGroup={createGroup}
           initialValue={searchValue}
           initialGroupId={resolvedGroupId}
         />

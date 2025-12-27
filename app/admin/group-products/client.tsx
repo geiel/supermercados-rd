@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/combobox";
+import { Button } from "@/components/ui/button";
 
 type GroupOption = {
   id: number;
@@ -15,12 +16,14 @@ type GroupProductsToolbarProps = {
   groups: GroupOption[];
   initialValue: string;
   initialGroupId?: number;
+  createGroup: (formData: FormData) => void;
 };
 
 export function GroupProductsToolbar({
   groups,
   initialValue,
   initialGroupId,
+  createGroup,
 }: GroupProductsToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -74,34 +77,55 @@ export function GroupProductsToolbar({
   }));
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-      <div className="flex-1">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+        <div className="flex-1">
+          <Input
+            placeholder="Buscar..."
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleSearch();
+              }
+            }}
+          />
+        </div>
+        <div className="w-full md:w-[240px]">
+          <Combobox
+            options={groupOptions}
+            placeholder="Grupo"
+            emptyMessage="Grupo no encontrado"
+            value={groupId}
+            className="w-full justify-between"
+            contentClassName="w-[--radix-popover-trigger-width]"
+            onValueChange={(option) => {
+              setGroupId(option.value);
+              updateParams(undefined, option.value);
+            }}
+          />
+        </div>
+      </div>
+      <form
+        action={createGroup}
+        className="flex w-full flex-col gap-2 sm:flex-row sm:items-center"
+      >
         <Input
-          placeholder="Buscar..."
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              handleSearch();
-            }
-          }}
+          name="groupName"
+          placeholder="Nuevo grupo"
+          aria-label="Nuevo grupo"
+          required
         />
-      </div>
-      <div className="w-full md:w-[240px]">
-        <Combobox
-          options={groupOptions}
-          placeholder="Grupo"
-          emptyMessage="Grupo no encontrado"
-          value={groupId}
-          className="w-full justify-between"
-          contentClassName="w-[--radix-popover-trigger-width]"
-          onValueChange={(option) => {
-            setGroupId(option.value);
-            updateParams(undefined, option.value);
-          }}
+        <input
+          type="hidden"
+          name="returnParams"
+          value={searchParams.toString()}
         />
-      </div>
+        <Button type="submit" size="sm" className="sm:w-auto">
+          Crear grupo
+        </Button>
+      </form>
     </div>
   );
 }

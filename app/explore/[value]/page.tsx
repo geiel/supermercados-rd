@@ -19,6 +19,9 @@ import { getUser } from "@/lib/supabase";
 import { normalizeUnitFiltersForSearch, parseUnitFilterParam } from "@/utils/unit-filter";
 import { ProductBrand } from "@/components/product-brand";
 import { Metadata } from "next";
+import { TypographyH3 } from "@/components/typography-h3";
+import { searchGroups } from "@/lib/search-categories";
+import { CategorySearch } from "@/components/categories-search";
 
 type Props = {
   params: Promise<{ value: string }>;
@@ -65,16 +68,22 @@ export default async function Page({ params, searchParams }: Props) {
 
   const unitFilters = normalizeUnitFiltersForSearch(parseUnitFilterParam(unit_filter));
 
-  const productsAndTotal = await searchProducts(
-    sanitizeForTsQuery(decodeURIComponent(value).trim()),
-    15,
-    getOffset(page),
-    true,
-    shopsIds,
-    canSeeHiddenProducts,
-    only_shop_products ? true : false,
-    unitFilters
-  );
+  const rawSearchValue = decodeURIComponent(value).trim();
+  const sanitizedSearchValue = sanitizeForTsQuery(rawSearchValue);
+
+  const [productsAndTotal, groupResults] = await Promise.all([
+    searchProducts(
+      sanitizedSearchValue,
+      15,
+      getOffset(page),
+      true,
+      shopsIds,
+      canSeeHiddenProducts,
+      only_shop_products ? true : false,
+      unitFilters
+    ),
+    searchGroups(rawSearchValue),
+  ]);
 
   const filteredProducts = productsAndTotal.products.filter((product) => {
     if (product.shopCurrentPrices.length === 0) {
@@ -114,6 +123,15 @@ export default async function Page({ params, searchParams }: Props) {
 
   return (
     <>
+      <CategorySearch groupResults={groupResults} />
+      <div className="px-2 md:px-0">
+        <div className="flex items-baseline gap-2">
+          <TypographyH3>Productos</TypographyH3>
+          <span className="text-sm text-muted-foreground">
+            ({productsAndTotal.total})
+          </span>
+        </div>
+      </div>
       <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
         {filteredProducts.map((product) => (
           <div
