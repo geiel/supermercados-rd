@@ -1,8 +1,17 @@
 import MergeProductsByBrand from "@/components/merge-products-by-brand";
 import { db } from "@/db";
 import { validateAdminUser } from "@/lib/authentication";
+import { Suspense } from "react";
 
-export default async function Page() {
+export default function Page() {
+  return (
+    <Suspense fallback={<MergeProductsByBrandFallback />}>
+      <MergeProductsByBrandPage />
+    </Suspense>
+  );
+}
+
+async function MergeProductsByBrandPage() {
   await validateAdminUser();
 
   const brands = await db.query.productsBrands.findMany();
@@ -10,6 +19,14 @@ export default async function Page() {
   return (
     <div className="container mx-auto pt-2">
       <MergeProductsByBrand brands={brands} />
+    </div>
+  );
+}
+
+function MergeProductsByBrandFallback() {
+  return (
+    <div className="container mx-auto pt-2">
+      <div className="text-sm text-muted-foreground">Cargando...</div>
     </div>
   );
 }

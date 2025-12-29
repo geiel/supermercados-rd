@@ -16,7 +16,15 @@ type Props = {
   params: Promise<{ complex_human_id: string }>;
 };
 
-export default async function Page({ params }: Props) {
+export default function Page({ params }: Props) {
+    return (
+        <Suspense fallback={<CategoriesFallback />}>
+            <CategoriesPage params={params} />
+        </Suspense>
+    );
+}
+
+async function CategoriesPage({ params }: Props) {
     const { complex_human_id } = await params;
 
     const complexCategory = await db.query.complexCategories.findFirst({
@@ -44,6 +52,14 @@ export default async function Page({ params }: Props) {
             </div>
         </div>
     )
+}
+
+function CategoriesFallback() {
+    return (
+        <div className="container mx-auto px-2">
+            <div className="text-sm text-muted-foreground">Cargando...</div>
+        </div>
+    );
 }
 
 async function GroupCard({ groupId, complexGroupHumanId }: { groupId: number, complexGroupHumanId: string }) {

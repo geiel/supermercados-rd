@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 type Props = {
   searchParams: Promise<{
@@ -163,7 +164,15 @@ async function removeProductFromGroup(formData: FormData) {
   revalidatePath("/admin/group-products");
 }
 
-export default async function Page({ searchParams }: Props) {
+export default function Page({ searchParams }: Props) {
+  return (
+    <Suspense fallback={<GroupProductsFallback />}>
+      <GroupProductsPage searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function GroupProductsPage({ searchParams }: Props) {
   await validateAdminUser();
 
   const { value, page, shop_ids, only_shop_products, unit_filter, groupId } =
@@ -351,18 +360,23 @@ export default async function Page({ searchParams }: Props) {
                     {product.name}
                   </div>
                   <ShopExclusive shopPrices={product.shopCurrentPrices} />
-                  <Price
-                    productId={product.id}
-                    unit={product.unit}
-                    categoryId={product.categoryId}
-                    showHiddenPrices={canSeeHiddenProducts}
-                  />
                 </Link>
               </div>
             );
           })}
         </div>
         <BottomPagination items={productsAndTotal.total} />
+      </div>
+    </div>
+  );
+}
+
+function GroupProductsFallback() {
+  return (
+    <div className="container mx-auto pb-4 pt-4">
+      <div className="flex flex-1 flex-col gap-4">
+        <TypographyH3>Asignar productos a grupo</TypographyH3>
+        <div className="text-sm text-muted-foreground">Cargando...</div>
       </div>
     </div>
   );
@@ -400,52 +414,6 @@ function ExploreImage({ product }: { product: productsSelect }) {
       blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
       className="max-w-none"
     />
-  );
-}
-
-async function Price({
-  productId,
-  unit,
-  categoryId,
-  showHiddenPrices,
-}: {
-  productId: number;
-  unit: string;
-  categoryId: number;
-  showHiddenPrices: boolean;
-}) {
-  const lowerPrice = await db.query.productsShopsPrices.findFirst({
-    columns: {
-      currentPrice: true,
-      regularPrice: true,
-    },
-    where: (priceTable, { isNotNull, eq, and, or, isNull }) =>
-      showHiddenPrices
-        ? and(
-            isNotNull(priceTable.currentPrice),
-            eq(priceTable.productId, productId)
-          )
-        : and(
-            isNotNull(priceTable.currentPrice),
-            eq(priceTable.productId, productId),
-            or(isNull(priceTable.hidden), eq(priceTable.hidden, false))
-          ),
-    orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
-  });
-
-  if (!lowerPrice || !lowerPrice.currentPrice) {
-    return null;
-  }
-
-  return (
-    <div>
-      <div className="font-bold text-lg pt-1">RD${lowerPrice.currentPrice}</div>
-      <PricePerUnit
-        unit={unit}
-        price={Number(lowerPrice.currentPrice)}
-        categoryId={categoryId}
-      />
-    </div>
   );
 }
 

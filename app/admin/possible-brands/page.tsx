@@ -1,8 +1,17 @@
 import { db } from "@/db";
 import { PossibleBrandsClient } from "./client";
 import { validateAdminUser } from "@/lib/authentication";
+import { Suspense } from "react";
 
-export default async function Page() {
+export default function Page() {
+  return (
+    <Suspense fallback={<PossibleBrandsFallback />}>
+      <PossibleBrandsPage />
+    </Suspense>
+  );
+}
+
+async function PossibleBrandsPage() {
   await validateAdminUser();
 
   const brands = await db.query.productsBrands.findMany({
@@ -15,6 +24,14 @@ export default async function Page() {
         brands={brands}
         initialCandidates={[]}
       />
+    </div>
+  );
+}
+
+function PossibleBrandsFallback() {
+  return (
+    <div className="container mx-auto pt-4">
+      <div className="text-sm text-muted-foreground">Cargando...</div>
     </div>
   );
 }

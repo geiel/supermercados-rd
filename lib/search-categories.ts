@@ -1,3 +1,5 @@
+"use server";
+
 import { groups, products, productsGroups } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { buildTsQueryV2, removeAccents } from "./search-query";

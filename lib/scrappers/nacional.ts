@@ -73,6 +73,11 @@ async function processByProductShopPrice(
 
   if (!finalPrice) {
     processErrorLog(scrapper, productShopPrice, `titulo: ${title}`);
+
+    if (title.includes("503 backend read error")) {
+      process.exit(1);
+    }
+    
     return;
   }
 
