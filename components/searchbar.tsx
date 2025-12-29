@@ -10,9 +10,10 @@ export function SearchBar() {
   const [value, setValue] = useState("");
   const router = useRouter();
   const params = useParams<{ value?: string }>();
+  let searchValue = "";
 
   if (params.value) {
-    params.value = decodeURIComponent(
+    searchValue = decodeURIComponent(
       params.value.replace(/%(?![0-9A-Fa-f]{2})/g, "%25")
     );
   }
@@ -41,7 +42,7 @@ export function SearchBar() {
       emptyMessage="No encontrado."
       onInputChange={setValue}
       onSearch={explore}
-      productName={params.value}
+      productName={searchValue}
     />
   );
 }

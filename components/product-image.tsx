@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 import Image, { ImageProps } from "next/image";
 import { useState } from "react";
@@ -16,10 +17,12 @@ function getImageSrc(src: string | StaticImport): string | StaticImport {
 
 export function ProductImage(props: ImageProps) {
   const [imageSrc, setImageSrc] = useState<string | StaticImport>(getImageSrc(props.src));
+  const [loaded, setLoaded] = useState(false);
 
   return (
     <Image
       {...props}
+      className={cn(`transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`, props.className)}
       src={imageSrc}
       onError={() => {
         if (typeof imageSrc === "string" && imageSrc.startsWith("https://assets-sirenago.s3-us-west-1") && imageSrc.includes("/large/")) {
@@ -48,6 +51,7 @@ export function ProductImage(props: ImageProps) {
           setImageSrc(imageSrc.toString().replace("-1", "_-1"));
         }
         
+        setLoaded(true);
       }}
       alt={props.alt}
       unoptimized

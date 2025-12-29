@@ -6,14 +6,8 @@ import {
   productsShopsPrices,
 } from "@/db/schema";
 import Image from "next/image";
-import { sirena } from "@/lib/scrappers/sirena";
 import Link from "next/link";
 import { getShopsIds, sanitizeForTsQuery, toSlug } from "@/lib/utils";
-import { jumbo } from "@/lib/scrappers/jumbo";
-import { nacional } from "@/lib/scrappers/nacional";
-import { plazaLama } from "@/lib/scrappers/plaza-lama";
-import { pricesmart } from "@/lib/scrappers/pricesmart";
-import { bravo } from "@/lib/scrappers/bravo";
 import { BottomPagination } from "@/components/bottom-pagination";
 import { ProductImage } from "@/components/product-image";
 import { searchProducts } from "@/lib/search-query";
@@ -252,30 +246,6 @@ export default async function Page({ searchParams }: Props) {
       </div>
     );
   }
-
-  const allShopPrices = filteredProducts.flatMap(
-    (product) => product.shopCurrentPrices
-  );
-  await Promise.all(
-    allShopPrices.map((shopPrice) => {
-      switch (shopPrice.shopId) {
-        case 1:
-          return sirena.processByProductShopPrice(shopPrice);
-        case 2:
-          return nacional.processByProductShopPrice(shopPrice);
-        case 3:
-          return jumbo.processByProductShopPrice(shopPrice);
-        case 4:
-          return plazaLama.processByProductShopPrice(shopPrice);
-        case 5:
-          return pricesmart.processByProductShopPrice(shopPrice);
-        case 6:
-          return bravo.processByProductShopPrice(shopPrice);
-        default:
-          return Promise.resolve(); // skip unknown shopId
-      }
-    })
-  );
 
   const groupProductIds =
     resolvedGroupId && filteredProducts.length > 0

@@ -1,5 +1,3 @@
-export const revalidate = 0;
-
 import { ExploreSection } from "@/components/explore-section";
 import { ProductImage } from "@/components/product-image";
 import { TypographyH3 } from "@/components/typography-h3";

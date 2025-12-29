@@ -16,7 +16,8 @@ const nextConfig: NextConfig = {
         hostname: "bravova-resources.superbravo.com.do",
       },
     ],
-  }
+  },
+  cacheComponents: true
 };
 
 export default nextConfig;

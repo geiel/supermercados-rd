@@ -27,6 +27,7 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  'use cache'
   const { id } = await params;
   const product = await db.query.products.findFirst({
     columns: { name: true, unit: true },
@@ -65,18 +66,13 @@ export default async function Page({ params }: Props) {
   const user = await getUser();
   const canSeeHiddenProducts = user?.email?.toLowerCase() === "geielpeguero@gmail.com";
 
-  const relatedProducts = await searchProducts(
-    sanitizeForTsQuery(product.name),
-    16,
-    0,
-    false,
-    undefined,
-    canSeeHiddenProducts
-  );
+  const relatedProducts = await searchRelatedProducts(product.name, canSeeHiddenProducts);
   relatedProducts.products.splice(
     relatedProducts.products.findIndex((i) => i.id === product.id),
     1
   );
+
+  const shops = await getShops();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
@@ -157,9 +153,7 @@ export default async function Page({ params }: Props) {
 
         <section className="flex flex-col gap-2">
           <div className="font-bold text-2xl">Historial de precios</div>
-          <Suspense>
-            <PricesChart priceHistory={product.pricesHistory} currentPrices={product.shopCurrentPrices} />
-          </Suspense>
+          <PricesChart priceHistory={product.pricesHistory} currentPrices={product.shopCurrentPrices} shops={shops} />
         </section>
 
         <section className="flex flex-col gap-2">
@@ -260,5 +254,23 @@ async function ShopPrice({
         className="opacity-60"
       />
     </div>
+  );
+}
+
+async function getShops() {
+  'use cache'
+
+  return await db.query.shops.findMany();
+}
+
+async function searchRelatedProducts(name: string, canSeeHiddenProducts: boolean) {
+  'use cache'
+  return await searchProducts(
+    sanitizeForTsQuery(name),
+    16,
+    0,
+    false,
+    undefined,
+    canSeeHiddenProducts
   );
 }

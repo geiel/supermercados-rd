@@ -12,6 +12,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Toaster } from "@/components/ui/sonner";
 import Image from "next/image";
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Suspense } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,14 +47,16 @@ export default function RootLayout({
                 <div className="flex h-14 items-center gap-2 md:gap-4">
                   <div className="flex-none">
                     <Link href="/">
-                      <Image src="/logo.svg" width={50} height={50} alt="Logo" />
+                      <Image src="/logo.svg" width={50} height={50} alt="Logo" loading="eager" />
                     </Link>
                   </div>
                   <div className="mt-1 grow">
                     <div className="w-full">
                       <div className="flex justify-center">
                         <div className="w-full max-w-6xl">
-                          <SearchBar />
+                          <Suspense fallback={<div>loading...</div>}>
+                            <SearchBar />
+                          </Suspense>
                         </div>
                       </div>
                     </div>
@@ -63,7 +67,9 @@ export default function RootLayout({
                           <NotepadText />
                       </Link>
                     </Button>
-                    <LogInLogOut />
+                    <Suspense fallback={<Button size="icon-lg"><Spinner /></Button>}>
+                      <LogInLogOut />
+                    </Suspense>
                   </div>
                   <div />
                 </div>

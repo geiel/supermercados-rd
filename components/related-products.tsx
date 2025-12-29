@@ -41,8 +41,6 @@ export function RelatedProducts({
                   style={{
                     objectFit: "contain",
                   }}
-                  placeholder="blur"
-                  blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
                   className="max-w-none"
                 />
               ) : null}

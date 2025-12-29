@@ -1,130 +1,495 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import * as React from "react";
+import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { productsPricesHistorySelect, productsShopsPrices } from "@/db/schema";
-import { DollarSign } from "lucide-react";
-import { Card, CardContent } from "./ui/card";
+import {
+  productsPricesHistorySelect,
+  productsShopsPrices,
+  shopsSelect,
+} from "@/db/schema";
+import { ChevronDown } from "lucide-react";
 import { isToday } from "@/lib/utils";
+import { Card, CardAction, CardContent, CardFooter, CardHeader } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Label } from "./ui/label";
 
-const chartConfig = {
-  price: {
-    label: "Precio",
-    color: "var(--chart-1)",
-    icon: DollarSign,
-  },
-} satisfies ChartConfig;
+const CHEAPEST_COLOR = "var(--chart-1)";
+const SHOP_COLORS = [
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
+
+const seriesKey = (shopId: number) => `shop-${shopId}`;
+
+type PricePoint = {
+  date: Date;
+  price: number;
+};
+
+type ChartDatum = {
+  date: string;
+  [key: string]: number | string | undefined;
+};
+
+type HistoryRange = "1" | "3" | "all";
 
 export function PricesChart({
   priceHistory,
   currentPrices,
+  shops,
 }: {
   priceHistory: Array<productsPricesHistorySelect>;
   currentPrices: Array<productsShopsPrices>;
+  shops: Array<shopsSelect>;
 }) {
+  const shopNameById = React.useMemo(() => {
+    const map = new Map<number, string>();
+    shops.forEach((shop) => {
+      map.set(shop.id, shop.name);
+    });
+    return map;
+  }, [shops]);
+
+  const shopHistories = React.useMemo(() => {
+    const histories = new Map<number, PricePoint[]>();
+
+    for (const entry of priceHistory) {
+      const price = Number(entry.price);
+      if (!Number.isFinite(price)) {
+        continue;
+      }
+
+      const list = histories.get(entry.shopId) ?? [];
+      list.push({
+        date: new Date(entry.createdAt),
+        price,
+      });
+      histories.set(entry.shopId, list);
+    }
+
+    for (const current of currentPrices) {
+      if (current.currentPrice == null) {
+        continue;
+      }
+
+      const price = Number(current.currentPrice);
+      if (!Number.isFinite(price)) {
+        continue;
+      }
+
+      const list = histories.get(current.shopId) ?? [];
+      list.push({
+        date: current.updateAt ? new Date(current.updateAt) : new Date(),
+        price,
+      });
+      histories.set(current.shopId, list);
+    }
+
+    for (const [shopId, list] of histories) {
+      list.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      const deduped: PricePoint[] = [];
+      for (const item of list) {
+        const last = deduped[deduped.length - 1];
+        if (!last || last.date.getTime() !== item.date.getTime()) {
+          deduped.push(item);
+        } else {
+          deduped[deduped.length - 1] = item;
+        }
+      }
+
+      histories.set(shopId, deduped);
+    }
+
+    return histories;
+  }, [priceHistory, currentPrices]);
+
+  const cheapestHistory = React.useMemo(() => {
+    const events: Array<{ time: number; shopId: number; price: number }> = [];
+
+    for (const [shopId, history] of shopHistories) {
+      history.forEach((entry) => {
+        events.push({
+          time: entry.date.getTime(),
+          shopId,
+          price: entry.price,
+        });
+      });
+    }
+
+    if (events.length === 0) {
+      return [];
+    }
+
+    events.sort((a, b) => a.time - b.time);
+
+    const lastByShop = new Map<number, number>();
+    const results: Array<{ date: Date; price: number; shop: string }> = [];
+
+    let index = 0;
+    while (index < events.length) {
+      const time = events[index].time;
+
+      while (index < events.length && events[index].time === time) {
+        lastByShop.set(events[index].shopId, events[index].price);
+        index += 1;
+      }
+
+      let cheapestPrice = Infinity;
+      let cheapestShopId: number | null = null;
+
+      for (const [shopId, price] of lastByShop) {
+        if (price < cheapestPrice) {
+          cheapestPrice = price;
+          cheapestShopId = shopId;
+        }
+      }
+
+      if (cheapestShopId !== null && Number.isFinite(cheapestPrice)) {
+        results.push({
+          date: new Date(time),
+          price: cheapestPrice,
+          shop:
+            shopNameById.get(cheapestShopId) ??
+            `Supermercado ${cheapestShopId}`,
+        });
+      }
+    }
+
+    return results;
+  }, [shopHistories, shopNameById]);
+
+  type TooltipFormatter = NonNullable<
+    React.ComponentProps<typeof ChartTooltipContent>["formatter"]
+  >;
+
+  const tooltipFormatter = React.useCallback<TooltipFormatter>(
+    (value, name, item) => {
+      const dataKey = String(item.dataKey ?? name);
+      const indicatorColor =
+        typeof item.color === "string"
+          ? item.color
+          : "var(--muted-foreground)";
+      const payload = item.payload as ChartDatum | undefined;
+
+      let label = name;
+      if (dataKey === "cheapestPrice") {
+        const shop = payload?.cheapestShop as string | undefined;
+        label = shop ? `${shop}` : "Precio mas barato";
+      } else if (dataKey.startsWith("shop-")) {
+        const id = Number(dataKey.replace("shop-", ""));
+        label = shopNameById.get(id) ?? name;
+      }
+
+      return (
+        <>
+          <div
+            className="h-2.5 w-2.5 shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)"
+            style={
+              {
+                "--color-bg": indicatorColor,
+                "--color-border": indicatorColor,
+              } as React.CSSProperties
+            }
+          />
+          <div className="flex flex-1 space-x-2 justify-between leading-none">
+            <div className="grid gap-1.5">
+              <span className="text-muted-foreground">{label}</span>
+            </div>
+            {value !== undefined && value !== null ? (
+              <span className="text-foreground font-mono font-medium tabular-nums">
+                {Array.isArray(value)
+                  ? value.join(", ")
+                  : typeof value === "number"
+                    ? value.toLocaleString()
+                    : value}
+              </span>
+            ) : null}
+          </div>
+        </>
+      );
+    },
+    [shopNameById]
+  );
+
+  const [selectedShopIds, setSelectedShopIds] = React.useState<number[]>([]);
+  const [historyRange, setHistoryRange] = React.useState<HistoryRange>("3");
+
+  const selectedShops = React.useMemo(
+    () =>
+      shops.filter(
+        (shop) =>
+          selectedShopIds.includes(shop.id) &&
+          (shopHistories.get(shop.id)?.length ?? 0) > 0
+      ),
+    [shops, selectedShopIds, shopHistories]
+  );
+
+  const colorByShopId = React.useMemo(() => {
+    const map = new Map<number, string>();
+    shops.forEach((shop, index) => {
+      map.set(shop.id, SHOP_COLORS[index % SHOP_COLORS.length]);
+    });
+    return map;
+  }, [shops]);
+
+  const chartConfig = React.useMemo<ChartConfig>(() => {
+    return selectedShops.reduce<ChartConfig>(
+      (config, shop) => {
+        const color = colorByShopId.get(shop.id) ?? SHOP_COLORS[0];
+        config[seriesKey(shop.id)] = {
+          label: shop.name,
+          color,
+        };
+        return config;
+      },
+      {
+        cheapestPrice: {
+          label: "Precio mas barato",
+          color: CHEAPEST_COLOR,
+        },
+      }
+    );
+  }, [selectedShops, colorByShopId]);
+
+  const chartData = React.useMemo(() => {
+    if (cheapestHistory.length === 0 && selectedShops.length === 0) {
+      return [];
+    }
+
+    const timeline = new Set<number>();
+    cheapestHistory.forEach((entry) => timeline.add(entry.date.getTime()));
+    const histories = selectedShops.map((shop) => {
+      const history = shopHistories.get(shop.id) ?? [];
+      history.forEach((entry) => timeline.add(entry.date.getTime()));
+      return history;
+    });
+
+    if (timeline.size === 0) {
+      return [];
+    }
+
+    const shouldExtendToToday = (() => {
+      const lastCheapest = cheapestHistory[cheapestHistory.length - 1];
+      if (lastCheapest && !isToday(lastCheapest.date)) {
+        return true;
+      }
+
+      return histories.some((history) => {
+        const last = history[history.length - 1];
+        return last ? !isToday(last.date) : false;
+      });
+    })();
+
+    if (shouldExtendToToday) {
+      timeline.add(new Date().getTime());
+    }
+
+    const sortedTimeline = Array.from(timeline).sort((a, b) => a - b);
+    const indices = histories.map(() => 0);
+    const lastPrices: Array<number | null> = histories.map(() => null);
+    let cheapestIndex = 0;
+    let lastCheapestPrice: number | null = null;
+    let lastCheapestShop: string | null = null;
+
+    // Share a timeline and carry each shop's last known price forward.
+    const data: ChartDatum[] = [];
+
+    for (const time of sortedTimeline) {
+      const row: ChartDatum = { date: new Date(time).toISOString() };
+
+      while (
+        cheapestIndex < cheapestHistory.length &&
+        cheapestHistory[cheapestIndex].date.getTime() <= time
+      ) {
+        lastCheapestPrice = cheapestHistory[cheapestIndex].price;
+        lastCheapestShop = cheapestHistory[cheapestIndex].shop;
+        cheapestIndex += 1;
+      }
+
+      if (lastCheapestPrice !== null) {
+        row.cheapestPrice = lastCheapestPrice;
+        row.cheapestShop = lastCheapestShop ?? undefined;
+      }
+
+      selectedShops.forEach((shop, index) => {
+        const history = histories[index];
+        while (
+          indices[index] < history.length &&
+          history[indices[index]].date.getTime() <= time
+        ) {
+          lastPrices[index] = history[indices[index]].price;
+          indices[index] += 1;
+        }
+
+        if (lastPrices[index] !== null) {
+          row[seriesKey(shop.id)] = lastPrices[index] ?? undefined;
+        }
+      });
+
+      data.push(row);
+    }
+
+    return data;
+  }, [cheapestHistory, selectedShops, shopHistories]);
+
+  const filteredChartData = React.useMemo(() => {
+    if (historyRange === "all") {
+      return chartData;
+    }
+
+    if (chartData.length === 0) {
+      return chartData;
+    }
+
+    const months = historyRange === "1" ? 1 : 3;
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - months);
+    cutoff.setHours(0, 0, 0, 0);
+
+    const filtered = chartData.filter(
+      (row) => new Date(row.date).getTime() >= cutoff.getTime()
+    );
+
+    if (filtered.length === 0) {
+      return filtered;
+    }
+
+    const lastBefore = [...chartData]
+      .reverse()
+      .find((row) => new Date(row.date).getTime() < cutoff.getTime());
+
+    if (!lastBefore) {
+      return filtered;
+    }
+
+    if (new Date(filtered[0].date).getTime() !== cutoff.getTime()) {
+      filtered.unshift({
+        ...lastBefore,
+        date: cutoff.toISOString(),
+      });
+    }
+
+    return filtered;
+  }, [chartData, historyRange]);
+
+  const { minPrice, maxPrice } = React.useMemo(() => {
+    if (filteredChartData.length === 0) {
+      return { minPrice: 0, maxPrice: 0 };
+    }
+
+    let min = Infinity;
+    let max = -Infinity;
+
+    for (const row of filteredChartData) {
+      const cheapestValue = row.cheapestPrice;
+      if (typeof cheapestValue === "number") {
+        min = Math.min(min, cheapestValue);
+        max = Math.max(max, cheapestValue);
+      }
+
+      for (const shop of selectedShops) {
+        const value = row[seriesKey(shop.id)];
+        if (typeof value === "number") {
+          min = Math.min(min, value);
+          max = Math.max(max, value);
+        }
+      }
+    }
+
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      return { minPrice: 0, maxPrice: 0 };
+    }
+
+    return { minPrice: min, maxPrice: max };
+  }, [filteredChartData, selectedShops]);
+
+  const handleCheckedChange = React.useCallback(
+    (checked: boolean | "indeterminate", shopId: number) => {
+      const shouldSelect = checked === true || checked === "indeterminate";
+
+      setSelectedShopIds((prev) => {
+        if (shouldSelect) {
+          if (prev.includes(shopId)) {
+            return prev;
+          }
+          return [...prev, shopId];
+        }
+        return prev.filter((id) => id !== shopId);
+      });
+    },
+    []
+  );
+
   if (priceHistory.length === 0) {
     return null;
   }
 
-  const organizedPrice = priceHistory
-    .map((price) => {
-      const shopPrices = priceHistory.filter((p) => p.shopId === price.shopId);
-      const shopActive = currentPrices.some(
-        (current) => current.shopId === price.shopId
-      );
-
-      if (shopPrices.length === 1 && shopActive) {
-        return { ...price, stillActive: true };
-      }
-
-      const sortedByRecent = shopPrices.sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-      );
-
-      if (price.createdAt === sortedByRecent[0].createdAt && shopActive) {
-        return { ...price, stillActive: true };
-      }
-
-      return { ...price, stillActive: false };
-    })
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-
-  const prices: Array<productsPricesHistorySelect & { stillActive: boolean }> =
-    [];
-
-  organizedPrice.forEach((price) => {
-    if (prices.length === 0) {
-      prices.push(price);
-      return;
-    }
-
-    const lastPrice = prices[prices.length - 1];
-
-    if (!lastPrice.stillActive) {
-      if (price.stillActive) {
-        prices.push(price);
-        return;
-      }
-
-      if (lastPrice.shopId === price.shopId) {
-        prices.push(price);
-        return;
-      }
-
-      if (Number(price.price) < Number(lastPrice.price)) {
-        prices.push(price);
-        return;
-      }
-
-      return;
-    }
-
-    if (!price.stillActive) {
-      return;
-    }
-
-    if (Number(price.price) < Number(lastPrice.price)) {
-      prices.push(price);
-    }
-  });
-
-  const data = prices.map((p) => ({
-    date: p.createdAt,
-    price: Number(p.price),
-    shop: getShopNameById(p.shopId),
-  }));
-
-  if (!isToday(data[data.length - 1].date)) {
-    data.push({
-      date: new Date(),
-      price: data[data.length - 1].price,
-      shop: data[data.length - 1].shop,
-    });
-  }
-
-  const formatedData = data.map((d) => ({
-    date: d.date.toISOString(),
-    price: d.price,
-    shop: d.shop,
-  }));
-
-  const onlyPrices = formatedData.map((item) => item.price);
-  const maxPrice = Math.max(...onlyPrices);
-  const minPrice = Math.min(...onlyPrices);
-
   return (
     <Card>
+      <CardHeader>
+        <CardAction>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Supermercados
+                {selectedShops.length > 0 ? (
+                  <Badge variant="secondary" className="ml-1">
+                    {selectedShops.length}
+                  </Badge>
+                ) : null}
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[150px]">
+              <DropdownMenuLabel>Supermercados</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {shops.map((shop) => {
+                const hasData =
+                  (shopHistories.get(shop.id)?.length ?? 0) > 0;
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={shop.id}
+                    checked={selectedShopIds.includes(shop.id)}
+                    onCheckedChange={(value) =>
+                      handleCheckedChange(value, shop.id)
+                    }
+                    disabled={!hasData}
+                  >
+                    {shop.name}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardAction>
+      </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <AreaChart
+          <ComposedChart
             accessibilityLayer
-            data={formatedData}
+            data={filteredChartData}
             margin={{
               left: 12,
               right: 12,
@@ -145,52 +510,89 @@ export function PricesChart({
                 });
               }}
             />
-            <YAxis type="number" domain={[lower5th(minPrice), maxPrice]} hide />
+            <YAxis
+              type="number"
+              domain={[lower5th(minPrice), maxPrice]}
+              hide
+            />
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value, payload) => {
-                    const date = new Date(value).toLocaleDateString("es-ES", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                    return `${date} | ${payload[0].payload.shop}`;
+                  formatter={tooltipFormatter}
+                  labelFormatter={(value) => {
+                    return new Date(String(value)).toLocaleDateString(
+                      "es-ES",
+                      {
+                        month: "short",
+                        day: "numeric",
+                      }
+                    );
                   }}
                 />
               }
             />
             <Area
-              dataKey="price"
+              dataKey="cheapestPrice"
               type="linear"
-              fill="var(--color-price)"
+              fill="var(--color-cheapestPrice)"
               fillOpacity={0.4}
-              stroke="var(--color-price)"
+              stroke="var(--color-cheapestPrice)"
+              strokeWidth={1}
             />
-          </AreaChart>
+            {selectedShops.map((shop) => {
+              const key = seriesKey(shop.id);
+              return (
+                <Line
+                  key={key}
+                  dataKey={key}
+                  type="linear"
+                  stroke={`var(--color-${key})`}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              );
+            })}
+            {selectedShops.length > 0 ? (
+              <ChartLegend content={<ChartLegendContent />} />
+            ) : null}
+          </ComposedChart>
         </ChartContainer>
       </CardContent>
+      <CardFooter className="justify-center">
+        <RadioGroup
+          value={historyRange}
+          onValueChange={(value) => setHistoryRange(value as HistoryRange)}
+        >
+          <div className="flex gap-2">
+            <Label
+              htmlFor="r1"
+              className="border-input has-[[data-state=checked]]:bg-black has-[[data-state=checked]]:text-white has-[[data-state=checked]]:border-black hover:bg-muted flex cursor-pointer items-center gap-2 rounded-full border py-2 px-4 transition-colors"
+            >
+              <RadioGroupItem value="1" id="r1" className="sr-only" />
+              1 Mes
+            </Label>
+            <Label
+              htmlFor="r3"
+              className="border-input has-[[data-state=checked]]:bg-black has-[[data-state=checked]]:text-white has-[[data-state=checked]]:border-black hover:bg-muted flex cursor-pointer items-center gap-2 rounded-full border py-2 px-4 transition-colors"
+            >
+              <RadioGroupItem value="3" id="r3" className="sr-only" />
+              3 Meses
+            </Label>
+            <Label
+              htmlFor="rAll"
+              className="border-input has-[[data-state=checked]]:bg-black has-[[data-state=checked]]:text-white has-[[data-state=checked]]:border-black hover:bg-muted flex cursor-pointer items-center gap-2 rounded-full border py-2 px-4 transition-colors"
+            >
+              <RadioGroupItem value="all" id="rAll" className="sr-only" />
+              Todos
+            </Label>
+          </div>
+        </RadioGroup>
+      </CardFooter>
     </Card>
   );
 }
 
 function lower5th(n: number) {
   return Math.floor((n - 1) / 5) * 5;
-}
-
-function getShopNameById(id: number) {
-  switch (id) {
-    case 1:
-      return "La Sirena";
-    case 2:
-      return "Nacional";
-    case 3:
-      return "Jumbo";
-    case 4:
-      return "Plaza Lama";
-    case 5:
-      return "Pricesmart";
-    case 6:
-      return "Bravo";
-  }
 }
