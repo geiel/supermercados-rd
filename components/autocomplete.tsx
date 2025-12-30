@@ -191,6 +191,14 @@ export const AutoComplete = ({
     }
   }, [suggestions, inputValue]);
 
+  useEffect(() => {
+  if (isOpen && isMobile) {
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+  }
+}, [isOpen, isMobile]);
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
       const input = inputRef.current;
@@ -262,7 +270,6 @@ export const AutoComplete = ({
   function clean() {
     setPrevSuggestions([]);
     setInputValue("");
-    setOpen(false);
   }
 
   const displaySuggestions =
