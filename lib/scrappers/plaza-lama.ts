@@ -1,13 +1,14 @@
 import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
 import { isLessThan12HoursAgo } from "./utils";
 import {
+  doneDuplicatedLog,
   doneProcessLog,
   ignoreLog,
   initProcessLog,
   processErrorLog,
 } from "./logs";
 import { db } from "@/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { hideProductPrice, showProductPrice } from "../db-utils";
 
@@ -139,7 +140,7 @@ async function processByProductShopPrice(
     return;
   }
 
-  await db
+  const result = await db
     .update(productsShopsPrices)
     .set({
       currentPrice: productPrice.toString(),
@@ -149,9 +150,18 @@ async function processByProductShopPrice(
     .where(
       and(
         eq(productsShopsPrices.productId, productShopPrice.productId),
-        eq(productsShopsPrices.shopId, productShopPrice.shopId)
+        eq(productsShopsPrices.shopId, productShopPrice.shopId),
+        or(
+          isNull(productsShopsPrices.currentPrice),
+          ne(productsShopsPrices.currentPrice, productPrice.toString())
+        )
       )
-    );
+    ).returning({ productId: productsShopsPrices.productId, currentPrice: productsShopsPrices.currentPrice });
+  
+  if (result.length === 0) {
+    doneDuplicatedLog(scrapper, productShopPrice);
+    return;
+  }
 
   await db.insert(productsPricesHistory).values({
     ...productShopPrice,

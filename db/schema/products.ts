@@ -3,6 +3,7 @@ import {
   boolean,
   integer,
   numeric,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -44,6 +45,7 @@ export const searchPhases = pgTable("search_phrases", {
 export const productsRelations = relations(products, ({ many, one }) => ({
   shopCurrentPrices: many(productsShopsPrices),
   pricesHistory: many(productsPricesHistory),
+  visibilityHistory: many(productsVisibilityHistory),
   category: one(productsCategories, {
     fields: [products.categoryId],
     references: [productsCategories.id],
@@ -160,6 +162,32 @@ export const productsPricesHistoryRelations = relations(
   })
 );
 
+export const visibilityEnum = pgEnum("visibility", ["visible", "hidden"]);
+
+export const productsVisibilityHistory = pgTable("products_visibility_history", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  productId: integer()
+    .notNull()
+    .references(() => products.id).notNull(),
+  shopId: integer()
+    .notNull()
+    .references(() => shops.id).notNull(),
+  visibility: visibilityEnum().notNull(),
+  createdAt: timestamp({ withTimezone: true }).notNull(),
+});
+
+
+export const productsVisibilityHistoryRelations = relations(productsVisibilityHistory, ({ one }) => ({
+  product: one(products, {
+      fields: [productsVisibilityHistory.productId],
+      references: [products.id],
+    }),
+    shop: one(shops, {
+      fields: [productsVisibilityHistory.shopId],
+      references: [shops.id],
+    }),
+}))
+
 export type productsSelect = typeof products.$inferSelect;
 export type productsInsert = typeof products.$inferInsert;
 export type productsShopsPrices = typeof productsShopsPrices.$inferSelect;
@@ -171,3 +199,5 @@ export type productsBrandsInsert = typeof productsBrands.$inferInsert;
 export type productsBrandsSelect = typeof productsBrands.$inferSelect;
 export type productsPricesHistorySelect =
   typeof productsPricesHistory.$inferSelect;
+export type productsVisibilityHistorySelect =
+  typeof productsVisibilityHistory.$inferSelect;

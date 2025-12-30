@@ -26,7 +26,6 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  'use cache'
   const { id } = await params;
   const product = await db.query.products.findFirst({
     columns: { name: true, unit: true },
@@ -55,6 +54,7 @@ export default async function Page({ params }: Props) {
       brand: true,
       possibleBrand: true,
       pricesHistory: true,
+      visibilityHistory: true,
     },
   });
 
@@ -152,7 +152,12 @@ export default async function Page({ params }: Props) {
 
         <section className="flex flex-col gap-2">
           <div className="font-bold text-2xl">Historial de precios</div>
-          <PricesChart priceHistory={product.pricesHistory} currentPrices={product.shopCurrentPrices} shops={shops} />
+          <PricesChart
+            priceHistory={product.pricesHistory}
+            currentPrices={product.shopCurrentPrices}
+            shops={shops}
+            visibilityHistory={product.visibilityHistory}
+          />
         </section>
 
         <section className="flex flex-col gap-2">

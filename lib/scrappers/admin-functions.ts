@@ -7,6 +7,7 @@ import {
   productsGroups,
   productsPricesHistory,
   productsShopsPrices,
+  productsVisibilityHistory,
   todaysDeals,
 } from "@/db/schema";
 import { eq, sql, and, inArray, notInArray } from "drizzle-orm";
@@ -70,6 +71,10 @@ export async function adminMergeProduct(
     .update(productsPricesHistory)
     .set({ productId: parentProductId })
     .where(eq(productsPricesHistory.productId, childProductId));
+  await db
+    .update(productsVisibilityHistory)
+    .set({ productId: parentProductId })
+    .where(eq(productsVisibilityHistory.productId, childProductId));
   await db
     .update(productsShopsPrices)
     .set({

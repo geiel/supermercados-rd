@@ -22,7 +22,8 @@ import { Button } from "./ui/button";
 
 import { cn } from "@/lib/utils";
 import { productsSelect } from "@/db/schema";
-import { ArrowUpLeft } from "lucide-react";
+import { ArrowUpLeft, Search } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ProductSuggestion = {
   phrase: string;
@@ -39,6 +40,7 @@ type AutoCompleteProps = {
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  simpleButton?: boolean;
 };
 
 const normalizeTerm = (value: string) =>
@@ -168,10 +170,13 @@ export const AutoComplete = ({
   disabled,
   isLoading = false,
   productName,
+  simpleButton
 }: AutoCompleteProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   const [isOpen, setOpen] = useState(false);
+  const [isSimpleButton, setSimpleButton] = useState(simpleButton);
   const [inputValue, setInputValue] = useState<string>(
     value?.name || productName || ""
   );
@@ -230,9 +235,11 @@ export const AutoComplete = ({
   );
 
   const handleSelectProduct = useCallback(
-    (selectedSuggestion: ProductSuggestion) => {
+    (selectedSuggestion: ProductSuggestion, simpleButton: boolean | undefined) => {
       setInputValue(selectedSuggestion.phrase);
       onSearch(selectedSuggestion.phrase);
+      setOpen(false);
+      setSimpleButton(simpleButton);
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -268,83 +275,126 @@ export const AutoComplete = ({
         return 1;
       }}
     >
-      <div>
-        <CommandInput
-          ref={inputRef}
-          value={inputValue}
-          onValueChange={isLoading ? undefined : handlerInputChange}
-          onBlur={() => setOpen(false)}
-          onFocus={onFocus}
-          placeholder={placeholder}
-          disabled={disabled}
-          className="text-base"
-          onClean={clean}
-        />
-      </div>
-      <div className="relative mt-1">
-        <div
-          className={cn(
-            "animate-in fade-in-0 zoom-in-95 absolute top-0 z-10 w-full rounded-xl bg-white outline-none",
-            isOpen ? "block" : "hidden"
-          )}
-        >
-          <CommandList className="rounded-lg ring-1 ring-slate-200 max-h-[400px] overflow-y-auto">
-            {isLoading ? (
-              <CommandPrimitive.Loading>
-                <div className="p-1">
-                  <Skeleton className="h-8 w-full" />
-                </div>
-              </CommandPrimitive.Loading>
-            ) : null}
+      <div
+        className={cn(
+          "relative flex flex-col",
+          isOpen &&
+            "fixed inset-0 z-50 bg-white p-4 md:relative md:z-auto md:bg-transparent md:p-0"
+        )}
+      >
+        <div className={cn("flex items-center gap-2", isOpen && "md:block")}>
+          <div className={cn(!isSimpleButton && "flex-1 rounded-full bg-white" )}>
+            {isSimpleButton ? (
+              <Button className="rounded-full" size="icon-lg" onClick={() => {
+                setOpen(true)
+                setSimpleButton(false);
+              }}>
+                <Search />
+              </Button>
+            ) :
+              <CommandInput
+                ref={inputRef}
+                value={inputValue}
+                onValueChange={isLoading ? undefined : handlerInputChange}
+                onBlur={() => {
+                  if (!isMobile) {
+                    setOpen(false);
+                  }
+                }}
+                onFocus={onFocus}
+                placeholder={placeholder}
+                disabled={disabled}
+                className={cn(
+                  "text-base",
+                  isOpen && "text-lg md:text-base"
+                )}
+                onClean={clean}
+              />
+            }
+          </div>
+          {isOpen ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="md:hidden"
+              onClick={() => {
+                setOpen(false);
+                setSimpleButton(simpleButton);
+                inputRef.current?.blur();
+              }}
+            >
+              Cancelar
+            </Button>
+          ) : null}
+        </div>
+        <div className={cn("relative mt-1", isOpen && "mt-4 md:mt-1")}>
+          <div
+            className={cn(
+              "animate-in fade-in-0 zoom-in-95 z-50 w-full rounded-xl bg-white outline-none",
+              isOpen
+                ? "block md:absolute md:top-0"
+                : "hidden absolute top-0"
+            )}
+          >
+            <CommandList className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-xl ring-0 md:ring-1 ring-slate-200 md:max-h-[400px]">
+              {isLoading ? (
+                <CommandPrimitive.Loading>
+                  <div className="p-1">
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                </CommandPrimitive.Loading>
+              ) : null}
 
-            {displaySuggestions.length > 0 && !isLoading ? (
-              <CommandGroup heading="Productos">
-                <CommandItem
-                  key="hidden"
-                  value={inputValue}
-                  className="hidden"
-                />
-                {displaySuggestions.map((suggestion, key) => {
-                  return (
-                    <CommandItem
-                      key={key}
-                      value={suggestion.phrase}
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                      }}
-                      onSelect={() => handleSelectProduct(suggestion)}
-                      className={cn("flex w-full items-center gap-2")}
-                    >
-                      <span className="flex-1 whitespace-pre-wrap text-left">
-                        {renderHighlightedPhrase(
-                          suggestion.phrase,
-                          inputValue
-                        )}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        type="button"
-                        onClick={(event) => {
+              {displaySuggestions.length > 0 && !isLoading ? (
+                <CommandGroup heading="Productos">
+                  <CommandItem
+                    key="hidden"
+                    value={inputValue}
+                    className="hidden"
+                  />
+                  {displaySuggestions.map((suggestion, key) => {
+                    return (
+                      <CommandItem
+                        key={key}
+                        value={suggestion.phrase}
+                        onMouseDown={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
-                          applySuggestionToInput(suggestion.phrase);
                         }}
+                        onSelect={() => handleSelectProduct(suggestion, simpleButton)}
+                        className={cn("flex w-full items-center gap-2")}
                       >
-                        <ArrowUpLeft className="size-5" />
-                      </Button>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            ) : null}
-            {!isLoading ? (
-              <CommandPrimitive.Empty className="select-none rounded-sm px-2 py-3 text-center text-sm">
-                {emptyMessage}
-              </CommandPrimitive.Empty>
-            ) : null}
-          </CommandList>
+                        <span className="flex-1 whitespace-pre-wrap text-left">
+                          {renderHighlightedPhrase(
+                            suggestion.phrase,
+                            inputValue
+                          )}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            applySuggestionToInput(suggestion.phrase);
+                          }}
+                        >
+                          <ArrowUpLeft className="size-5" />
+                        </Button>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              ) : null}
+              {!isLoading ? (
+                <CommandPrimitive.Empty className="select-none rounded-sm px-2 py-3 text-center text-sm">
+                  {emptyMessage}
+                </CommandPrimitive.Empty>
+              ) : null}
+            </CommandList>
+          </div>
         </div>
       </div>
     </CommandPrimitive>

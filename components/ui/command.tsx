@@ -40,7 +40,7 @@ const CommandInput = ({
   onClean?: () => void;
 }) => (
   <div
-    className="flex items-center rounded-lg border px-3"
+    className="flex items-center rounded-full border px-3"
     cmdk-input-wrapper=""
   >
     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />

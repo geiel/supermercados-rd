@@ -3,14 +3,13 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SearchBar } from "@/components/searchbar";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, NotepadText, User } from "lucide-react";
+import { LogIn, LogOut, NotepadText, Search, User } from "lucide-react";
 import { LoginUserGoogle, LogOutUser } from "@/lib/authentication";
 import Link from "next/link";
 import ListItemsProvider from "@/components/list-provider";
 import { getUser } from "@/lib/supabase";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
-import Image from "next/image";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Suspense } from "react";
 import { Spinner } from "@/components/ui/spinner";
@@ -42,34 +41,40 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ListItemsProvider>
-            <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="px-2 py-2 container mx-auto">
+            <header className="w-full">
+              <div className="px-4 py-2 container mx-auto">
                 <div className="flex h-14 items-center gap-2 md:gap-4">
                   <div className="flex-none">
                     <Link href="/">
-                      <Image src="/logo.svg" width={50} height={50} alt="Logo" loading="eager" />
+                      <div>
+                        SupermercadosRD
+                      </div>
                     </Link>
                   </div>
                   <div className="mt-1 grow">
                     <div className="w-full">
                       <div className="flex justify-center">
                         <div className="w-full max-w-6xl">
-                          <Suspense fallback={<div>loading...</div>}>
+                          {/* <Suspense fallback={<div>loading...</div>}>
                             <SearchBar />
-                          </Suspense>
+                          </Suspense> */}
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-2 flex-none">
-                    <Button variant="outline" size="icon-lg" asChild>
+                    <Suspense fallback={<div>loading...</div>}>
+                      <SearchBar simpleButton={true} />
+                      {/* <Search size={18} /> */}
+                    </Suspense>
+                    {/* <Button variant="outline" size="icon-lg" asChild>
                       <Link href="/lists">
                           <NotepadText />
                       </Link>
                     </Button>
                     <Suspense fallback={<Button size="icon-lg"><Spinner /></Button>}>
                       <LogInLogOut />
-                    </Suspense>
+                    </Suspense> */}
                   </div>
                   <div />
                 </div>

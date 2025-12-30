@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 
-export function SearchBar() {
+export function SearchBar({ simpleButton }: { simpleButton: boolean }) {
   const [value, setValue] = useState("");
   const router = useRouter();
   const params = useParams<{ value?: string }>();
@@ -43,6 +43,7 @@ export function SearchBar() {
       onInputChange={setValue}
       onSearch={explore}
       productName={searchValue}
+      simpleButton={simpleButton}
     />
   );
 }

@@ -14,6 +14,7 @@ import {
 import {
   productsPricesHistorySelect,
   productsShopsPrices,
+  productsVisibilityHistorySelect,
   shopsSelect,
 } from "@/db/schema";
 import { ChevronDown } from "lucide-react";
@@ -47,9 +48,14 @@ type PricePoint = {
   price: number;
 };
 
+type VisibilityPoint = {
+  date: Date;
+  visibility: productsVisibilityHistorySelect["visibility"];
+};
+
 type ChartDatum = {
   date: string;
-  [key: string]: number | string | undefined;
+  [key: string]: number | string | null | undefined;
 };
 
 type HistoryRange = "1" | "3" | "all";
@@ -58,10 +64,12 @@ export function PricesChart({
   priceHistory,
   currentPrices,
   shops,
+  visibilityHistory,
 }: {
   priceHistory: Array<productsPricesHistorySelect>;
   currentPrices: Array<productsShopsPrices>;
   shops: Array<shopsSelect>;
+  visibilityHistory: Array<productsVisibilityHistorySelect>;
 }) {
   const shopNameById = React.useMemo(() => {
     const map = new Map<number, string>();
@@ -125,60 +133,36 @@ export function PricesChart({
     return histories;
   }, [priceHistory, currentPrices]);
 
-  const cheapestHistory = React.useMemo(() => {
-    const events: Array<{ time: number; shopId: number; price: number }> = [];
+  const visibilityHistoryByShop = React.useMemo(() => {
+    const histories = new Map<number, VisibilityPoint[]>();
 
-    for (const [shopId, history] of shopHistories) {
-      history.forEach((entry) => {
-        events.push({
-          time: entry.date.getTime(),
-          shopId,
-          price: entry.price,
-        });
+    for (const entry of visibilityHistory) {
+      const list = histories.get(entry.shopId) ?? [];
+      list.push({
+        date: new Date(entry.createdAt),
+        visibility: entry.visibility,
       });
+      histories.set(entry.shopId, list);
     }
 
-    if (events.length === 0) {
-      return [];
-    }
+    for (const [shopId, list] of histories) {
+      list.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    events.sort((a, b) => a.time - b.time);
-
-    const lastByShop = new Map<number, number>();
-    const results: Array<{ date: Date; price: number; shop: string }> = [];
-
-    let index = 0;
-    while (index < events.length) {
-      const time = events[index].time;
-
-      while (index < events.length && events[index].time === time) {
-        lastByShop.set(events[index].shopId, events[index].price);
-        index += 1;
-      }
-
-      let cheapestPrice = Infinity;
-      let cheapestShopId: number | null = null;
-
-      for (const [shopId, price] of lastByShop) {
-        if (price < cheapestPrice) {
-          cheapestPrice = price;
-          cheapestShopId = shopId;
+      const deduped: VisibilityPoint[] = [];
+      for (const item of list) {
+        const last = deduped[deduped.length - 1];
+        if (!last || last.date.getTime() !== item.date.getTime()) {
+          deduped.push(item);
+        } else {
+          deduped[deduped.length - 1] = item;
         }
       }
 
-      if (cheapestShopId !== null && Number.isFinite(cheapestPrice)) {
-        results.push({
-          date: new Date(time),
-          price: cheapestPrice,
-          shop:
-            shopNameById.get(cheapestShopId) ??
-            `Supermercado ${cheapestShopId}`,
-        });
-      }
+      histories.set(shopId, deduped);
     }
 
-    return results;
-  }, [shopHistories, shopNameById]);
+    return histories;
+  }, [visibilityHistory]);
 
   type TooltipFormatter = NonNullable<
     React.ComponentProps<typeof ChartTooltipContent>["formatter"]
@@ -274,85 +258,129 @@ export function PricesChart({
   }, [selectedShops, colorByShopId]);
 
   const chartData = React.useMemo(() => {
-    if (cheapestHistory.length === 0 && selectedShops.length === 0) {
+    const shopIds = Array.from(shopHistories.keys());
+    if (shopIds.length === 0 && selectedShops.length === 0) {
       return [];
     }
 
     const timeline = new Set<number>();
-    cheapestHistory.forEach((entry) => timeline.add(entry.date.getTime()));
-    const histories = selectedShops.map((shop) => {
-      const history = shopHistories.get(shop.id) ?? [];
+    for (const history of shopHistories.values()) {
       history.forEach((entry) => timeline.add(entry.date.getTime()));
-      return history;
-    });
+    }
+
+    const shopIdSet = new Set(shopIds);
+    for (const [shopId, history] of visibilityHistoryByShop) {
+      if (!shopIdSet.has(shopId)) {
+        continue;
+      }
+      history.forEach((entry) => timeline.add(entry.date.getTime()));
+    }
 
     if (timeline.size === 0) {
       return [];
     }
 
-    const shouldExtendToToday = (() => {
-      const lastCheapest = cheapestHistory[cheapestHistory.length - 1];
-      if (lastCheapest && !isToday(lastCheapest.date)) {
-        return true;
+    let latestTime: number | null = null;
+    for (const time of timeline) {
+      if (latestTime === null || time > latestTime) {
+        latestTime = time;
       }
+    }
 
-      return histories.some((history) => {
-        const last = history[history.length - 1];
-        return last ? !isToday(last.date) : false;
-      });
-    })();
-
-    if (shouldExtendToToday) {
+    if (latestTime !== null && !isToday(new Date(latestTime))) {
       timeline.add(new Date().getTime());
     }
 
     const sortedTimeline = Array.from(timeline).sort((a, b) => a - b);
-    const indices = histories.map(() => 0);
+    const histories = shopIds.map((shopId) => shopHistories.get(shopId) ?? []);
+    const visibilityHistories = shopIds.map(
+      (shopId) => visibilityHistoryByShop.get(shopId) ?? []
+    );
+    const priceIndices = histories.map(() => 0);
+    const visibilityIndices = visibilityHistories.map(() => 0);
     const lastPrices: Array<number | null> = histories.map(() => null);
-    let cheapestIndex = 0;
-    let lastCheapestPrice: number | null = null;
-    let lastCheapestShop: string | null = null;
+    const visibilityStates = visibilityHistories.map(() => true);
+    const shopIndexById = new Map<number, number>();
 
-    // Share a timeline and carry each shop's last known price forward.
+    shopIds.forEach((shopId, index) => {
+      shopIndexById.set(shopId, index);
+    });
+
+    // Share a timeline, respect visibility changes, and carry last known prices.
     const data: ChartDatum[] = [];
 
     for (const time of sortedTimeline) {
       const row: ChartDatum = { date: new Date(time).toISOString() };
 
-      while (
-        cheapestIndex < cheapestHistory.length &&
-        cheapestHistory[cheapestIndex].date.getTime() <= time
-      ) {
-        lastCheapestPrice = cheapestHistory[cheapestIndex].price;
-        lastCheapestShop = cheapestHistory[cheapestIndex].shop;
-        cheapestIndex += 1;
-      }
-
-      if (lastCheapestPrice !== null) {
-        row.cheapestPrice = lastCheapestPrice;
-        row.cheapestShop = lastCheapestShop ?? undefined;
-      }
-
-      selectedShops.forEach((shop, index) => {
+      for (let index = 0; index < shopIds.length; index += 1) {
         const history = histories[index];
         while (
-          indices[index] < history.length &&
-          history[indices[index]].date.getTime() <= time
+          priceIndices[index] < history.length &&
+          history[priceIndices[index]].date.getTime() <= time
         ) {
-          lastPrices[index] = history[indices[index]].price;
-          indices[index] += 1;
+          lastPrices[index] = history[priceIndices[index]].price;
+          priceIndices[index] += 1;
         }
 
-        if (lastPrices[index] !== null) {
-          row[seriesKey(shop.id)] = lastPrices[index] ?? undefined;
+        const visibility = visibilityHistories[index];
+        while (
+          visibilityIndices[index] < visibility.length &&
+          visibility[visibilityIndices[index]].date.getTime() <= time
+        ) {
+          visibilityStates[index] =
+            visibility[visibilityIndices[index]].visibility === "visible";
+          visibilityIndices[index] += 1;
         }
-      });
+      }
+
+      let cheapestPrice: number | null = null;
+      let cheapestShopId: number | null = null;
+
+      for (let index = 0; index < shopIds.length; index += 1) {
+        const price = lastPrices[index];
+        if (price === null || !visibilityStates[index]) {
+          continue;
+        }
+
+        if (cheapestPrice === null || price < cheapestPrice) {
+          cheapestPrice = price;
+          cheapestShopId = shopIds[index];
+        }
+      }
+
+      if (cheapestPrice !== null && cheapestShopId !== null) {
+        row.cheapestPrice = cheapestPrice;
+        row.cheapestShop =
+          shopNameById.get(cheapestShopId) ??
+          `Supermercado ${cheapestShopId}`;
+      } else {
+        row.cheapestPrice = null;
+        row.cheapestShop = undefined;
+      }
+
+      for (const shop of selectedShops) {
+        const index = shopIndexById.get(shop.id);
+        if (index === undefined) {
+          row[seriesKey(shop.id)] = null;
+          continue;
+        }
+
+        row[seriesKey(shop.id)] =
+          visibilityStates[index] && lastPrices[index] !== null
+            ? lastPrices[index]
+            : null;
+      }
 
       data.push(row);
     }
 
     return data;
-  }, [cheapestHistory, selectedShops, shopHistories]);
+  }, [
+    shopHistories,
+    visibilityHistoryByShop,
+    selectedShops,
+    shopNameById,
+  ]);
 
   const filteredChartData = React.useMemo(() => {
     if (historyRange === "all") {
@@ -539,6 +567,7 @@ export function PricesChart({
               fillOpacity={0.4}
               stroke="var(--color-cheapestPrice)"
               strokeWidth={1}
+              connectNulls={false}
             />
             {selectedShops.map((shop) => {
               const key = seriesKey(shop.id);
@@ -550,6 +579,7 @@ export function PricesChart({
                   stroke={`var(--color-${key})`}
                   strokeWidth={2}
                   dot={false}
+                  connectNulls={false}
                 />
               );
             })}

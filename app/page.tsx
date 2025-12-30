@@ -12,12 +12,30 @@ import Link from "next/link";
 import { Suspense } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/searchbar";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
 export default function Home() {
   return (
     <main className="container mx-auto p-2 space-y-6">
+      <section className="bg-purple-800 p-6 rounded-3xl flex flex-col gap-6">
+        <div>
+          <h1 className="scroll-m-20 text-center text-2xl font-extrabold tracking-tight text-balance text-white">
+            Busca, compara y ahorra
+            Encuentra el supermercado más barato hoy
+          </h1>
+          
+          <p className="leading-7 [&:not(:first-child)]:mt-4 text-center text-white">
+            Compara precios de productos de supermercado en República Dominicana 
+            y decide dónde comprar antes de salir de casa
+          </p>
+        </div>
+        <Suspense fallback={<div>loading...</div>}>
+          <SearchBar simpleButton={false} />
+        </Suspense>
+      </section>
+
       <Suspense fallback={<TodaysDealsSkeleton />}>
         <TodaysDealsSection />
       </Suspense>

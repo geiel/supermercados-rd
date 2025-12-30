@@ -4,8 +4,9 @@ import {
   productsShopsPrices,
 } from "@/db/schema/products";
 import * as cheerio from "cheerio";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, ne, or } from "drizzle-orm";
 import {
+  doneDuplicatedLog,
   doneProcessLog,
   ignoreLog,
   initProcessLog,
@@ -96,7 +97,7 @@ async function processByProductShopPrice(
     return;
   }
 
-  await db
+  const result = await db
     .update(productsShopsPrices)
     .set({
       currentPrice: finalPrice,
@@ -106,9 +107,22 @@ async function processByProductShopPrice(
     .where(
       and(
         eq(productsShopsPrices.productId, productShopPrice.productId),
-        eq(productsShopsPrices.shopId, productShopPrice.shopId)
+        eq(productsShopsPrices.shopId, productShopPrice.shopId),
+        or(
+          isNull(productsShopsPrices.currentPrice),
+          ne(productsShopsPrices.currentPrice, finalPrice)
+        )
       )
-    );
+    )
+    .returning({
+      productId: productsShopsPrices.productId,
+      currentPrice: productsShopsPrices.currentPrice,
+    });
+
+  if (result.length === 0) {
+    doneDuplicatedLog(scrapper, productShopPrice);
+    return;
+  }
 
   await db.insert(productsPricesHistory).values({
     ...productShopPrice,

@@ -34,3 +34,9 @@ export function ignoreLog(scrapper: string, product: productsShopsPrices) {
     `IGNORE process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId}`
   );
 }
+
+export function doneDuplicatedLog(scrapper: string, product: productsShopsPrices) {
+  console.log(
+    `DONE/IGNORE process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId}`
+  )
+}
