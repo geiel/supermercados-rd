@@ -186,6 +186,14 @@ export const AutoComplete = ({
   );
 
   useEffect(() => {
+    inputRef.current?.addEventListener("focus", () => {
+      setTimeout(() => {
+        window.scrollTo({ top: 0 });
+      }, 250)
+    })
+  }, [])
+
+  useEffect(() => {
     if (suggestions.length > 0 && inputValue.length > 0) {
       setPrevSuggestions(suggestions);
     }
@@ -256,7 +264,6 @@ export const AutoComplete = ({
   };
 
   const onFocus = () => {
-    window.scrollTo(0, 0);
     setOpen(true);
   };
 
