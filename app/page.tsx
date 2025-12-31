@@ -19,11 +19,11 @@ const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"
 export default function Home() {
   return (
     <main className="container mx-auto p-2 space-y-6">
-      <section className="bg-purple-800 p-6 rounded-3xl flex flex-col gap-6">
+      <section className="bg-purple-900 p-6 rounded-3xl flex flex-col items-center gap-6 md:py-10 lg:px-40 lg:py-20">
         <div>
-          <h1 className="scroll-m-20 text-center text-2xl font-extrabold tracking-tight text-balance text-white">
-            Busca, compara y ahorra
-            Encuentra el supermercado más barato hoy
+          <h1 className="scroll-m-20 text-center text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance text-white">
+            <span className="block">Busca, compara y ahorra</span>
+            <span className="block">Encuentra el supermercado más barato hoy</span>
           </h1>
           
           <p className="leading-7 [&:not(:first-child)]:mt-4 text-center text-white">
@@ -31,9 +31,11 @@ export default function Home() {
             y decide dónde comprar antes de salir de casa
           </p>
         </div>
-        <Suspense fallback={<div>loading...</div>}>
-          <SearchBar simpleButton={false} />
-        </Suspense>
+        <div className="w-full md:w-[60%]">
+          <Suspense fallback={<div>loading...</div>}>
+            <SearchBar />
+          </Suspense>
+        </div>
       </section>
 
       <Suspense fallback={<TodaysDealsSkeleton />}>
@@ -122,9 +124,9 @@ export default function Home() {
         </div>
       </section>
 
-      <Suspense fallback={<ExploreSectionSkeleton />}>
+      {/* <Suspense fallback={<ExploreSectionSkeleton />}>
         <ExploreSection />
-      </Suspense>
+      </Suspense> */}
     </main>
   );
 }
@@ -137,7 +139,7 @@ async function TodaysDealsSection() {
   return (
     <section>
         <div className="space-y-4">
-          <TypographyH3>Ofertas De Hoy</TypographyH3>
+          <TypographyH3>Mejores ofertas de hoy</TypographyH3>
           <ScrollFade>
             <div className="flex w-40 space-x-6 p-2 relative">
               {todaysDeals.map(deal => (

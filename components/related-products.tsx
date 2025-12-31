@@ -54,6 +54,7 @@ export function RelatedProducts({
               shopCurrentPrices={relatedProduct.shopCurrentPrices}
               unit={relatedProduct.unit}
               categoryId={relatedProduct.categoryId}
+              productName={relatedProduct.name}
             />
           </Link>
         ))}
@@ -67,10 +68,12 @@ function CheapestPrice({
   shopCurrentPrices,
   unit,
   categoryId,
+  productName,
 }: {
   shopCurrentPrices: productsShopsPrices[];
   unit: string;
   categoryId: number;
+  productName: string;
 }) {
   const cheapest = shopCurrentPrices.reduce((minSoFar, current) =>
     Number(current.currentPrice) < Number(minSoFar.currentPrice)
@@ -85,6 +88,7 @@ function CheapestPrice({
         unit={unit}
         price={Number(cheapest.currentPrice)}
         categoryId={categoryId}
+        productName={productName}
       />
     </div>
   );

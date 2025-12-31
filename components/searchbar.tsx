@@ -6,7 +6,13 @@ import useSWR from "swr";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 
-export function SearchBar({ simpleButton }: { simpleButton: boolean }) {
+type SearchBarProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  autoFocus?: boolean;
+};
+
+export function SearchBar({ open, onOpenChange, autoFocus }: SearchBarProps) {
   const [value, setValue] = useState("");
   const router = useRouter();
   const params = useParams<{ value?: string }>();
@@ -26,6 +32,9 @@ export function SearchBar({ simpleButton }: { simpleButton: boolean }) {
       return z
         .array(z.object({ phrase: z.string(), sml: z.number() }))
         .parse(await response.json());
+    },
+    {
+      keepPreviousData: true,
     }
   );
 
@@ -43,7 +52,9 @@ export function SearchBar({ simpleButton }: { simpleButton: boolean }) {
       onInputChange={setValue}
       onSearch={explore}
       productName={searchValue}
-      simpleButton={simpleButton}
+      open={open}
+      onOpenChange={onOpenChange}
+      autoFocus={autoFocus}
     />
   );
 }

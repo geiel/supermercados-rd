@@ -80,11 +80,13 @@ export function PricePerUnit({
   price,
   categoryId,
   className,
+  productName,
 }: {
   unit: string;
   price: number;
   categoryId: number;
   className?: string;
+  productName?: string;
 }) {
   const amountAndUnit = unit.split(" ");
 
@@ -100,6 +102,10 @@ export function PricePerUnit({
 
   const amount = Number(amountAndUnit[0]);
   const unitOnly = amountAndUnit[1];
+  const pricePerUndFromName = pricePerAmountInName({
+    name: productName,
+    price,
+  });
 
   if (
     unitOnly !== "LB" &&
@@ -113,16 +119,31 @@ export function PricePerUnit({
     unitOnly !== "CL" &&
     unitOnly !== "GL"
   ) {
+    if (pricePerUndFromName) {
+      return (
+        <div className={cn("text-xs", className)}>
+          ${pricePerUndFromName} por UND
+        </div>
+      );
+    }
+
     return null;
   }
 
   if (unitOnly === "UND") {
+    const resolvedPricePerUnd =
+      pricePerUndFromName ?? (price / amount).toFixed(2);
+
     return (
       <div className={cn("text-xs", className)}>
-        ${(price / amount).toFixed(2)} por UND
+        ${resolvedPricePerUnd} por UND
       </div>
     );
   }
+
+  const perUndSuffix = pricePerUndFromName
+    ? `$${pricePerUndFromName} por UND`
+    : "";
 
   if (
     unitOnly === "ML" ||
@@ -134,6 +155,9 @@ export function PricePerUnit({
     return (
       <div className={cn("text-xs", className)}>
         ${getPricePer100Milliliters(price, amount, unitOnly)} por 100 ML
+        <div>
+          {perUndSuffix}
+        </div>
       </div>
     );
   }
@@ -143,6 +167,9 @@ export function PricePerUnit({
     return (
       <div className={cn("text-xs", className)}>
         ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR
+        <div>
+          {perUndSuffix}
+        </div>
       </div>
     );
   }
@@ -152,6 +179,9 @@ export function PricePerUnit({
     return (
       <div className={cn("text-xs", className)}>
         ${getPricePer100Grams(price, amount, unitOnly)} por 100 GR
+        <div>
+          {perUndSuffix}
+        </div>
       </div>
     );
   }
@@ -161,6 +191,37 @@ export function PricePerUnit({
   return (
     <div className={cn("text-xs", className)}>
       ${(price / lb).toFixed(2)} por LB
+      <div>
+        {perUndSuffix}
+      </div>
     </div>
   );
+}
+
+function pricePerAmountInName({
+  name,
+  price,
+}: {
+  name: string | undefined;
+  price: number;
+}) {
+  if (!name) {
+    return null;
+  }
+
+  const match = name.match(
+    /\b(\d+(?:[.,]\d+)?)\s*(?:UND|UNIDAD(?:ES)?|PACKS?)\b/i
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const parsed = Number(match[1].replace(",", "."));
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return (price / parsed).toFixed(2);
 }

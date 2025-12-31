@@ -118,6 +118,7 @@ export async function GroupExplorer({ humanId }: { humanId: string }) {
                                         unit={groupProduct.productUnit}
                                         price={Number(groupProduct.currentPrice)}
                                         categoryId={groupProduct.productCategory}
+                                        productName={groupProduct.productName}
                                     />
                                 </div>
                             </Link>

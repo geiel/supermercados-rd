@@ -311,6 +311,7 @@ export function PricesChart({
 
     for (const time of sortedTimeline) {
       const row: ChartDatum = { date: new Date(time).toISOString() };
+      const hideAfterRow = new Array(shopIds.length).fill(false);
 
       for (let index = 0; index < shopIds.length; index += 1) {
         const history = histories[index];
@@ -325,10 +326,21 @@ export function PricesChart({
         const visibility = visibilityHistories[index];
         while (
           visibilityIndices[index] < visibility.length &&
-          visibility[visibilityIndices[index]].date.getTime() <= time
+          visibility[visibilityIndices[index]].date.getTime() < time
         ) {
           visibilityStates[index] =
             visibility[visibilityIndices[index]].visibility === "visible";
+          visibilityIndices[index] += 1;
+        }
+        if (
+          visibilityIndices[index] < visibility.length &&
+          visibility[visibilityIndices[index]].date.getTime() === time
+        ) {
+          if (visibility[visibilityIndices[index]].visibility === "visible") {
+            visibilityStates[index] = true;
+          } else {
+            hideAfterRow[index] = true;
+          }
           visibilityIndices[index] += 1;
         }
       }
@@ -372,6 +384,12 @@ export function PricesChart({
       }
 
       data.push(row);
+
+      for (let index = 0; index < hideAfterRow.length; index += 1) {
+        if (hideAfterRow[index]) {
+          visibilityStates[index] = false;
+        }
+      }
     }
 
     return data;
@@ -513,7 +531,7 @@ export function PricesChart({
           </DropdownMenu>
         </CardAction>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-1">
         <ChartContainer config={chartConfig}>
           <ComposedChart
             accessibilityLayer

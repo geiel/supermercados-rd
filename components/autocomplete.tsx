@@ -40,7 +40,9 @@ type AutoCompleteProps = {
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
-  simpleButton?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  autoFocus?: boolean;
 };
 
 const normalizeTerm = (value: string) =>
@@ -170,19 +172,28 @@ export const AutoComplete = ({
   disabled,
   isLoading = false,
   productName,
-  simpleButton
+  open,
+  onOpenChange,
+  autoFocus = false,
 }: AutoCompleteProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
-  const [isOpen, setOpen] = useState(false);
-  const [isSimpleButton, setSimpleButton] = useState(simpleButton);
+  const [isOpenInternal, setOpenInternal] = useState(false);
+  const isOpen = open ?? isOpenInternal;
+  const setOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (open === undefined) {
+        setOpenInternal(nextOpen);
+      }
+      if (nextOpen !== isOpen) {
+        onOpenChange?.(nextOpen);
+      }
+    },
+    [isOpen, onOpenChange, open]
+  );
   const [inputValue, setInputValue] = useState<string>(
     value?.name || productName || ""
-  );
-
-  const [prevSuggestions, setPrevSuggestions] = useState<ProductSuggestion[]>(
-    []
   );
 
   useEffect(() => {
@@ -194,10 +205,18 @@ export const AutoComplete = ({
   }, [])
 
   useEffect(() => {
-    if (suggestions.length > 0 && inputValue.length > 0) {
-      setPrevSuggestions(suggestions);
+    if (autoFocus && isOpen) {
+      inputRef.current?.focus();
     }
-  }, [suggestions, inputValue]);
+  }, [autoFocus, isOpen]);
+
+  const handleSearch = useCallback(
+    (nextValue: string) => {
+      onSearch(nextValue);
+      setOpen(false);
+    },
+    [onSearch, setOpen]
+  );
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -218,19 +237,20 @@ export const AutoComplete = ({
         );
 
         if (optionToSelect) {
-          onSearch(optionToSelect.phrase);
+          handleSearch(optionToSelect.phrase);
         } else {
-          onSearch(input.value);
+          handleSearch(input.value);
         }
 
         input.blur();
       }
 
       if (event.key === "Escape") {
+        setOpen(false);
         input.blur();
       }
     },
-    [isOpen, suggestions, onSearch]
+    [isOpen, suggestions, setOpen, handleSearch]
   );
 
   const applySuggestionToInput = useCallback(
@@ -243,11 +263,9 @@ export const AutoComplete = ({
   );
 
   const handleSelectProduct = useCallback(
-    (selectedSuggestion: ProductSuggestion, simpleButton: boolean | undefined) => {
+    (selectedSuggestion: ProductSuggestion) => {
       setInputValue(selectedSuggestion.phrase);
-      onSearch(selectedSuggestion.phrase);
-      setOpen(false);
-      setSimpleButton(simpleButton);
+      handleSearch(selectedSuggestion.phrase);
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -255,7 +273,7 @@ export const AutoComplete = ({
         inputRef?.current?.blur();
       }, 0);
     },
-    [onSearch]
+    [handleSearch]
   );
 
   const handlerInputChange = (value: string) => {
@@ -268,12 +286,11 @@ export const AutoComplete = ({
   };
 
   function clean() {
-    setPrevSuggestions([]);
     setInputValue("");
+    onInputChange?.("");
   }
 
-  const displaySuggestions =
-    suggestions.length > 0 ? suggestions : prevSuggestions;
+  const displaySuggestions = inputValue.length > 0 ? suggestions : [];
 
   return (
     <CommandPrimitive
@@ -284,40 +301,31 @@ export const AutoComplete = ({
     >
       <div
         className={cn(
-          "relative flex flex-col",
+          "relative flex flex-col mt-1",
           isOpen &&
             "fixed inset-0 z-50 bg-white p-4 md:relative md:z-auto md:bg-transparent md:p-0"
         )}
       >
         <div className={cn("flex items-center gap-2", isOpen && "md:block")}>
-          <div className={cn(!isSimpleButton && "flex-1 rounded-full bg-white" )}>
-            {isSimpleButton ? (
-              <Button className="rounded-full" size="icon-lg" onClick={() => {
-                setOpen(true)
-                setSimpleButton(false);
-              }}>
-                <Search />
-              </Button>
-            ) :
-              <CommandInput
-                ref={inputRef}
-                value={inputValue}
-                onValueChange={isLoading ? undefined : handlerInputChange}
-                onBlur={() => {
-                  if (!isMobile) {
-                    setOpen(false);
-                  }
-                }}
-                onFocus={onFocus}
-                placeholder={placeholder}
-                disabled={disabled}
-                className={cn(
-                  "text-base",
-                  isOpen && "text-lg md:text-base"
-                )}
-                onClean={clean}
-              />
-            }
+          <div className={cn("flex-1 rounded-full bg-white")}>
+            <CommandInput
+              ref={inputRef}
+              value={inputValue}
+              onValueChange={isLoading ? undefined : handlerInputChange}
+              onBlur={() => {
+                if (!isMobile) {
+                  setOpen(false);
+                }
+              }}
+              onFocus={onFocus}
+              placeholder={placeholder}
+              disabled={disabled}
+              className={cn(
+                "text-base",
+                isOpen && "text-lg md:text-base"
+              )}
+              onClean={clean}
+            />
           </div>
           {isOpen ? (
             <Button
@@ -327,7 +335,6 @@ export const AutoComplete = ({
               className="md:hidden"
               onClick={() => {
                 setOpen(false);
-                setSimpleButton(simpleButton);
                 inputRef.current?.blur();
               }}
             >
@@ -369,7 +376,7 @@ export const AutoComplete = ({
                           event.preventDefault();
                           event.stopPropagation();
                         }}
-                        onSelect={() => handleSelectProduct(suggestion, simpleButton)}
+                        onSelect={() => handleSelectProduct(suggestion)}
                         className={cn("flex w-full items-center gap-2")}
                       >
                         <span className="flex-1 whitespace-pre-wrap text-left">

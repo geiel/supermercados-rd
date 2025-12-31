@@ -161,6 +161,7 @@ export default async function Page({ params, searchParams }: Props) {
                 unit={product.unit}
                 categoryId={product.categoryId}
                 showHiddenPrices={canSeeHiddenProducts}
+                productName={product.name}
               />
             </Link>
           </div>
@@ -207,11 +208,13 @@ async function Price({
   unit,
   categoryId,
   showHiddenPrices,
+  productName,
 }: {
   productId: number;
   unit: string;
   categoryId: number;
   showHiddenPrices: boolean;
+  productName: string;
 }) {
   const lowerPrice = await db.query.productsShopsPrices.findFirst({
     columns: {
@@ -243,6 +246,7 @@ async function Price({
         unit={unit}
         price={Number(lowerPrice.currentPrice)}
         categoryId={categoryId}
+        productName={productName}
       />
     </div>
   );

@@ -135,6 +135,7 @@ export default async function Page({ params }: Props) {
                 shopPrice={shopPrice}
                 unit={product.unit}
                 categoryId={product.categoryId}
+                productName={product.name}
               />
               <div className="place-self-end self-center">
                 <SearchProductButton shopPrice={shopPrice} />
@@ -202,10 +203,12 @@ async function ShopPrice({
   shopPrice,
   unit,
   categoryId,
+  productName,
 }: {
   shopPrice: productsShopsPrices;
   unit: string;
   categoryId: number;
+  productName: string;
 }) {
   switch (shopPrice.shopId) {
     case 1:
@@ -256,6 +259,7 @@ async function ShopPrice({
         unit={unit}
         categoryId={categoryId}
         className="opacity-60"
+        productName={productName}
       />
     </div>
   );

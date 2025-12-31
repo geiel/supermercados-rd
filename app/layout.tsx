@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SearchBar } from "@/components/searchbar";
+import { HeaderSearchSlot } from "@/components/header-search-slot";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, NotepadText, Search, User } from "lucide-react";
+import { LogIn, LogOut, NotepadText, User } from "lucide-react";
 import { LoginUserGoogle, LogOutUser } from "@/lib/authentication";
 import Link from "next/link";
 import ListItemsProvider from "@/components/list-provider";
@@ -41,9 +41,9 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ListItemsProvider>
-            <header className="w-full">
-              <div className="px-4 py-2 container mx-auto">
-                <div className="flex h-14 items-center gap-2 md:gap-4">
+            <header>
+              <div className="px-4 lg:px-0 py-2 container mx-auto">
+                <div className="flex items-center">
                   <div className="flex-none">
                     <Link href="/">
                       <div>
@@ -51,32 +51,20 @@ export default function RootLayout({
                       </div>
                     </Link>
                   </div>
-                  <div className="mt-1 grow">
-                    <div className="w-full">
-                      <div className="flex justify-center">
-                        <div className="w-full max-w-6xl">
-                          {/* <Suspense fallback={<div>loading...</div>}>
-                            <SearchBar />
-                          </Suspense> */}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-none">
-                    <Suspense fallback={<div>loading...</div>}>
-                      <SearchBar simpleButton={true} />
-                      {/* <Search size={18} /> */}
+                  <div className="flex gap-2 grow justify-end items-center">
+                    <Suspense>
+                      <HeaderSearchSlot />
                     </Suspense>
-                    {/* <Button variant="outline" size="icon-lg" asChild>
+
+                    <Button variant="outline" size="icon-lg" asChild>
                       <Link href="/lists">
                           <NotepadText />
                       </Link>
                     </Button>
                     <Suspense fallback={<Button size="icon-lg"><Spinner /></Button>}>
                       <LogInLogOut />
-                    </Suspense> */}
+                    </Suspense>
                   </div>
-                  <div />
                 </div>
               </div>
             </header>
