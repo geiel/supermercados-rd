@@ -392,7 +392,35 @@ export function PricesChart({
       }
     }
 
-    return data;
+    const comparisonKeys = [
+      "cheapestPrice",
+      "cheapestShop",
+      ...selectedShops.map((shop) => seriesKey(shop.id)),
+    ];
+
+    const toDayKey = (value: string) => {
+      const date = new Date(value);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const grouped: ChartDatum[] = [];
+    for (const row of data) {
+      const last = grouped[grouped.length - 1];
+      if (
+        last &&
+        toDayKey(last.date) === toDayKey(row.date) &&
+        comparisonKeys.every((key) => last[key] === row[key])
+      ) {
+        grouped[grouped.length - 1] = row;
+        continue;
+      }
+      grouped.push(row);
+    }
+
+    return grouped;
   }, [
     shopHistories,
     visibilityHistoryByShop,
@@ -491,6 +519,8 @@ export function PricesChart({
   if (priceHistory.length === 0) {
     return null;
   }
+
+  console.log(filteredChartData);
 
   return (
     <Card>
