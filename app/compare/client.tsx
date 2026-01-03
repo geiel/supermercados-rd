@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { productsSelect, productsShopsPrices, shopsSelect } from "@/db/schema";
-import { useRef, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import Image from "next/image";
 
 export type Props = {
     shops: shopsSelect[],
@@ -173,7 +176,7 @@ export function CompareProducts({ shops, productPrices, totalsByShopId }: Props)
     return (
         <div className="p-0 md:p-4 md:flex md:gap-2 relative">
             <ScrollArea className="h-[93vh] border rounded-sm">
-                <div>
+                <div className="mb-32">
                     <div
                         data-slot="table-container"
                         className="relative w-full"
@@ -182,7 +185,9 @@ export function CompareProducts({ shops, productPrices, totalsByShopId }: Props)
                             <TableHeader className="sticky top-0 z-30 bg-background">
                                 <TableRow>
                                     <TableHead>
-                                        <span className="sr-only">Seleccionar</span>
+                                        <div className="w-[50px]">
+                                            <span className="sr-only">Seleccionar</span>
+                                        </div>
                                     </TableHead>
                                     <TableHead>
                                         <div className="w-[150px]">
@@ -193,7 +198,29 @@ export function CompareProducts({ shops, productPrices, totalsByShopId }: Props)
                                         <span className="sr-only">Nombre</span>
                                     </TableHead>
                                     {shops.map((shop) => (
-                                        <TableHead key={shop.id}>{shop.name}</TableHead>
+                                        <TableHead key={shop.id}>
+                                            <div className="grid grid-rows-2 place-items-center">
+                                                <div>
+                                                    <Image
+                                                        src={`/supermarket-logo/${shop.logo}`}
+                                                        width={0}
+                                                        height={0}
+                                                        className="w-[50px] h-auto"
+                                                        alt="Supermarket logo"
+                                                        unoptimized
+                                                    />
+                                                </div>
+
+                                                <div className="font-bold text-lg">
+                                                    RD$
+                                                    {(
+                                                        displayTotalsByShopId.get(shop.id) ??
+                                                        totalsByShopId.get(shop.id) ??
+                                                        0
+                                                    ).toFixed(2)}
+                                                </div>
+                                            </div>
+                                        </TableHead>
                                     ))}
                                 </TableRow>
                             </TableHeader>
@@ -205,7 +232,7 @@ export function CompareProducts({ shops, productPrices, totalsByShopId }: Props)
                                         const selectionKey = getSelectionKey("group", group.id);
                                         return (
                                             <TableRow key={groupKey}>
-                                                <TableCell className="p-4">
+                                                <TableCell className="text-center">
                                                     <Checkbox 
                                                         checked={selectedProductsIds.has(selectionKey)}
                                                         onCheckedChange={() => {
@@ -280,7 +307,7 @@ export function CompareProducts({ shops, productPrices, totalsByShopId }: Props)
                                     const selectionKey = getSelectionKey("product", product.id);
                                     return (
                                         <TableRow key={product.id}>
-                                            <TableCell className="p-4">
+                                            <TableCell className="text-center">
                                                 <Checkbox 
                                                     checked={selectedProductsIds.has(selectionKey)}
                                                     onCheckedChange={() => {
@@ -337,22 +364,6 @@ export function CompareProducts({ shops, productPrices, totalsByShopId }: Props)
                                     );
                                 })}
                             </TableBody>
-                            <TableFooter>
-                                <TableRow>
-                                    <TableCell>Total</TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    {shops.map((shop) => {
-                                        const total =
-                                            displayTotalsByShopId.get(shop.id) ??
-                                            totalsByShopId.get(shop.id) ??
-                                            0;
-                                        return (
-                                            <TableCell key={shop.id}>RD${total.toFixed(2)}</TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            </TableFooter>
                         </Table>
                     </div>
                 </div>
@@ -450,6 +461,7 @@ function GroupDialog({ open, onOpenChange, onCreateGroup }: {
     onCreateGroup: (name: string) => void 
 }) {
     const [groupName, setGroupName] = useState("")
+    const isMobile = useIsMobile();
     const handleOpenChange = (nextOpen: boolean) => {
         if (!nextOpen) {
             setGroupName("");
@@ -458,6 +470,51 @@ function GroupDialog({ open, onOpenChange, onCreateGroup }: {
         onOpenChange(nextOpen);
     };
 
+    const formFields = (
+        <div className="space-y-2">
+            <Label htmlFor="group-name" className="text-foreground">
+                Nombre del grupo
+            </Label>
+            <Input
+                id="group-name"
+                placeholder="ej. Plátano verde"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="bg-secondary border-border"
+            />
+        </div>
+    );
+
+    const formActions = (
+        <>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                Cancelar
+            </Button>
+            <Button onClick={() => onCreateGroup(groupName)} disabled={!groupName.trim()}>
+                Crear grupo
+            </Button>
+        </>
+    );
+
+    if (isMobile) {
+        return (
+            <Drawer open={open} onOpenChange={handleOpenChange}>
+                <DrawerContent>
+                    <DrawerHeader>
+                        <DrawerTitle>Comparar estos productos juntos</DrawerTitle>
+                        <DrawerDescription>Agrupa productos que consideras intercambiables.</DrawerDescription>
+                    </DrawerHeader>
+                    <div className="px-4">
+                        {formFields}
+                    </div>
+                    <DrawerFooter className="gap-2">
+                        {formActions}
+                    </DrawerFooter>
+                </DrawerContent>
+            </Drawer>
+        )
+    }
+
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent>
@@ -465,26 +522,9 @@ function GroupDialog({ open, onOpenChange, onCreateGroup }: {
                     <DialogTitle>Comparar estos productos juntos</DialogTitle>
                     <DialogDescription>Agrupa productos que consideras intercambiables.</DialogDescription>
                 </DialogHeader>
-
-                <div className="space-y-2">
-                    <Label htmlFor="group-name" className="text-foreground">
-                        Nombre del grupo
-                    </Label>
-                    <Input
-                        id="group-name"
-                        placeholder="ej. Plátano verde"
-                        value={groupName}
-                        onChange={(e) => setGroupName(e.target.value)}
-                        className="bg-secondary border-border"
-                    />
-                </div>
+                {formFields}
                 <DialogFooter className="gap-2">
-                    <Button variant="outline" onClick={() => handleOpenChange(false)}>
-                        Cancelar
-                    </Button>
-                    <Button onClick={() => onCreateGroup(groupName)} disabled={!groupName.trim()}>
-                        Crear grupo
-                    </Button>
+                    {formActions}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
