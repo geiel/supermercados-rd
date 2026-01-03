@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { products, productsShopsPrices, shops } from "@/db/schema";
-import { SQL, and, desc, eq, isNull, or } from "drizzle-orm";
+import { SQL, and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 export type UrlVisibilityFilter = "hidden" | "visible" | "all";
 
@@ -21,11 +21,13 @@ export type ProductShopUrlRow = {
 export async function fetchProductShopUrls({
   visibility = "hidden",
   shopId,
+  productIds,
   limit = 50,
   offset = 0,
 }: {
   visibility?: UrlVisibilityFilter;
   shopId?: number;
+  productIds?: number[];
   limit?: number;
   offset?: number;
 }): Promise<ProductShopUrlRow[]> {
@@ -41,6 +43,10 @@ export async function fetchProductShopUrls({
 
   if (shopId) {
     conditions.push(eq(productsShopsPrices.shopId, shopId));
+  }
+
+  if (productIds && productIds.length > 0) {
+    conditions.push(inArray(productsShopsPrices.productId, productIds));
   }
 
   const whereClause =

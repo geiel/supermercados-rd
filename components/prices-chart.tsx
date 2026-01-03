@@ -520,8 +520,6 @@ export function PricesChart({
     return null;
   }
 
-  console.log(filteredChartData);
-
   return (
     <Card>
       <CardHeader>

@@ -47,3 +47,5 @@ export const complexCategoriesGroupsRelations = relations(complexCategoriesGroup
     complexCategory: one(complexCategories, { fields: [complexCategoriesGroups.complexCategoryId], references: [complexCategories.id] }),
     group: one(groups, { fields: [complexCategoriesGroups.groupId], references: [groups.id] })
 }));
+
+export type productsGroupsSelect = typeof productsGroups.$inferSelect;

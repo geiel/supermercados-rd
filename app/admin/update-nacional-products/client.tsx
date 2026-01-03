@@ -242,8 +242,9 @@ export function UpdateNacionalProductsClient({
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">Actualizar URLs de Nacional</h1>
         <p className="text-sm text-muted-foreground">
-          Busca coincidencias en Nacional (shopId=2) y selecciona manualmente la URL
-          correcta antes de actualizar.
+          Busca coincidencias en Nacional (shopId=2) usando primero la URL de Jumbo
+          (shopId=3) cuando está disponible, y luego permite seleccionar manualmente
+          la URL correcta antes de actualizar.
         </p>
       </div>
 
@@ -254,7 +255,8 @@ export function UpdateNacionalProductsClient({
             {matchesPending ? <Spinner /> : null}
           </div>
           <CardDescription>
-            Se consulta la página de búsqueda de Nacional para los productos ocultos.
+            Primero se intenta construir la URL con el ID de Jumbo, y si no funciona se
+            consulta la página de búsqueda de Nacional para los productos ocultos.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -284,7 +286,7 @@ export function UpdateNacionalProductsClient({
               disabled={matchesPending}
             >
               {isRunning ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Ejecutar búsqueda
+              Ejecutar busqueda
             </Button>
           </form>
 

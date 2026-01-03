@@ -13,8 +13,9 @@ export async function GET(request: Request) {
     );
   }
 
+  const rawSearchValue = decodeURIComponent(value).trim();
   try {
-    const units = await searchUnits(value);
+    const units = await searchUnits(rawSearchValue);
     return NextResponse.json(units);
   } catch (error) {
     console.error("[api/search-units] Failed to load units", error);
