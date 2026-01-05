@@ -15,19 +15,26 @@ import { toSlug } from "@/lib/utils";
 
 type Product = productsSelect & { shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }> }
 
-type ProductItemsProps = {
-    products?: Array<Product>
-    listItems: listItemsSelect[]
+type ProductItemEntry = {
+    rowKey: string
+    product: Product
+    amount?: number | null
+    listItem?: listItemsSelect
+    comparisonLabel?: string | null
 }
 
-export function ProductItems({ products, listItems }: ProductItemsProps ) {
+type ProductItemsProps = {
+    items: ProductItemEntry[]
+}
+
+export function ProductItems({ items }: ProductItemsProps ) {
     const isMobile = useIsMobile()
 
     if (isMobile) {
         return (
             <ItemGroup className="gap-2">
-                {products?.map((product) => (
-                    <ItemProductDrawer key={product.id}  product={product} listItems={listItems} />
+                {items.map((entry) => (
+                    <ItemProductDrawer key={entry.rowKey} entry={entry} />
                 ))}
             </ItemGroup>
         )
@@ -35,50 +42,68 @@ export function ProductItems({ products, listItems }: ProductItemsProps ) {
 
     return (
         <ItemGroup className="gap-2">
-            {products?.map((product) => (
-                <ItemProductDialog key={product.id} product={product} listItems={listItems} />
+            {items.map((entry) => (
+                <ItemProductDialog key={entry.rowKey} entry={entry} />
             ))}
         </ItemGroup>
     )
 }
 
-type DialogDrawerProps = { product: Product; listItems: listItemsSelect[] }
+type DialogDrawerProps = { entry: ProductItemEntry }
 
-function ItemProductDialog({ product, listItems }: DialogDrawerProps) {
+function ItemProductDialog({ entry }: DialogDrawerProps) {
     const [open, setOpen] = React.useState(false);
+    const amount = entry.amount ?? entry.listItem?.amount;
+
+    if (!entry.listItem) {
+        return (
+            <Item asChild role="listItem" variant="outline">
+                <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
+            </Item>
+        )
+    }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Item asChild role="listItem" variant="outline">
-                    <ProductItemATag product={product} item={listItems.find(i => i.productId === product.id)} />
+                    <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
                 </Item>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Acciones</DialogTitle>
                 </DialogHeader>
-                <ProductDetails product={product} item={listItems.find(i => i.productId === product.id)} onItemClose={() => setOpen(false)} />
+                <ProductDetails product={entry.product} item={entry.listItem} onItemClose={() => setOpen(false)} />
             </DialogContent>
         </Dialog>
     )    
 }
 
-function ItemProductDrawer({ product, listItems }: DialogDrawerProps) {
+function ItemProductDrawer({ entry }: DialogDrawerProps) {
     const [open, setOpen] = React.useState(false);
+    const amount = entry.amount ?? entry.listItem?.amount;
+
+    if (!entry.listItem) {
+        return (
+            <Item asChild role="listItem" variant="outline">
+                <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
+            </Item>
+        )
+    }
 
     return (
         <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
                 <Item asChild role="listItem" variant="outline">
-                    <ProductItemATag product={product} item={listItems.find(i => i.productId === product.id)} />
+                    <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
                 </Item>
             </DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader>
                     <DrawerTitle>Acciones</DrawerTitle>
                 </DrawerHeader>
-                <ProductDetails product={product} item={listItems.find(i => i.productId === product.id)} onItemClose={() => setOpen(false)} />
+                <ProductDetails product={entry.product} item={entry.listItem} onItemClose={() => setOpen(false)} />
             </DrawerContent>
         </Drawer>
     )
@@ -87,12 +112,63 @@ function ItemProductDrawer({ product, listItems }: DialogDrawerProps) {
 
 type ProductItemATagProps = React.ComponentPropsWithoutRef<"a"> & {
     product: Product;
-    item?: listItemsSelect
+    amount?: number | null
+    comparisonLabel?: string | null
 }
 
 const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps>(
-    ({ product, item, onClick, ...props }, ref) => {
-        const price = product.shopCurrentPrices[0]?.currentPrice
+    ({ product, amount, comparisonLabel, onClick, ...props }, ref) => {
+        const displayAmount = amount && amount > 1 ? amount : null
+        const priceEntries = product.shopCurrentPrices
+            .map((shopPrice) => {
+                const value = Number(shopPrice.currentPrice);
+                if (!Number.isFinite(value)) {
+                    return null;
+                }
+                return { value, raw: shopPrice, shopName: shopPrice.shop.name };
+            })
+            .filter((entry): entry is { value: number; raw: typeof product.shopCurrentPrices[number]; shopName: string } => Boolean(entry));
+
+        let price = "";
+        let computedComparisonLabel: string | null = null;
+
+        if (priceEntries.length > 0) {
+            const currentShopId = product.shopCurrentPrices[0]?.shopId;
+            const currentEntry =
+                currentShopId !== undefined
+                    ? priceEntries.find((entry) => entry.raw.shopId === currentShopId) ??
+                      priceEntries[0]
+                    : priceEntries[0];
+
+            if (currentEntry.raw.currentPrice !== undefined && currentEntry.raw.currentPrice !== null) {
+                price = `RD$${currentEntry.raw.currentPrice}`;
+            }
+
+            const comparisonEntries = priceEntries.filter(
+                (entry) => entry.raw.shopId !== currentEntry.raw.shopId
+            );
+
+            if (comparisonEntries.length > 0) {
+                let comparisonEntry = comparisonEntries[0];
+
+                for (const entry of comparisonEntries.slice(1)) {
+                    if (entry.value > comparisonEntry.value) {
+                        comparisonEntry = entry;
+                    }
+                }
+
+                const difference = comparisonEntry.value - currentEntry.value;
+
+                if (difference > 0) {
+                    computedComparisonLabel = `RD$${difference.toFixed(2)} mas barato que ${comparisonEntry.shopName}`;
+                } else if (difference === 0) {
+                    computedComparisonLabel = `Mismo precio que ${comparisonEntry.shopName}`;
+                }
+            }
+        }
+
+        const resolvedComparisonLabel =
+            typeof comparisonLabel !== "undefined" ? comparisonLabel : computedComparisonLabel;
 
         return (
             <a
@@ -125,11 +201,18 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                         {product.name} {product.unit}
                     </ItemTitle>
                 </ItemContent>
-                <ItemContent className="flex flex-row items-center gap-2 text-center">
-                    {item?.amount && item.amount > 1 ? ( <div> {item.amount}x </div>) : null}
-                    <ItemDescription className="text-base font-semibold text-black">
-                        {price !== undefined ? `RD$${price}` : ""}
-                    </ItemDescription>
+                <ItemContent className="flex flex-col items-end gap-1 text-right">
+                    <div className="flex items-center gap-2">
+                        {displayAmount ? ( <div> {displayAmount}x </div>) : null}
+                        <ItemDescription className="text-base font-semibold text-black">
+                            {price}
+                        </ItemDescription>
+                    </div>
+                    {resolvedComparisonLabel ? (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                            {resolvedComparisonLabel}
+                        </span>
+                    ) : null}
                 </ItemContent>
             </a>
         )

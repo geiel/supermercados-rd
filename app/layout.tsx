@@ -41,7 +41,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ListItemsProvider>
-            <header>
+            <header className="h-[76px]">
               <div className="px-4 lg:px-0 py-2 container mx-auto">
                 <div className="flex items-center">
                   <div className="flex-none">

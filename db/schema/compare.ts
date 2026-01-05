@@ -1,6 +1,7 @@
 import { integer, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { products } from "./products";
 import { relations, sql } from "drizzle-orm";
+import { groups } from "./groups";
 
 export const list = pgTable("list", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -19,6 +20,15 @@ export const listItems = pgTable("list_items", {
     amount: integer()
 }, (table) => [
     unique("list_product_unique").on(table.listId, table.productId)
+]);
+
+export const listGroupItems = pgTable("list_group_items", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    listId: integer().notNull().references(() => list.id),
+    groupId: integer().notNull().references(() => groups.id),
+    amount: integer()
+}, (table) => [
+    unique("list_group_item_unique").on(table.listId, table.groupId)
 ]);
 
 export const listItemsRelations = relations(listItems, ({ one }) => ({

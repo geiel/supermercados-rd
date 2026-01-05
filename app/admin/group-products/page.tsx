@@ -23,6 +23,7 @@ import { validateAdminUser } from "@/lib/authentication";
 import { GroupProductsToolbar } from "./client";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -256,26 +257,49 @@ async function GroupProductsPage({ searchParams }: Props) {
     );
   }
 
-  const groupProductIds =
-    resolvedGroupId && filteredProducts.length > 0
-      ? new Set(
-          (
-            await db.query.productsGroups.findMany({
-              columns: {
-                productId: true,
-              },
-              where: (productsGroups, { and, eq, inArray }) =>
-                and(
-                  eq(productsGroups.groupId, resolvedGroupId),
-                  inArray(
-                    productsGroups.productId,
-                    filteredProducts.map((product) => product.id)
-                  )
-                ),
-            })
-          ).map((item) => item.productId)
-        )
-      : new Set<number>();
+  const filteredProductIds = filteredProducts.map((product) => product.id);
+  const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
+  const productGroupEntries =
+    filteredProductIds.length > 0
+      ? await db.query.productsGroups.findMany({
+          columns: {
+            productId: true,
+            groupId: true,
+          },
+          where: (productsGroups, { inArray }) =>
+            inArray(productsGroups.productId, filteredProductIds),
+        })
+      : [];
+
+  const productGroupsByProductId = new Map<
+    number,
+    { id: number; name: string }[]
+  >();
+  const groupProductIds = new Set<number>();
+
+  for (const entry of productGroupEntries) {
+    const groupName = groupNameById.get(entry.groupId);
+    if (groupName) {
+      const existingGroups = productGroupsByProductId.get(entry.productId);
+      const groupInfo = { id: entry.groupId, name: groupName };
+      if (existingGroups) {
+        existingGroups.push(groupInfo);
+      } else {
+        productGroupsByProductId.set(entry.productId, [groupInfo]);
+      }
+    }
+
+    if (resolvedGroupId && entry.groupId === resolvedGroupId) {
+      groupProductIds.add(entry.productId);
+    }
+  }
+
+  for (const groupsList of productGroupsByProductId.values()) {
+    groupsList.sort((a, b) => {
+      const nameOrder = a.name.localeCompare(b.name);
+      return nameOrder !== 0 ? nameOrder : a.id - b.id;
+    });
+  }
 
   return (
     <div className="container mx-auto pb-4 pt-4">
@@ -292,6 +316,7 @@ async function GroupProductsPage({ searchParams }: Props) {
             const isInGroup = resolvedGroupId
               ? groupProductIds.has(product.id)
               : false;
+            const productGroups = productGroupsByProductId.get(product.id) ?? [];
 
             return (
               <div
@@ -351,6 +376,19 @@ async function GroupProductsPage({ searchParams }: Props) {
                     </div>
                   </div>
                   <Unit unit={product.unit} />
+                  {productGroups.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {productGroups.map((group) => (
+                        <Badge
+                          key={group.id}
+                          variant="secondary"
+                          className="px-1 py-0 text-[10px] leading-4"
+                        >
+                          {group.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
                   <div>
                     <ProductBrand
                       brand={product.brand}

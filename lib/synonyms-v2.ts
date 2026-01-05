@@ -122,7 +122,7 @@ const base: Array<Synonym> = [
     { synonyms: ["hazelnut", "avellana", "noisette"], query: ["hazelnut:*", "avellana:*"]},
     { synonyms: ["shelled", "pelado", "pelada"], query: ["shelled:*", "pelad:*"]},
     { synonyms: ["mix", "mixed", "mixto", "mixta", "mezcla", "surtido", "surtida"], query: ["mix:*", "mezcl:*", "surtid:*"]},
-    { synonyms: ["ring", "anilla", "anillo"], query: ["ring", "anill:*"]},
+    { synonyms: ["ring", "anilla", "anillo", "aro"], query: ["ring", "anill:*", "aro"]},
     { synonyms: ["mandarina", "clementina"], query: ["mandarina", "clementina"]},
     { synonyms: ["carnation", "evaporada"], query: ["carnation", "evaporad:*"]},
     { synonyms: ["banana", "guineo"], query: ["banana:*", "guineo:*"]},
@@ -605,6 +605,10 @@ const base: Array<Synonym> = [
     { synonyms: ["conejo", "rabbit"], query: ["conejo", "rabbit"]},
     { synonyms: ["pez", "fish"], query: ["pez", "fish"]},
     { synonyms: ["ave", "bird"], query: ["ave", "bird"]},
+    { synonyms: ["zukini", "zucchini"], query: ["zukini", "zucchini"]},
+    { synonyms: ["coulotte", "culotte"], query: ["coulotte", "culotte"]},
+    { synonyms: ["fajita", "ricitos"], query: ["fajita", "ricitos"]},
+    { synonyms: ["yodada", "iodized"], query: ["yodada", "iodized"]}
 ]; 
 
 function pluralizeWord(word: string) {
