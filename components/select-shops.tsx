@@ -16,10 +16,12 @@ import { Badge } from "./ui/badge";
 type SelectShopsProps = { 
     shops: shopsSelect[], 
     listId: number, 
-    initialSelectedShops: number[] 
+    initialSelectedShops: number[]
+    cheapestShopIds: number[]
+    bestPairShopIds: number[]
 }
 
-export function SelectShops({ shops, listId, initialSelectedShops }: SelectShopsProps) {
+export function SelectShops({ shops, listId, initialSelectedShops, cheapestShopIds, bestPairShopIds }: SelectShopsProps) {
     const [open, setOpen] = React.useState(false)
     const isMobile = useIsMobile()
 
@@ -38,7 +40,14 @@ export function SelectShops({ shops, listId, initialSelectedShops }: SelectShops
                     <DrawerHeader>
                         <DrawerTitle>Selecciona supermercado</DrawerTitle>
                     </DrawerHeader>
-                    <SupermarketsList shops={shops} listId={listId} initialSelectedShops={initialSelectedShops} onClose={() => setOpen(false)} />
+                    <SupermarketsList
+                        shops={shops}
+                        listId={listId}
+                        initialSelectedShops={initialSelectedShops}
+                        cheapestShopIds={cheapestShopIds}
+                        bestPairShopIds={bestPairShopIds}
+                        onClose={() => setOpen(false)}
+                    />
                 </DrawerContent>
             </Drawer>
         )
@@ -58,20 +67,54 @@ export function SelectShops({ shops, listId, initialSelectedShops }: SelectShops
                 <DialogHeader>
                     <DialogTitle>Selecciona supermercado</DialogTitle>
                 </DialogHeader>
-                <SupermarketsList shops={shops} listId={listId} initialSelectedShops={initialSelectedShops} onClose={() => setOpen(false)} />
+                <SupermarketsList
+                    shops={shops}
+                    listId={listId}
+                    initialSelectedShops={initialSelectedShops}
+                    cheapestShopIds={cheapestShopIds}
+                    bestPairShopIds={bestPairShopIds}
+                    onClose={() => setOpen(false)}
+                />
             </DialogContent>
         </Dialog>
     )
 }
 
-function SupermarketsList({ shops, listId, initialSelectedShops, onClose }: SelectShopsProps & { onClose: () => void }) {
+function SupermarketsList({
+    shops,
+    listId,
+    initialSelectedShops,
+    cheapestShopIds,
+    bestPairShopIds,
+    onClose
+}: SelectShopsProps & { onClose: () => void }) {
     const [selectedShops, setSelectedShops] = React.useState<number[]>(initialSelectedShops);
     const [loading, setLoading] = React.useState(false);
 
     const shopAmount = selectedShops.length === 0 ? 6 : selectedShops.length;
+    const canSelectCheapest = cheapestShopIds.length > 0;
+    const canSelectBestPair = bestPairShopIds.length > 0;
 
     return (
         <div className="grid grid-cols-2 justify-items-stretch gap-4 p-4 md:p-0">
+            <div className="col-span-2 grid grid-cols-2 gap-2">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={loading || !canSelectCheapest}
+                    onClick={() => setSelectedShops(cheapestShopIds)}
+                >
+                    Seleccionar mas barato
+                </Button>
+                <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={loading || !canSelectBestPair}
+                    onClick={() => setSelectedShops(bestPairShopIds)}
+                >
+                    Seleccionar 2 mejores
+                </Button>
+            </div>
             {shops.map(shop => (
                 <Toggle key={shop.id} variant="outline" className="h-[50px]" pressed={selectedShops.includes(shop.id)} onPressedChange={(pressed) => {
                     if (pressed) {

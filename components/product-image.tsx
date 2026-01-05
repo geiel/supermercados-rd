@@ -15,7 +15,25 @@ function getImageSrc(src: string | StaticImport): string | StaticImport {
   return src;
 }
 
+function getImageKey(src: string | StaticImport): string {
+  if (typeof src === "string") {
+    return src;
+  }
+
+  if ("src" in src) {
+    return src.src;
+  }
+
+  return "";
+}
+
 export function ProductImage(props: ImageProps) {
+  const imageKey = getImageKey(props.src);
+
+  return <ProductImageInner key={imageKey} {...props} />;
+}
+
+function ProductImageInner(props: ImageProps) {
   const [imageSrc, setImageSrc] = useState<string | StaticImport>(getImageSrc(props.src));
   const [loaded, setLoaded] = useState(false);
 

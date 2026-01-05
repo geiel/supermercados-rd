@@ -8,13 +8,31 @@ import React, { useTransition } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "./ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { updateItemAmount, deleteItem } from "@/lib/compare";
+import { updateGroupIgnoredProducts, updateItemAmount, deleteItem } from "@/lib/compare";
 import { ArrowRightSquare, Trash } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toSlug } from "@/lib/utils";
 import { Badge } from "./ui/badge";
+import { Separator } from "./ui/separator";
 
 type Product = productsSelect & { shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }> }
+
+type GroupAlternative = {
+    product: Product
+    price: number
+    shopName: string
+    shopId: number
+    isCurrent: boolean
+}
+
+type GroupEntryInfo = {
+    id: number
+    name: string
+    alternatives: GroupAlternative[]
+    ignoredProducts: Product[]
+    listItemId?: number
+}
 
 type ProductItemEntry = {
     rowKey: string
@@ -22,6 +40,7 @@ type ProductItemEntry = {
     amount?: number | null
     listItem?: listItemsSelect
     comparisonLabel?: string | null
+    group?: GroupEntryInfo
 }
 
 type ProductItemsProps = {
@@ -90,8 +109,9 @@ type DialogDrawerProps = {
 function ItemProductDialog({ entry, onAmountChange }: DialogDrawerProps) {
     const [open, setOpen] = React.useState(false);
     const amount = entry.amount ?? entry.listItem?.amount;
+    const isGroup = Boolean(entry.group);
 
-    if (!entry.listItem) {
+    if (!entry.listItem && !isGroup) {
         return (
             <Item asChild role="listItem" variant="outline">
                 <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
@@ -108,14 +128,18 @@ function ItemProductDialog({ entry, onAmountChange }: DialogDrawerProps) {
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Acciones</DialogTitle>
+                    <DialogTitle>{isGroup ? entry.group?.name : "Acciones"}</DialogTitle>
                 </DialogHeader>
-                <ProductDetails
-                    product={entry.product}
-                    item={entry.listItem}
-                    onItemClose={() => setOpen(false)}
-                    onAmountChange={onAmountChange}
-                />
+                {isGroup && entry.group ? (
+                    <GroupDetails group={entry.group} />
+                ) : (
+                    <ProductDetails
+                        product={entry.product}
+                        item={entry.listItem}
+                        onItemClose={() => setOpen(false)}
+                        onAmountChange={onAmountChange}
+                    />
+                )}
             </DialogContent>
         </Dialog>
     )    
@@ -124,8 +148,9 @@ function ItemProductDialog({ entry, onAmountChange }: DialogDrawerProps) {
 function ItemProductDrawer({ entry, onAmountChange }: DialogDrawerProps) {
     const [open, setOpen] = React.useState(false);
     const amount = entry.amount ?? entry.listItem?.amount;
+    const isGroup = Boolean(entry.group);
 
-    if (!entry.listItem) {
+    if (!entry.listItem && !isGroup) {
         return (
             <Item asChild role="listItem" variant="outline">
                 <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
@@ -142,14 +167,18 @@ function ItemProductDrawer({ entry, onAmountChange }: DialogDrawerProps) {
             </DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader>
-                    <DrawerTitle>Acciones</DrawerTitle>
+                    <DrawerTitle>{isGroup ? entry.group?.name : "Acciones"}</DrawerTitle>
                 </DrawerHeader>
-                <ProductDetails
-                    product={entry.product}
-                    item={entry.listItem}
-                    onItemClose={() => setOpen(false)}
-                    onAmountChange={onAmountChange}
-                />
+                {isGroup && entry.group ? (
+                    <GroupDetails group={entry.group} />
+                ) : (
+                    <ProductDetails
+                        product={entry.product}
+                        item={entry.listItem}
+                        onItemClose={() => setOpen(false)}
+                        onAmountChange={onAmountChange}
+                    />
+                )}
             </DrawerContent>
         </Drawer>
     )
@@ -268,6 +297,199 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
 )
 
 ProductItemATag.displayName = "ProductItemATag"
+
+type GroupDetailsProps = {
+    group: GroupEntryInfo
+}
+
+function GroupDetails({ group }: GroupDetailsProps) {
+    const router = useRouter();
+    const [alternatives, setAlternatives] = React.useState(group.alternatives);
+    const [ignoredProducts, setIgnoredProducts] = React.useState(group.ignoredProducts);
+    const [ignorePending, startIgnoreTransition] = useTransition();
+    const alternativesRef = React.useRef(group.alternatives);
+    const ignoredProductsRef = React.useRef(group.ignoredProducts);
+
+    React.useEffect(() => {
+        setAlternatives(group.alternatives);
+        setIgnoredProducts(group.ignoredProducts);
+        alternativesRef.current = group.alternatives;
+        ignoredProductsRef.current = group.ignoredProducts;
+    }, [group.alternatives, group.ignoredProducts]);
+
+    const commitIgnoredProducts = (nextIgnoredProducts: Product[]) => {
+        const listItemId = group.listItemId;
+        if (!listItemId) {
+            return;
+        }
+
+        startIgnoreTransition(() => {
+            void updateGroupIgnoredProducts(
+                listItemId,
+                nextIgnoredProducts.map((product) => product.id)
+            ).then(() => {
+                router.refresh();
+            });
+        });
+    };
+
+    const handleIgnore = (alternative: GroupAlternative) => {
+        if (!group.listItemId) {
+            return;
+        }
+
+        const nextAlternatives = alternativesRef.current.filter(
+            (entry) => entry.product.id !== alternative.product.id
+        );
+        const alreadyIgnored = ignoredProductsRef.current.some(
+            (product) => product.id === alternative.product.id
+        );
+
+        alternativesRef.current = nextAlternatives;
+        setAlternatives(nextAlternatives);
+
+        if (alreadyIgnored) {
+            return;
+        }
+
+        const nextIgnored = [...ignoredProductsRef.current, alternative.product];
+        ignoredProductsRef.current = nextIgnored;
+        setIgnoredProducts(nextIgnored);
+        commitIgnoredProducts(nextIgnored);
+    };
+
+    const handleRestore = (product: Product) => {
+        if (!group.listItemId) {
+            return;
+        }
+
+        const nextIgnored = ignoredProductsRef.current.filter((entry) => entry.id !== product.id);
+        ignoredProductsRef.current = nextIgnored;
+        setIgnoredProducts(nextIgnored);
+        commitIgnoredProducts(nextIgnored);
+    };
+
+    const hasAlternatives = alternatives.length > 0;
+    const hasIgnored = ignoredProducts.length > 0;
+
+    if (!hasAlternatives && !hasIgnored) {
+        return (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+                No hay alternativas disponibles en otros supermercados.
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex flex-col gap-3 pb-2 px-2 overflow-auto">
+            {hasAlternatives ? (
+                alternatives.map((alternative) => {
+                    const priceLabel = Number.isFinite(alternative.price)
+                        ? `RD$${alternative.price.toFixed(2)}`
+                        : "RD$--";
+
+                    return (
+                        <div
+                            key={`${alternative.product.id}-${alternative.shopId}`}
+                            className="rounded-md border border-border p-3 space-y-2"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="size-14 relative">
+                                    <ProductImage
+                                        src={alternative.product.image ? alternative.product.image : "/no-product-found.jpg"}
+                                        fill
+                                        alt={alternative.product.name + alternative.product.unit}
+                                        sizes="56px"
+                                        style={{
+                                            objectFit: "contain",
+                                        }}
+                                        placeholder="blur"
+                                        blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                        className="max-w-none"
+                                    />
+                                </div>
+                                <div className="flex flex-1 flex-col gap-1">
+                                    <p className="text-sm font-semibold">
+                                        {alternative.product.name} {alternative.product.unit}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{alternative.shopName}</p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                    {alternative.isCurrent ? (
+                                        <Badge variant="secondary">Actual</Badge>
+                                    ) : null}
+                                    <span className="text-sm font-semibold">{priceLabel}</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                                <Button
+                                    size="xs"
+                                    variant="ghost"
+                                    onClick={() => handleIgnore(alternative)}
+                                    disabled={ignorePending}
+                                >
+                                    Ignorar
+                                </Button>
+                                <Button size="xs" variant="outline" asChild>
+                                    <Link href={`/product/${toSlug(alternative.product.name)}/${alternative.product.id}`}>
+                                        <ArrowRightSquare className="size-4" />
+                                        Ver
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    )
+                })
+            ) : (
+                <div className="py-2 text-center text-sm text-muted-foreground">
+                    No hay alternativas disponibles en otros supermercados.
+                </div>
+            )}
+            {hasIgnored ? (
+                <>
+                    <Separator />
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Ignorados
+                    </div>
+                    {ignoredProducts.map((product) => (
+                        <div
+                            key={`ignored-${product.id}`}
+                            className="flex items-center gap-3 rounded-md border border-border p-3"
+                        >
+                            <div className="size-14 relative">
+                                <ProductImage
+                                    src={product.image ? product.image : "/no-product-found.jpg"}
+                                    fill
+                                    alt={product.name + product.unit}
+                                    sizes="56px"
+                                    style={{
+                                        objectFit: "contain",
+                                    }}
+                                    placeholder="blur"
+                                    blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    className="max-w-none"
+                                />
+                            </div>
+                            <div className="flex flex-1 flex-col gap-1">
+                                <p className="text-sm font-semibold">
+                                    {product.name} {product.unit}
+                                </p>
+                            </div>
+                            <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => handleRestore(product)}
+                                disabled={ignorePending}
+                            >
+                                Agregar
+                            </Button>
+                        </div>
+                    ))}
+                </>
+            ) : null}
+        </div>
+    )
+}
 
 type ProductDetailsProps = {
     product: Product

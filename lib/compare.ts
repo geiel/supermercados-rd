@@ -105,3 +105,17 @@ export async function deleteItem(itemId: number) {
     revalidatePath("/lists");
     return { data: "ok" }
 }
+
+export async function updateGroupIgnoredProducts(listGroupItemId: number, ignoredProductIds: number[]) {
+    const user = await getUser();
+    if (!user) {
+        return { data: null, error: ErrorMessage.UserAuth }
+    }
+
+    await db.update(listGroupItems)
+        .set({ ignoredProducts: ignoredProductIds.map((productId) => productId.toString()) })
+        .where(eq(listGroupItems.id, listGroupItemId));
+
+    revalidatePath("/lists");
+    return { data: "ok" }
+}
