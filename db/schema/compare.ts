@@ -26,7 +26,8 @@ export const listGroupItems = pgTable("list_group_items", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     listId: integer().notNull().references(() => list.id),
     groupId: integer().notNull().references(() => groups.id),
-    amount: integer()
+    amount: integer(),
+    ignoredProducts: text().array().notNull().default(sql`ARRAY[]::text[]`),
 }, (table) => [
     unique("list_group_item_unique").on(table.listId, table.groupId)
 ]);

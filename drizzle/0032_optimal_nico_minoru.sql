@@ -1,0 +1,1 @@
+ALTER TABLE "list_group_items" ADD COLUMN "ignoredProducts" text[] DEFAULT ARRAY[]::text[] NOT NULL;

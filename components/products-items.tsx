@@ -2,7 +2,7 @@
 
 import { listItemsSelect, productsSelect, productsShopsPrices, shopsSelect } from "@/db/schema"
 import { ProductImage } from "./product-image"
-import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "./ui/item"
+import { Item, ItemContent, ItemDescription, ItemFooter, ItemGroup, ItemMedia, ItemTitle } from "./ui/item"
 import { Button } from "./ui/button"
 import React, { useTransition } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -12,6 +12,7 @@ import { updateItemAmount, deleteItem } from "@/lib/compare";
 import { ArrowRightSquare, Trash } from "lucide-react";
 import Link from "next/link";
 import { toSlug } from "@/lib/utils";
+import { Badge } from "./ui/badge";
 
 type Product = productsSelect & { shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }> }
 
@@ -29,12 +30,40 @@ type ProductItemsProps = {
 
 export function ProductItems({ items }: ProductItemsProps ) {
     const isMobile = useIsMobile()
+    const [localItems, setLocalItems] = React.useState(items);
+
+    React.useEffect(() => {
+        setLocalItems(items);
+    }, [items]);
+
+    const handleAmountChange = React.useCallback((itemId: number, nextAmount: number) => {
+        setLocalItems((current) =>
+            current.map((entry) => {
+                if (!entry.listItem || entry.listItem.id !== itemId) {
+                    return entry;
+                }
+
+                return {
+                    ...entry,
+                    amount: nextAmount,
+                    listItem: {
+                        ...entry.listItem,
+                        amount: nextAmount,
+                    },
+                };
+            })
+        );
+    }, []);
 
     if (isMobile) {
         return (
             <ItemGroup className="gap-2">
-                {items.map((entry) => (
-                    <ItemProductDrawer key={entry.rowKey} entry={entry} />
+                {localItems.map((entry) => (
+                    <ItemProductDrawer
+                        key={entry.rowKey}
+                        entry={entry}
+                        onAmountChange={handleAmountChange}
+                    />
                 ))}
             </ItemGroup>
         )
@@ -42,16 +71,23 @@ export function ProductItems({ items }: ProductItemsProps ) {
 
     return (
         <ItemGroup className="gap-2">
-            {items.map((entry) => (
-                <ItemProductDialog key={entry.rowKey} entry={entry} />
+            {localItems.map((entry) => (
+                <ItemProductDialog
+                    key={entry.rowKey}
+                    entry={entry}
+                    onAmountChange={handleAmountChange}
+                />
             ))}
         </ItemGroup>
     )
 }
 
-type DialogDrawerProps = { entry: ProductItemEntry }
+type DialogDrawerProps = {
+    entry: ProductItemEntry
+    onAmountChange?: (itemId: number, nextAmount: number) => void
+}
 
-function ItemProductDialog({ entry }: DialogDrawerProps) {
+function ItemProductDialog({ entry, onAmountChange }: DialogDrawerProps) {
     const [open, setOpen] = React.useState(false);
     const amount = entry.amount ?? entry.listItem?.amount;
 
@@ -74,13 +110,18 @@ function ItemProductDialog({ entry }: DialogDrawerProps) {
                 <DialogHeader>
                     <DialogTitle>Acciones</DialogTitle>
                 </DialogHeader>
-                <ProductDetails product={entry.product} item={entry.listItem} onItemClose={() => setOpen(false)} />
+                <ProductDetails
+                    product={entry.product}
+                    item={entry.listItem}
+                    onItemClose={() => setOpen(false)}
+                    onAmountChange={onAmountChange}
+                />
             </DialogContent>
         </Dialog>
     )    
 }
 
-function ItemProductDrawer({ entry }: DialogDrawerProps) {
+function ItemProductDrawer({ entry, onAmountChange }: DialogDrawerProps) {
     const [open, setOpen] = React.useState(false);
     const amount = entry.amount ?? entry.listItem?.amount;
 
@@ -103,7 +144,12 @@ function ItemProductDrawer({ entry }: DialogDrawerProps) {
                 <DrawerHeader>
                     <DrawerTitle>Acciones</DrawerTitle>
                 </DrawerHeader>
-                <ProductDetails product={entry.product} item={entry.listItem} onItemClose={() => setOpen(false)} />
+                <ProductDetails
+                    product={entry.product}
+                    item={entry.listItem}
+                    onItemClose={() => setOpen(false)}
+                    onAmountChange={onAmountChange}
+                />
             </DrawerContent>
         </Drawer>
     )
@@ -208,12 +254,14 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                             {price}
                         </ItemDescription>
                     </div>
-                    {resolvedComparisonLabel ? (
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                            {resolvedComparisonLabel}
-                        </span>
-                    ) : null}
                 </ItemContent>
+            {resolvedComparisonLabel ? (
+                <ItemFooter className="justify-end">
+                    <Badge variant="secondary">
+                        {resolvedComparisonLabel}
+                    </Badge>
+                </ItemFooter>
+                ) : null}
             </a>
         )
     }
@@ -221,43 +269,85 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
 
 ProductItemATag.displayName = "ProductItemATag"
 
-function ProductDetails({ product, item, onItemClose }: { product: Product, item?: listItemsSelect, onItemClose: () => void } ) {
+type ProductDetailsProps = {
+    product: Product
+    item?: listItemsSelect
+    onItemClose: () => void
+    onAmountChange?: (itemId: number, nextAmount: number) => void
+}
+
+function ProductDetails({ product, item, onItemClose, onAmountChange }: ProductDetailsProps ) {
     const [quantity, setQuantity] = React.useState(item?.amount ? item.amount : 1)
-    const [amountUpdatePending, startUpdateTransition] = useTransition();
+    const [, startUpdateTransition] = useTransition();
+    const amountUpdateTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingAmountRef = React.useRef<number | null>(null);
+    const quantityRef = React.useRef<number>(item?.amount ? item.amount : 1);
+    const itemId = item?.id;
 
     const price = product.shopCurrentPrices[0]?.currentPrice
     const formattedPrice = price !== undefined ? `RD$${price}` : ""
+
+    React.useEffect(() => {
+        return () => {
+            if (amountUpdateTimeoutRef.current) {
+                clearTimeout(amountUpdateTimeoutRef.current);
+                amountUpdateTimeoutRef.current = null;
+            }
+
+            const pendingAmount = pendingAmountRef.current;
+            pendingAmountRef.current = null;
+
+            if (pendingAmount !== null && itemId) {
+                void updateItemAmount(pendingAmount, itemId);
+            }
+        };
+    }, [itemId]);
 
     if (!item) {
         return null;
     }
 
-    const handleDecrease = async () => {
-        let nextQuantity = 1
+    const scheduleAmountUpdate = (nextQuantity: number) => {
+        if (!itemId) {
+            return;
+        }
 
-        setQuantity((current) => {
-            const updated = Math.max(1, current - 1)
-            nextQuantity = updated
-            return updated
-        })
+        onAmountChange?.(itemId, nextQuantity);
+        pendingAmountRef.current = nextQuantity;
 
-        startUpdateTransition(() => {
-            updateItemAmount(nextQuantity, item.id)
-        })
+        if (amountUpdateTimeoutRef.current) {
+            clearTimeout(amountUpdateTimeoutRef.current);
+        }
+
+        amountUpdateTimeoutRef.current = setTimeout(() => {
+            const amountToSend = pendingAmountRef.current;
+            pendingAmountRef.current = null;
+            amountUpdateTimeoutRef.current = null;
+
+            if (amountToSend === null) {
+                return;
+            }
+
+            startUpdateTransition(() => {
+                void updateItemAmount(amountToSend, itemId);
+            });
+        }, 400);
+    };
+
+    const applyQuantityChange = (nextQuantity: number) => {
+        quantityRef.current = nextQuantity;
+        setQuantity(nextQuantity);
+        scheduleAmountUpdate(nextQuantity);
+    };
+
+    const handleDecrease = () => {
+        const nextQuantity = Math.max(1, quantityRef.current - 1);
+        applyQuantityChange(nextQuantity);
     }
 
-    const handleIncrease = async () => {
-        let nextQuantity = 1
-
-        setQuantity((current) => {
-            const updated = current + 1
-            nextQuantity = updated
-            return updated
-        })
-
-        startUpdateTransition(() => {
-            updateItemAmount(nextQuantity, item.id)
-        })
+    const handleIncrease = () => {
+        const nextQuantity = quantityRef.current + 1;
+        applyQuantityChange(nextQuantity);
     }
 
     const handleDeleteItemFromList = async () => {
@@ -297,7 +387,7 @@ function ProductDetails({ product, item, onItemClose }: { product: Product, item
                     variant="outline"
                     onClick={handleDecrease}
                     aria-label="Disminuir cantidad"
-                    disabled={quantity <= 1 || amountUpdatePending}
+                    disabled={quantity <= 1}
                 >
                     -
                 </Button>
@@ -307,7 +397,6 @@ function ProductDetails({ product, item, onItemClose }: { product: Product, item
                     size="icon"
                     variant="outline"
                     onClick={handleIncrease}
-                    disabled={amountUpdatePending}
                     aria-label="Incrementar cantidad"
                 >
                     +
