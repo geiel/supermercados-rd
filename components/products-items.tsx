@@ -18,6 +18,42 @@ import { Separator } from "./ui/separator";
 
 type Product = productsSelect & { shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }> }
 
+type ComparisonDisplay =
+    | {
+          label: string
+          kind: "cheaper" | "same"
+          prefix: string
+          shopName: string
+      }
+    | {
+          label: string
+          kind: "unknown"
+      }
+
+const parseComparisonLabel = (label: string): ComparisonDisplay => {
+    const cheaperMatch = label.match(/^(.*?mas barato que)\s+(.+)$/i)
+    if (cheaperMatch) {
+        return {
+            label,
+            kind: "cheaper",
+            prefix: `${cheaperMatch[1]} `,
+            shopName: cheaperMatch[2],
+        }
+    }
+
+    const sameMatch = label.match(/^(Mismo (precio|valor) que)\s+(.+)$/i)
+    if (sameMatch) {
+        return {
+            label,
+            kind: "same",
+            prefix: `${sameMatch[1]} `,
+            shopName: sameMatch[3],
+        }
+    }
+
+    return { label, kind: "unknown" }
+}
+
 type GroupAlternative = {
     product: Product
     price: number
@@ -205,7 +241,7 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
             .filter((entry): entry is { value: number; raw: typeof product.shopCurrentPrices[number]; shopName: string } => Boolean(entry));
 
         let price = "";
-        let computedComparisonLabel: string | null = null;
+        let computedComparison: ComparisonDisplay | null = null;
 
         if (priceEntries.length > 0) {
             const currentShopId = product.shopCurrentPrices[0]?.shopId;
@@ -235,15 +271,31 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                 const difference = comparisonEntry.value - currentEntry.value;
 
                 if (difference > 0) {
-                    computedComparisonLabel = `RD$${difference.toFixed(2)} mas barato que ${comparisonEntry.shopName}`;
+                    const label = `RD$${difference.toFixed(2)} mas barato que ${comparisonEntry.shopName}`;
+                    computedComparison = {
+                        label,
+                        kind: "cheaper",
+                        prefix: `RD$${difference.toFixed(2)} mas barato que `,
+                        shopName: comparisonEntry.shopName,
+                    };
                 } else if (difference === 0) {
-                    computedComparisonLabel = `Mismo precio que ${comparisonEntry.shopName}`;
+                    const label = `Mismo precio que ${comparisonEntry.shopName}`;
+                    computedComparison = {
+                        label,
+                        kind: "same",
+                        prefix: "Mismo precio que ",
+                        shopName: comparisonEntry.shopName,
+                    };
                 }
             }
         }
 
-        const resolvedComparisonLabel =
-            typeof comparisonLabel !== "undefined" ? comparisonLabel : computedComparisonLabel;
+        const resolvedComparison =
+            typeof comparisonLabel !== "undefined"
+                ? comparisonLabel
+                    ? parseComparisonLabel(comparisonLabel)
+                    : null
+                : computedComparison;
 
         return (
             <a
@@ -284,12 +336,26 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                         </ItemDescription>
                     </div>
                 </ItemContent>
-            {resolvedComparisonLabel ? (
-                <ItemFooter className="justify-end">
-                    <Badge variant="secondary">
-                        {resolvedComparisonLabel}
-                    </Badge>
-                </ItemFooter>
+                {resolvedComparison ? (
+                    <ItemFooter className="justify-end">
+                        <Badge
+                            variant="secondary"
+                            className={
+                                resolvedComparison.kind === "cheaper"
+                                    ? "bg-emerald-100 text-emerald-900"
+                                    : undefined
+                            }
+                        >
+                            {resolvedComparison.kind === "unknown" ? (
+                                resolvedComparison.label
+                            ) : (
+                                <>
+                                    <span>{resolvedComparison.prefix}</span>
+                                    <span className="font-semibold">{resolvedComparison.shopName}</span>
+                                </>
+                            )}
+                        </Badge>
+                    </ItemFooter>
                 ) : null}
             </a>
         )

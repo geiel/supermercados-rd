@@ -4,25 +4,41 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { TypographyH3 } from "./typography-h3";
 import { Button } from "./ui/button";
-import { Plus } from "lucide-react";
-import { addGroupToUserList } from "@/lib/compare";
+import { Check, Plus } from "lucide-react";
+import { addGroupToUserList, deleteGroupItem } from "@/lib/compare";
 import { Spinner } from "./ui/spinner";
 import { toast } from "sonner";
+import useSWR from "swr";
+import { createSelectSchema } from "drizzle-zod";
+import { listGroupItems as listGroupItemsTable } from "@/db/schema";
+import { useRouter } from "next/navigation";
 
-export function CategorySearch({ groupResults }: { groupResults: Array<{ name: string; humanId: string }> }) {
+type GroupResult = { name: string; humanId: string; groupId: number };
+type ListGroupItem = typeof listGroupItemsTable.$inferSelect;
+
+const listGroupItemsSchema = createSelectSchema(listGroupItemsTable);
+
+export function CategorySearch({ groupResults }: { groupResults: Array<GroupResult> }) {
     const [showAllMobile, setShowAllMobile] = useState(false);
-    const [pendingGroupIds, setPendingGroupIds] = useState<Set<string>>(new Set());
+    const [pendingAddGroupIds, setPendingAddGroupIds] = useState<Set<number>>(new Set());
+    const [pendingRemoveGroupIds, setPendingRemoveGroupIds] = useState<Set<number>>(new Set());
     const [, startTransition] = useTransition();
+    const router = useRouter();
+    const { data: listGroupItems, mutate: mutateGroupItems, isLoading: isLoadingGroupItems } = useSWR<ListGroupItem[]>('/api/user/lists/groups', async (key: string | URL | Request) => {
+        const response = await fetch(key, { credentials: 'include' });
+        return listGroupItemsSchema.array().parse(await response.json());
+    });
     const mobileGroups = showAllMobile ? groupResults : groupResults.slice(0, 4);
+    const groupItemByGroupId = new Map(listGroupItems?.map((item) => [item.groupId, item]) ?? []);
 
-    const handleAddGroup = (groupHumanId: string) => {
-        if (pendingGroupIds.has(groupHumanId)) {
+    const handleAddGroup = (groupHumanId: string, groupId: number) => {
+        if (pendingAddGroupIds.has(groupId) || pendingRemoveGroupIds.has(groupId)) {
             return;
         }
 
-        setPendingGroupIds((current) => {
+        setPendingAddGroupIds((current) => {
             const next = new Set(current);
-            next.add(groupHumanId);
+            next.add(groupId);
             return next;
         });
 
@@ -31,15 +47,91 @@ export function CategorySearch({ groupResults }: { groupResults: Array<{ name: s
                 const { error } = await addGroupToUserList(groupHumanId);
                 if (error) {
                     toast.error(error);
+                    return;
                 }
+                await mutateGroupItems();
+                toast('Agregado a la lista', {
+                    action: {
+                        label: "Ver",
+                        onClick: () => router.push("/lists")
+                    }
+                });
             } finally {
-                setPendingGroupIds((current) => {
+                setPendingAddGroupIds((current) => {
                     const next = new Set(current);
-                    next.delete(groupHumanId);
+                    next.delete(groupId);
                     return next;
                 });
             }
         });
+    };
+
+    const handleRemoveGroup = (groupId: number, listGroupItemId: number) => {
+        if (pendingAddGroupIds.has(groupId) || pendingRemoveGroupIds.has(groupId)) {
+            return;
+        }
+
+        setPendingRemoveGroupIds((current) => {
+            const next = new Set(current);
+            next.add(groupId);
+            return next;
+        });
+
+        startTransition(async () => {
+            try {
+                const { error } = await deleteGroupItem(listGroupItemId);
+                if (error) {
+                    toast.error(error);
+                    return;
+                }
+                await mutateGroupItems();
+                toast('Removido de la lista');
+            } finally {
+                setPendingRemoveGroupIds((current) => {
+                    const next = new Set(current);
+                    next.delete(groupId);
+                    return next;
+                });
+            }
+        });
+    };
+
+    const renderGroupActionButton = (group: GroupResult) => {
+        const groupListItem = groupItemByGroupId.get(group.groupId);
+        const isPendingAdd = pendingAddGroupIds.has(group.groupId);
+        const isPendingRemove = pendingRemoveGroupIds.has(group.groupId);
+        const isPending = isPendingAdd || isPendingRemove;
+        const isDisabled = isPending || isLoadingGroupItems;
+
+        if (groupListItem) {
+            return (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="rounded-full bg-[#CE1126] text-white hover:bg-[#CE1126]/60"
+                    onClick={() => handleRemoveGroup(group.groupId, groupListItem.id)}
+                    disabled={isDisabled}
+                    aria-label={`Remover ${group.name} de la lista`}
+                >
+                    {isPendingRemove ? <Spinner /> : <Check />}
+                </Button>
+            );
+        }
+
+        return (
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full"
+                onClick={() => handleAddGroup(group.humanId, group.groupId)}
+                disabled={isDisabled}
+                aria-label={`Agregar ${group.name} a la lista`}
+            >
+                {isPendingAdd ? <Spinner /> : <Plus />}
+            </Button>
+        );
     };
 
     return (
@@ -63,17 +155,7 @@ export function CategorySearch({ groupResults }: { groupResults: Array<{ name: s
               >
                 {group.name}
               </Link>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={() => handleAddGroup(group.humanId)}
-                disabled={pendingGroupIds.has(group.humanId)}
-                aria-label={`Agregar ${group.name} a la lista`}
-              >
-                {pendingGroupIds.has(group.humanId) ? <Spinner /> : <Plus />}
-              </Button>
+              {renderGroupActionButton(group)}
             </div>
           ))}
         </div>
@@ -89,17 +171,7 @@ export function CategorySearch({ groupResults }: { groupResults: Array<{ name: s
               >
                 {group.name}
               </Link>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={() => handleAddGroup(group.humanId)}
-                disabled={pendingGroupIds.has(group.humanId)}
-                aria-label={`Agregar ${group.name} a la lista`}
-              >
-                {pendingGroupIds.has(group.humanId) ? <Spinner /> : <Plus />}
-              </Button>
+              {renderGroupActionButton(group)}
             </div>
           ))}
           {!showAllMobile && groupResults.length > 4 ? (

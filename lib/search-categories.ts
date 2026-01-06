@@ -14,7 +14,7 @@ export async function searchGroups(value: string) {
     const query = sql`
         WITH
             fts AS (
-                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id
+                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id
                 FROM ${products}
                 INNER JOIN ${productsGroups} ON ${productsGroups.productId} = ${products.id}
                 INNER JOIN ${groups} ON ${groups.id} = ${productsGroups.groupId}
@@ -27,7 +27,7 @@ export async function searchGroups(value: string) {
                 AND COALESCE(deleted, FALSE) = FALSE
             ),
             fuzzy AS (
-                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id
+                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id
                 FROM ${products}
                 INNER JOIN ${productsGroups} ON ${productsGroups.productId} = ${products.id}
                 INNER JOIN ${groups} ON ${groups.id} = ${productsGroups.groupId}
@@ -35,14 +35,15 @@ export async function searchGroups(value: string) {
                 AND deleted IS NOT TRUE
             ),
             combined AS (
-                SELECT DISTINCT group_name, human_id FROM fts
+                SELECT DISTINCT group_name, human_id, group_id FROM fts
                 UNION
-                SELECT DISTINCT group_name, human_id FROM fuzzy
+                SELECT DISTINCT group_name, human_id, group_id FROM fuzzy
             )
-        SELECT group_name, human_id
+        SELECT group_name, human_id, group_id
         FROM combined
+        ORDER BY similarity(unaccent(lower(group_name)), unaccent(lower(${value}))) DESC
     `;
 
-    const rows = await db.execute<{ group_name: string; human_id: string }>(query);
-    return rows.map((row) => ({name: row.group_name, humanId: row.human_id}));
+    const rows = await db.execute<{ group_name: string; human_id: string; group_id: number }>(query);
+    return rows.map((row) => ({name: row.group_name, humanId: row.human_id, groupId: row.group_id}));
 }

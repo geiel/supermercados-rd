@@ -123,6 +123,9 @@ export default async function Page({ params, searchParams }: Props) {
 
   return (
     <>
+      <div className="px-2 md:px-0">
+        <h1 className="text-2xl font-semibold tracking-tight">Buscaste &quot;{rawSearchValue}&quot;</h1>
+      </div>
       <CategorySearch groupResults={groupResults} />
       <div className="px-2 md:px-0">
         <div className="flex items-baseline gap-2">

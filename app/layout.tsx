@@ -43,7 +43,7 @@ export default function RootLayout({
         >
           <ListItemsProvider>
             <header className="h-[76px]">
-              <div className="px-4 lg:px-0 py-2 container mx-auto">
+              <div className="px-2 py-2 container mx-auto">
                 <div className="flex items-center">
                   <div className="flex-none">
                     <Link href="/">
@@ -68,7 +68,7 @@ export default function RootLayout({
               </div>
             </header>
             {children}
-            <Toaster richColors position="top-right" />
+            <Toaster richColors />
             <SpeedInsights />
           </ListItemsProvider>
         </body>

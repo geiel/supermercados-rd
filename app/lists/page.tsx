@@ -61,6 +61,7 @@ export default async function Page({ searchParams }: Props) {
     }
 
     const selectedShopIds = selectedShops.map(id => Number(id));
+    const selectedShopIdSet = new Set(selectedShopIds);
     const allShopIds = allShops.map((shop) => shop.id);
     const compareMode: CompareMode = compare === "value" ? "value" : "cheapest";
 
@@ -73,9 +74,11 @@ export default async function Page({ searchParams }: Props) {
             shopId: number;
             price: number | string;
             quantity: number | string;
+            unit: string | null;
         }>(sql`
             SELECT
                 ${listItemsTable.productId} AS "productId",
+                ${products.unit} AS "unit",
                 ${productsShopsPricesTable.shopId} AS "shopId",
                 ${productsShopsPricesTable.currentPrice} AS "price",
                 COALESCE(${listItemsTable.amount}, 1) AS "quantity"
@@ -247,25 +250,8 @@ export default async function Page({ searchParams }: Props) {
     const bestSingleShop = computeBestSingleShop(allShopIds, lineItems);
     const bestPairShops = computeBestPairShops(allShopIds, lineItems);
 
-    const cheapestShopIds = bestSingleShop ? bestSingleShop.shopIds : [];
-    const bestPairShopIds = (() => {
-        if (!bestSingleShop && !bestPairShops) {
-            return [];
-        }
-        if (!bestPairShops) {
-            return bestSingleShop?.shopIds ?? [];
-        }
-        if (!bestSingleShop) {
-            return bestPairShops.shopIds;
-        }
-
-        const pairIsBetter =
-            bestPairShops.missingCount < bestSingleShop.missingCount ||
-            (bestPairShops.missingCount === bestSingleShop.missingCount &&
-                bestPairShops.total < bestSingleShop.total);
-
-        return pairIsBetter ? bestPairShops.shopIds : bestSingleShop.shopIds;
-    })();
+    const cheapestSingleShopIds = bestSingleShop ? bestSingleShop.shopIds : [];
+    const cheapestPairShopIds = bestPairShops ? bestPairShops.shopIds : [];
 
     const productPrices = list.items.length > 0
         ? await db.query.products.findMany({
@@ -352,10 +338,7 @@ export default async function Page({ searchParams }: Props) {
                     or(
                         isNull(productsShopsPricesTable.hidden),
                         eq(productsShopsPricesTable.hidden, false)
-                    ),
-                    selectedShopIds.length > 0
-                        ? inArray(productsShopsPricesTable.shopId, selectedShopIds)
-                        : sql`false`
+                    )
                 )
             )
             .leftJoin(shops, eq(shops.id, productsShopsPricesTable.shopId))
@@ -498,6 +481,107 @@ export default async function Page({ searchParams }: Props) {
 
         return unitPrice;
     };
+
+    const getValuePrice = (price: number, unit: string | null) => {
+        const parsed = unit ? parseUnit(unit) : null;
+        const unitPrice = parsed ? getUnitPrice(price, parsed) : null;
+        return unitPrice ?? price;
+    };
+
+    const ignoredProductsByGroupId = new Map<number, Set<number>>();
+
+    for (const groupItem of listGroupItems) {
+        const ignored = (groupItem.ignoredProducts ?? [])
+            .map((productId) => Number(productId))
+            .filter(Number.isFinite);
+
+        if (ignored.length > 0) {
+            ignoredProductsByGroupId.set(groupItem.groupId, new Set(ignored));
+        }
+    }
+
+    const valueLineItemsByKey = new Map<string, LineItem>();
+
+    const addValueLineItem = (
+        key: string,
+        quantity: number,
+        shopIdRaw: number | string,
+        valueRaw: number
+    ) => {
+        const value = Number(valueRaw);
+        if (!Number.isFinite(value)) {
+            return;
+        }
+
+        const shopId = Number(shopIdRaw);
+        if (!Number.isFinite(shopId)) {
+            return;
+        }
+
+        const lineItem = valueLineItemsByKey.get(key);
+        if (!lineItem) {
+            valueLineItemsByKey.set(key, {
+                quantity,
+                pricesByShop: new Map([[shopId, value]])
+            });
+            return;
+        }
+
+        const existing = lineItem.pricesByShop.get(shopId);
+        if (existing === undefined || value < existing) {
+            lineItem.pricesByShop.set(shopId, value);
+        }
+    };
+
+    for (const row of listItemRows) {
+        const quantity = getQuantity(row.quantity);
+        const price = Number(row.price);
+        if (!Number.isFinite(price)) {
+            continue;
+        }
+
+        const valuePrice = getValuePrice(price, row.unit);
+        addValueLineItem(`product-${row.productId}`, quantity, row.shopId, valuePrice);
+    }
+
+    const groupQuantityById = new Map<number, number>();
+    for (const groupItem of listGroupItems) {
+        groupQuantityById.set(groupItem.groupId, getQuantity(groupItem.amount ?? 1));
+    }
+
+    for (const row of groupProductRows) {
+        if (!row.shopId || row.currentPrice === null) {
+            continue;
+        }
+
+        const ignoredProducts = ignoredProductsByGroupId.get(row.groupId);
+        if (ignoredProducts && ignoredProducts.has(row.productId)) {
+            continue;
+        }
+
+        const price = Number(row.currentPrice);
+        if (!Number.isFinite(price)) {
+            continue;
+        }
+
+        const quantity = groupQuantityById.get(row.groupId);
+        if (!quantity) {
+            continue;
+        }
+
+        const valuePrice = getValuePrice(price, row.productUnit);
+        addValueLineItem(`group-${row.groupId}`, quantity, row.shopId, valuePrice);
+    }
+
+    const valueLineItems = Array.from(valueLineItemsByKey.values()).filter(
+        (item) => item.pricesByShop.size > 0
+    );
+
+    const bestValueSingleShop = computeBestSingleShop(allShopIds, valueLineItems);
+    const bestValuePairShops = computeBestPairShops(allShopIds, valueLineItems);
+
+    const bestValueSingleShopIds = bestValueSingleShop ? bestValueSingleShop.shopIds : [];
+    const bestValuePairShopIds = bestValuePairShops ? bestValuePairShops.shopIds : [];
 
     const getCheapestComparisonLabel = (
         bestPick: GroupPick | null,
@@ -848,7 +932,9 @@ export default async function Page({ searchParams }: Props) {
             shopCurrentPrices: [
                 bestPick.shopPrice,
                 ...bestPick.product.shopCurrentPrices.filter(
-                    (price) => price.shopId !== bestPick.shopPrice.shopId
+                    (price) =>
+                        price.shopId !== bestPick.shopPrice.shopId &&
+                        selectedShopIdSet.has(price.shopId)
                 ),
             ],
         };
@@ -916,8 +1002,10 @@ export default async function Page({ searchParams }: Props) {
                             shops={allShops}
                             listId={list.id}
                             initialSelectedShops={list.selectedShops.map(s => (Number(s)))}
-                            cheapestShopIds={cheapestShopIds}
-                            bestPairShopIds={bestPairShopIds}
+                            cheapestSingleShopIds={cheapestSingleShopIds}
+                            cheapestPairShopIds={cheapestPairShopIds}
+                            bestValueSingleShopIds={bestValueSingleShopIds}
+                            bestValuePairShopIds={bestValuePairShopIds}
                         />
                     </div>
                 </div>
