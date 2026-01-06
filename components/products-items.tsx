@@ -385,6 +385,33 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
         });
     };
 
+    const handleViewProduct = (
+        event: React.MouseEvent<HTMLAnchorElement>,
+        product: Product
+    ) => {
+        if (event.defaultPrevented) {
+            return;
+        }
+
+        if (
+            event.button !== 0 ||
+            event.metaKey ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.shiftKey
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+        const href = `/product/${toSlug(product.name)}/${product.id}`;
+
+        onClose?.();
+        setTimeout(() => {
+            router.push(href);
+        }, 0);
+    };
+
     const hasAlternatives = alternatives.length > 0;
     const hasIgnored = ignoredProducts.length > 0;
     const canDeleteGroup = Boolean(group.listItemId);
@@ -461,7 +488,12 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
                                         Ignorar
                                     </Button>
                                     <Button size="xs" variant="outline" asChild>
-                                        <Link href={`/product/${toSlug(alternative.product.name)}/${alternative.product.id}`}>
+                                        <Link
+                                            href={`/product/${toSlug(alternative.product.name)}/${alternative.product.id}`}
+                                            onClick={(event) =>
+                                                handleViewProduct(event, alternative.product)
+                                            }
+                                        >
                                             <ArrowRightSquare className="size-4" />
                                             Ver
                                         </Link>

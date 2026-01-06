@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Suspense } from "react";
 import { Spinner } from "@/components/ui/spinner";
+import Image from "next/image";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,9 +47,7 @@ export default function RootLayout({
                 <div className="flex items-center">
                   <div className="flex-none">
                     <Link href="/">
-                      <div>
-                        SupermercadosRD
-                      </div>
+                      <Image src="logo.svg" alt="logo" width={170} height={20} />
                     </Link>
                   </div>
                   <div className="flex gap-2 grow justify-end items-center">
