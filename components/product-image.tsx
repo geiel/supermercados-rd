@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 import Image, { ImageProps } from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 function getImageSrc(src: string | StaticImport): string | StaticImport {
   if (typeof src === "string") {
@@ -36,6 +36,7 @@ export function ProductImage(props: ImageProps) {
 function ProductImageInner(props: ImageProps) {
   const [imageSrc, setImageSrc] = useState<string | StaticImport>(getImageSrc(props.src));
   const [loaded, setLoaded] = useState(false);
+  const nacionalFailedImageStepRef = useRef(0);
 
   return (
     <Image
@@ -51,25 +52,31 @@ function ProductImageInner(props: ImageProps) {
         setImageSrc("/no-product-found.jpg");
       }}
       onLoad={(e) => {
-        if (
+        const isNacionalPlaceholder =
           e.currentTarget.naturalWidth === 384 &&
           e.currentTarget.naturalHeight === 384 &&
-          imageSrc.toString().startsWith("https://supermercadosnacional.com") &&
-          imageSrc.toString().includes("__")
-        ) {
-          setImageSrc(imageSrc.toString().replace(/__\d+(?=\.\w+$)/, ""));
+          imageSrc.toString().startsWith("https://supermercadosnacional.com");
+
+        if (!isNacionalPlaceholder) {
+          setLoaded(true);
+          return;
         }
 
-        if (
-          e.currentTarget.naturalWidth === 384 &&
-          e.currentTarget.naturalHeight === 384 &&
-          imageSrc.toString().startsWith("https://supermercadosnacional.com") &&
-          !imageSrc.toString().includes("__")
-        ) {
-          setImageSrc(imageSrc.toString().replace("-1", "_-1"));
+        setLoaded(false);
+
+        if (nacionalFailedImageStepRef.current === 0 && imageSrc.toString().includes("__")) {
+          nacionalFailedImageStepRef.current = 1;
+          setImageSrc(imageSrc.toString().replace(/__\d+(?=\.\w+$)/, ""));
+          return;
         }
-        
-        setLoaded(true);
+
+        if (nacionalFailedImageStepRef.current === 1 && imageSrc.toString().includes("-1")) {
+          nacionalFailedImageStepRef.current = 2;
+          setImageSrc(imageSrc.toString().replace("-1", "_-1"));
+          return;
+        }
+
+        setImageSrc("/no-product-found.jpg");
       }}
       alt={props.alt}
       unoptimized

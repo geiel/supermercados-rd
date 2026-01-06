@@ -119,3 +119,15 @@ export async function updateGroupIgnoredProducts(listGroupItemId: number, ignore
     revalidatePath("/lists");
     return { data: "ok" }
 }
+
+export async function deleteGroupItem(listGroupItemId: number) {
+    const user = await getUser();
+    if (!user) {
+        return { data: null, error: ErrorMessage.UserAuth }
+    }
+
+    await db.delete(listGroupItems).where(eq(listGroupItems.id, listGroupItemId));
+
+    revalidatePath("/lists");
+    return { data: "ok" }
+}
