@@ -47,7 +47,7 @@ export default function RootLayout({
                 <div className="flex items-center">
                   <div className="flex-none">
                     <Link href="/">
-                      <Image src="logo.svg" alt="logo" width={170} height={20} />
+                      <Image src="/logo.svg" alt="logo" width={170} height={20} />
                     </Link>
                   </div>
                   <div className="flex gap-2 grow justify-end items-center">
