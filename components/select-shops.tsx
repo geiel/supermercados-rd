@@ -4,7 +4,7 @@ import React from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "./ui/drawer";
 import { Button } from "./ui/button";
-import { DollarSign, Info, Star, Store } from "lucide-react";
+import { Store } from "lucide-react";
 import { shopsSelect } from "@/db/schema";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";

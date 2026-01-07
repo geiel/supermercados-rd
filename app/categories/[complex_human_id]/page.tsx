@@ -2,7 +2,7 @@ import { ProductImage } from "@/components/product-image";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import ScrollFade from "@/components/ui/scroll-fade";
+import ScrollPeek from "@/components/ui/scroll-peek";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
 import { groups, products, productsGroups, productsShopsPrices } from "@/db/schema";
@@ -123,18 +123,21 @@ async function GroupCard({ groupId, complexGroupHumanId }: { groupId: number, co
                 </CardAction>
             </CardHeader>
             <CardContent>
-                <ScrollFade>
+                <ScrollPeek
+                    itemWidth="clamp(130px, 42vw, 180px)"
+                    itemWidthMd="clamp(95px, 9.5vw, 135px)"
+                >
                     <div className="flex space-x-4">
                         {groupProducts.map(groupProduct => (
-                            <Link key={groupProduct.productId} href={`/product/${toSlug(groupProduct.productName)}/${groupProduct.productId}`} className="w-40">
+                            <Link key={groupProduct.productId} href={`/product/${toSlug(groupProduct.productName)}/${groupProduct.productId}`} className="block">
                                 <div className="flex justify-center">
-                                    <div className="h-[130px] w-[130px] relative">
+                                    <div className="relative w-full max-w-[180px] aspect-square mx-auto">
                                         {groupProduct.productImage ? (
                                             <ProductImage
                                                 src={groupProduct.productImage}
                                                 fill
                                                 alt={groupProduct.productName + " " + groupProduct.productUnit}
-                                                sizes="130px"
+                                                sizes="(min-width: 1024px) 180px, 32vw"
                                                 style={{
                                                     objectFit: "contain",
                                                 }}
@@ -155,7 +158,7 @@ async function GroupCard({ groupId, complexGroupHumanId }: { groupId: number, co
                             </Link>
                         ))}
                     </div>
-                </ScrollFade>
+                </ScrollPeek>
             </CardContent>
         </Card>
     )

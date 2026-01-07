@@ -3,7 +3,7 @@ import { ProductImage } from "@/components/product-image";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import ScrollFade from "@/components/ui/scroll-fade";
+import ScrollPeek from "@/components/ui/scroll-peek";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
@@ -46,7 +46,7 @@ export default function Home() {
         <div className="space-y-4">
           <TypographyH3>Ofertas por supermercados</TypographyH3>
           
-          <ScrollFade>
+          <ScrollPeek>
             <div className="flex gap-4">
               <Button className="h-30 w-42" variant="outline">
                 <Image
@@ -120,7 +120,7 @@ export default function Home() {
                   />
               </Button>
             </div>
-          </ScrollFade>
+          </ScrollPeek>
         </div>
       </section>
 
@@ -140,8 +140,11 @@ async function TodaysDealsSection() {
     <section>
         <div className="space-y-4">
           <TypographyH3>Mejores ofertas de hoy</TypographyH3>
-          <ScrollFade>
-            <div className="flex w-40 space-x-6 p-2 relative">
+          <ScrollPeek
+            itemWidth="min(max(35vw, 110px), 218px)"
+            itemWidthMd="224px"
+          >
+            <div className="flex space-x-2 p-2 relative">
               {todaysDeals.map(deal => (
                 <Link
                   href={`/product/${toSlug(deal.name)}/${deal.productId}`}
@@ -151,13 +154,13 @@ async function TodaysDealsSection() {
                   <div className="absolute top-0 left-0 z-10">
                     <Badge variant="destructive">-{Math.round(Number(deal.dropPercentage))}%</Badge>
                   </div>
-                  <div className="h-[132px] w-[132px] md:h-[180px] md:w-[180px] relative">
+                  <div className="relative w-full max-w-[180px] aspect-square mx-auto">
                     {deal.image ? (
                       <ProductImage
                         src={deal.image}
                         fill
                         alt={deal.name + deal.unit}
-                        sizes="132px, 180px"
+                        sizes="(min-width: 1024px) 180px, 32vw"
                         style={{
                           objectFit: "contain",
                         }}
@@ -167,16 +170,18 @@ async function TodaysDealsSection() {
                       />
                     ) : null}
                   </div>
-                  <Unit unit={deal.unit} />
-                  <div>
-                    <BrandName name={deal.brandName} possibleName={deal.possibleBrandName} />
-                    {deal.name}
+                  <div className="px-2">
+                    <Unit unit={deal.unit} />
+                    <div>
+                      <BrandName name={deal.brandName} possibleName={deal.possibleBrandName} />
+                      {deal.name}
+                    </div>
+                    <div className="font-bold text-lg">RD${deal.priceToday}</div>
                   </div>
-                  <div className="font-bold text-lg">RD${deal.priceToday}</div>
                 </Link>
               ))}
             </div>
-          </ScrollFade>
+          </ScrollPeek>
         </div>
       </section>
   )
@@ -187,13 +192,16 @@ function TodaysDealsSkeleton() {
     <section>
       <div className="space-y-4">
         <TypographyH3>Ofertas De Hoy</TypographyH3>
-        <ScrollFade>
-          <div className="flex w-max space-x-6 p-2">
+        <ScrollPeek
+          itemWidth="clamp(160px, 50vw, 210px)"
+          itemWidthMd="clamp(110px, 11vw, 150px)"
+        >
+          <div className="flex w-max space-x-2 p-2">
             {Array.from({ length: 18 }).map((_, index) => (
-              <Skeleton key={index} className="h-72 w-44 shrink-0" />
+              <Skeleton key={index} className="h-72" />
             ))}
           </div>
-        </ScrollFade>
+        </ScrollPeek>
       </div>
     </section>
   )
@@ -204,7 +212,7 @@ function ExploreSectionSkeleton() {
     <section>
       <div className="space-y-4">
         <TypographyH3>Explora</TypographyH3>
-        <ScrollFade>
+        <ScrollPeek>
           <div className="flex space-x-4">
             {Array.from({ length: 3 }).map((_, index) => (
               <Card key={index} className="w-80 bg-muted/60 border-none py-4">
@@ -233,7 +241,7 @@ function ExploreSectionSkeleton() {
               </Card>
             ))}
           </div>
-        </ScrollFade>
+        </ScrollPeek>
       </div>
     </section>
   )

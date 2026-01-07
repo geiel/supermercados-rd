@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { and, asc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { TypographyH3 } from "./typography-h3";
-import ScrollFade from "./ui/scroll-fade";
+import ScrollPeek from "./ui/scroll-peek";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { ProductImage } from "./product-image";
@@ -18,7 +18,7 @@ export async function ExploreSection() {
         <section>
             <div className="space-y-4">
                 <TypographyH3>Explora</TypographyH3>
-                <ScrollFade>
+                <ScrollPeek>
                     <div className="flex space-x-4">
                         {categories.map(category => (
                             <Card className="w-84 bg-muted/60 border-none py-4" key={category.id}>
@@ -41,7 +41,7 @@ export async function ExploreSection() {
                             </Card>
                         ))}
                     </div>
-                </ScrollFade>
+                </ScrollPeek>
             </div>
         </section>
     )
