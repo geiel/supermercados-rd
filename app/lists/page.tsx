@@ -2,6 +2,8 @@
 import { CompareModeTabs } from "@/components/compare-mode-tabs";
 import { ProductItems } from "@/components/products-items";
 import { SelectShops } from "@/components/select-shops";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { db } from "@/db";
 import {
     listGroupItems as listGroupItemsTable,
@@ -15,7 +17,9 @@ import {
 import { parseUnit, type ParsedUnit } from "@/lib/unit-utils";
 import { getUser } from "@/lib/supabase";
 import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { Info } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 type CompareMode = "cheapest" | "value";
 type ComparableType = "measure" | "count";
@@ -185,70 +189,114 @@ export default async function Page({ searchParams }: Props) {
         missingCount: number;
     };
 
-    const computeBestSingleShop = (shopIds: number[], items: LineItem[]) => {
-        if (items.length === 0) {
+    const computeSelectionStats = (shopIds: number[], items: LineItem[]) => {
+        if (items.length === 0 || shopIds.length === 0) {
             return null;
         }
 
-        let best: ShopSelectionScore | null = null;
-        for (const shopId of shopIds) {
-            let total = 0;
-            let missingCount = 0;
+        let total = 0;
+        let missingCount = 0;
 
-            for (const item of items) {
+        for (const item of items) {
+            let bestPrice: number | null = null;
+
+            for (const shopId of shopIds) {
                 const price = item.pricesByShop.get(shopId);
                 if (price === undefined) {
-                    missingCount += 1;
                     continue;
                 }
-                total += price * item.quantity;
+
+                if (bestPrice === null || price < bestPrice) {
+                    bestPrice = price;
+                }
             }
 
-            if (!best || missingCount < best.missingCount || (missingCount === best.missingCount && total < best.total)) {
-                best = { shopIds: [shopId], total, missingCount };
+            if (bestPrice === null) {
+                missingCount += 1;
+                continue;
+            }
+
+            total += bestPrice * item.quantity;
+        }
+
+        return { shopIds, total, missingCount };
+    };
+
+    const buildSingleSelectionStats = (shopIds: number[], items: LineItem[]) => {
+        return shopIds
+            .map((shopId) => computeSelectionStats([shopId], items))
+            .filter((selection): selection is ShopSelectionScore => Boolean(selection));
+    };
+
+    const buildPairSelectionStats = (shopIds: number[], items: LineItem[]) => {
+        if (shopIds.length < 2) {
+            return [];
+        }
+
+        const selections: ShopSelectionScore[] = [];
+        for (let i = 0; i < shopIds.length; i += 1) {
+            for (let j = i + 1; j < shopIds.length; j += 1) {
+                const selection = computeSelectionStats([shopIds[i], shopIds[j]], items);
+                if (selection) {
+                    selections.push(selection);
+                }
+            }
+        }
+
+        return selections;
+    };
+
+    const pickBestSelection = (selections: ShopSelectionScore[]) => {
+        let best: ShopSelectionScore | null = null;
+
+        for (const selection of selections) {
+            if (
+                !best ||
+                selection.missingCount < best.missingCount ||
+                (selection.missingCount === best.missingCount && selection.total < best.total)
+            ) {
+                best = selection;
             }
         }
 
         return best;
     };
 
-    const computeBestPairShops = (shopIds: number[], items: LineItem[]) => {
-        if (items.length === 0 || shopIds.length < 2) {
+    const computeValueScore = (
+        selection: ShopSelectionScore | null,
+        totalItems: number,
+        totalShopCount: number,
+    ) => {
+        if (!selection || totalItems === 0) {
             return null;
         }
 
-        let best: ShopSelectionScore | null = null;
-        for (let i = 0; i < shopIds.length; i += 1) {
-            for (let j = i + 1; j < shopIds.length; j += 1) {
-                const shopA = shopIds[i];
-                const shopB = shopIds[j];
-                let total = 0;
-                let missingCount = 0;
-
-                for (const item of items) {
-                    const priceA = item.pricesByShop.get(shopA);
-                    const priceB = item.pricesByShop.get(shopB);
-
-                    if (priceA === undefined && priceB === undefined) {
-                        missingCount += 1;
-                        continue;
-                    }
-
-                    const price = Math.min(priceA ?? Number.POSITIVE_INFINITY, priceB ?? Number.POSITIVE_INFINITY);
-                    total += price * item.quantity;
-                }
-
-                if (!best || missingCount < best.missingCount || (missingCount === best.missingCount && total < best.total)) {
-                    best = { shopIds: [shopA, shopB], total, missingCount };
-                }
-            }
+        if (selection.missingCount >= totalItems || totalShopCount === 0) {
+            return 0;
         }
 
-        return best;
+        const coveredItems = totalItems - selection.missingCount;
+        if (coveredItems <= 0) {
+            return 0;
+        }
+
+        const averagePrice = selection.total / coveredItems;
+        if (!Number.isFinite(averagePrice) || averagePrice <= 0) {
+            return 0;
+        }
+
+        const coverageRatio = coveredItems / totalItems;
+        const shopCountFactor = selection.shopIds.length / totalShopCount;
+        const scale = 1000;
+
+        return (coverageRatio * shopCountFactor * scale) / averagePrice;
     };
 
-    const bestSingleShop = computeBestSingleShop(allShopIds, lineItems);
-    const bestPairShops = computeBestPairShops(allShopIds, lineItems);
+    const cheapestSingleSelections = buildSingleSelectionStats(allShopIds, lineItems);
+    const cheapestPairSelections = buildPairSelectionStats(allShopIds, lineItems);
+
+    const bestSingleShop = pickBestSelection(cheapestSingleSelections);
+    const bestPairShops = pickBestSelection(cheapestPairSelections);
 
     const cheapestSingleShopIds = bestSingleShop ? bestSingleShop.shopIds : [];
     const cheapestPairShopIds = bestPairShops ? bestPairShops.shopIds : [];
@@ -577,8 +625,15 @@ export default async function Page({ searchParams }: Props) {
         (item) => item.pricesByShop.size > 0
     );
 
-    const bestValueSingleShop = computeBestSingleShop(allShopIds, valueLineItems);
-    const bestValuePairShops = computeBestPairShops(allShopIds, valueLineItems);
+    const valueSingleSelections = buildSingleSelectionStats(allShopIds, valueLineItems);
+    const valuePairSelections = buildPairSelectionStats(allShopIds, valueLineItems);
+    const bestValueSingleShop = pickBestSelection(valueSingleSelections);
+    const bestValuePairShops = pickBestSelection(valuePairSelections);
+    const selectedValueSelection = computeSelectionStats(selectedShopIds, valueLineItems);
+    const selectedValueScore =
+        selectedShopIds.length > 0
+            ? computeValueScore(selectedValueSelection, valueLineItems.length, allShopIds.length)
+            : null;
 
     const bestValueSingleShopIds = bestValueSingleShop ? bestValueSingleShop.shopIds : [];
     const bestValuePairShopIds = bestValuePairShops ? bestValuePairShops.shopIds : [];
@@ -1012,13 +1067,40 @@ export default async function Page({ searchParams }: Props) {
 
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <CompareModeTabs mode={compareMode} />
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <div>
                             Total <span className="font-bold">RD${totalPrice.toFixed(2)}</span>
                         </div>
+
                         <div>
                             Productos <span className="font-bold">{totalProducts}</span>
                         </div>
+
+                        {compareMode === "value" && selectedValueScore !== null ? (
+                            <div className="flex items-center">
+                                <div>
+                                    Índice de eficiencia{" "}
+                                    <span className="font-bold">{selectedValueScore.toFixed(1)}</span>
+                                </div>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            aria-label="Cómo funciona el índice de eficiencia"
+                                        >
+                                            <Info className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="text-sm">
+                                        Más alto = mejor valor. <br /> Explora cómo funciona.{" "}
+                                        <Link href="/value-score" className="underline">
+                                            Leer más
+                                        </Link>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
                 {shopsGrouped.map(shop => {

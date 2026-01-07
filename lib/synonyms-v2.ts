@@ -130,7 +130,7 @@ const base: Array<Synonym> = [
     { synonyms: ["kid", "nino", "nina"], query: ["kid:*", "nino", "nina"]},
     { synonyms: ["activia", "dannon"], query: ["activia", "dannon"]},
     { synonyms: ["org", "organico", "organica", "orgain"], query: ["org:*"]},
-    { synonyms: ["margarina", "mantequilla", "butter", "manteca"], query: ["margarin:*", "mantequilla", "butte:*", "manteca"], id: "mantequilla"},
+    { synonyms: ["mantequilla", "butter", "manteca"], query: ["mantequilla", "butter", "manteca"], id: "mantequilla"},
     { synonyms: ["vanilla", "vainilla"], query: ["vanilla:*", "vainilla:*"]},
     { synonyms: ["peach", "durazno", "melocoton"], query: ["peach:*", "durazno", "melocoton:*"]},
     { synonyms: ["pastel", "bizcocho", "biscocho"], query: ["pastel", "bizcocho:*", "biscocho:*"]},
