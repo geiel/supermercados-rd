@@ -1,3 +1,4 @@
+import { AddGroupToListButton } from "@/components/add-group-to-list";
 import { AddListButton } from "@/components/add-list";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
@@ -7,7 +8,7 @@ import { RelatedProducts } from "@/components/related-products";
 import { Button } from "@/components/ui/button";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
-import { productsShopsPrices } from "@/db/schema";
+import { groups, productsGroups, productsShopsPrices } from "@/db/schema";
 import { bravo } from "@/lib/scrappers/bravo";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
@@ -17,6 +18,7 @@ import { sirena } from "@/lib/scrappers/sirena";
 import { searchProducts } from "@/lib/search-query";
 import { getUser } from "@/lib/supabase";
 import { sanitizeForTsQuery } from "@/lib/utils";
+import { asc, eq } from "drizzle-orm";
 import { MessageCircleWarning } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
@@ -65,6 +67,17 @@ export default async function Page({ params }: Props) {
   const user = await getUser();
   const canSeeHiddenProducts = user?.email?.toLowerCase() === "geielpeguero@gmail.com";
 
+  const productGroups = await db
+    .select({
+      id: groups.id,
+      name: groups.name,
+      humanId: groups.humanNameId,
+    })
+    .from(groups)
+    .innerJoin(productsGroups, eq(productsGroups.groupId, groups.id))
+    .where(eq(productsGroups.productId, product.id))
+    .orderBy(asc(groups.name));
+
   const relatedProducts = await searchRelatedProducts(product.name, canSeeHiddenProducts);
   relatedProducts.products.splice(
     relatedProducts.products.findIndex((i) => i.id === product.id),
@@ -108,7 +121,10 @@ export default async function Page({ params }: Props) {
                       className="max-w-none" />}
               </div>
               <div>
-                <AddListButton productId={product.id} type="button" />
+                <div className="flex items-center gap-2">
+                  <AddListButton productId={product.id} type="button" />
+                  <AddGroupToListButton groups={productGroups} />
+                </div>
               </div>
             </div>
           </div>

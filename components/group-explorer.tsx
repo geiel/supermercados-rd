@@ -1,3 +1,4 @@
+import { AddGroupToListButton } from "@/components/add-group-to-list";
 import { AddListButton } from "@/components/add-list";
 import { db } from "@/db";
 import { groups, products, productsBrands, productsGroups, productsShopsPrices } from "@/db/schema";
@@ -16,6 +17,7 @@ import { TypographyH3 } from "@/components/typography-h3";
 type Response = {
     groupId: number;
     groupName: string;
+    groupHumanId: string;
     productId: number;
     productName: string;
     productImage: string | null;
@@ -30,6 +32,7 @@ export async function GroupExplorer({ humanId }: { humanId: string }) {
         .selectDistinctOn([products.id], {
             groupId: groups.id,
             groupName: groups.name,
+            groupHumanId: groups.humanNameId,
             groupCheaperProductId: groups.cheaperProductId,
             groupBestValueProductId: groups.bestValueProductId,
             productId: products.id,
@@ -72,9 +75,18 @@ export async function GroupExplorer({ humanId }: { humanId: string }) {
         return aHasBadge ? -1 : 1;
     });
 
+    const groupInfo = {
+        id: sortedGroupProducts[0].groupId,
+        name: sortedGroupProducts[0].groupName,
+        humanId: sortedGroupProducts[0].groupHumanId,
+    };
+
     return (
         <div className="container mx-auto px-2 pb-2 space-y-4">
-            <TypographyH3>{sortedGroupProducts[0].groupName}</TypographyH3>
+            <div className="flex gap-2 items-center justify-between">
+                <TypographyH3>{sortedGroupProducts[0].groupName}</TypographyH3>
+                <AddGroupToListButton groups={[groupInfo]} />
+            </div>
             <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
                 {sortedGroupProducts.map((groupProduct) => {
                     const isCheaper = groupProduct.groupCheaperProductId === groupProduct.productId;

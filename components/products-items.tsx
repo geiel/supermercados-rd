@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { toSlug } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
+import { ScrollArea } from "./ui/scroll-area";
 
 type Product = productsSelect & { shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }> }
 
@@ -203,7 +204,7 @@ function ItemProductDrawer({ entry, onAmountChange }: DialogDrawerProps) {
             </DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader>
-                <DrawerTitle>{isGroup ? entry.group?.name : "Acciones"}</DrawerTitle>
+                    <DrawerTitle>{isGroup ? entry.group?.name : "Acciones"}</DrawerTitle>
                 </DrawerHeader>
                 {isGroup && entry.group ? (
                     <GroupDetails group={entry.group} type="drawer" onClose={() => setOpen(false)} />
@@ -377,6 +378,8 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
     const [ignorePending, startIgnoreTransition] = useTransition();
     const alternativesRef = React.useRef(group.alternatives);
     const ignoredProductsRef = React.useRef(group.ignoredProducts);
+    const scrollAreaClassName =
+        type === "dialog" ? "max-h-[60vh] w-full" : "w-full overflow-auto";
 
     React.useEffect(() => {
         setAlternatives(group.alternatives);
@@ -504,24 +507,92 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
 
     return (
         <>
-            <div className="flex flex-col gap-3 pb-2 px-2 overflow-auto">
-                {hasAlternatives ? (
-                    alternatives.map((alternative) => {
-                        const priceLabel = Number.isFinite(alternative.price)
-                            ? `RD$${alternative.price.toFixed(2)}`
-                            : "RD$--";
+            <ScrollArea className={scrollAreaClassName}>
+                <div className="flex flex-col gap-3 pb-2 px-2">
+                    {hasAlternatives ? (
+                        alternatives.map((alternative) => {
+                            const priceLabel = Number.isFinite(alternative.price)
+                                ? `RD$${alternative.price.toFixed(2)}`
+                                : "RD$--";
 
-                        return (
-                            <div
-                                key={`${alternative.product.id}-${alternative.shopId}`}
-                                className="rounded-md border border-border p-3 space-y-2"
-                            >
-                                <div className="flex items-center gap-3">
+                            return (
+                                <div
+                                    key={`${alternative.product.id}-${alternative.shopId}`}
+                                    className="rounded-md border border-border p-3 space-y-2"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="size-14 relative">
+                                            <ProductImage
+                                                src={alternative.product.image ? alternative.product.image : "/no-product-found.jpg"}
+                                                fill
+                                                alt={alternative.product.name + alternative.product.unit}
+                                                sizes="56px"
+                                                style={{
+                                                    objectFit: "contain",
+                                                }}
+                                                placeholder="blur"
+                                                blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                                className="max-w-none"
+                                            />
+                                        </div>
+                                        <div className="flex flex-1 flex-col gap-1">
+                                            <p className="text-sm font-semibold">
+                                                {alternative.product.name} {alternative.product.unit}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">{alternative.shopName}</p>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            {alternative.isCurrent ? (
+                                                <Badge variant="secondary">Actual</Badge>
+                                            ) : null}
+                                            <span className="text-sm font-semibold">{priceLabel}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 justify-end">
+                                        <Button
+                                            size="xs"
+                                            variant="ghost"
+                                            onClick={() => handleIgnore(alternative)}
+                                            disabled={ignorePending}
+                                        >
+                                            Ignorar
+                                        </Button>
+                                        <Button size="xs" variant="outline" asChild>
+                                            <Link
+                                                href={`/product/${toSlug(alternative.product.name)}/${alternative.product.id}`}
+                                                onClick={(event) =>
+                                                    handleViewProduct(event, alternative.product)
+                                                }
+                                            >
+                                                <ArrowRightSquare className="size-4" />
+                                                Ver
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                </div>
+                            )
+                        })
+                    ) : (
+                        <div className="py-2 text-center text-sm text-muted-foreground">
+                            No hay alternativas disponibles en otros supermercados.
+                        </div>
+                    )}
+                    {hasIgnored ? (
+                        <>
+                            <Separator />
+                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Ignorados
+                            </div>
+                            {ignoredProducts.map((product) => (
+                                <div
+                                    key={`ignored-${product.id}`}
+                                    className="flex items-center gap-3 rounded-md border border-border p-3"
+                                >
                                     <div className="size-14 relative">
                                         <ProductImage
-                                            src={alternative.product.image ? alternative.product.image : "/no-product-found.jpg"}
+                                            src={product.image ? product.image : "/no-product-found.jpg"}
                                             fill
-                                            alt={alternative.product.name + alternative.product.unit}
+                                            alt={product.name + product.unit}
                                             sizes="56px"
                                             style={{
                                                 objectFit: "contain",
@@ -533,89 +604,23 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
                                     </div>
                                     <div className="flex flex-1 flex-col gap-1">
                                         <p className="text-sm font-semibold">
-                                            {alternative.product.name} {alternative.product.unit}
+                                            {product.name} {product.unit}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">{alternative.shopName}</p>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2">
-                                        {alternative.isCurrent ? (
-                                            <Badge variant="secondary">Actual</Badge>
-                                        ) : null}
-                                        <span className="text-sm font-semibold">{priceLabel}</span>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 justify-end">
                                     <Button
                                         size="xs"
-                                        variant="ghost"
-                                        onClick={() => handleIgnore(alternative)}
+                                        variant="outline"
+                                        onClick={() => handleRestore(product)}
                                         disabled={ignorePending}
                                     >
-                                        Ignorar
-                                    </Button>
-                                    <Button size="xs" variant="outline" asChild>
-                                        <Link
-                                            href={`/product/${toSlug(alternative.product.name)}/${alternative.product.id}`}
-                                            onClick={(event) =>
-                                                handleViewProduct(event, alternative.product)
-                                            }
-                                        >
-                                            <ArrowRightSquare className="size-4" />
-                                            Ver
-                                        </Link>
+                                        Agregar
                                     </Button>
                                 </div>
-                            </div>
-                        )
-                    })
-                ) : (
-                    <div className="py-2 text-center text-sm text-muted-foreground">
-                        No hay alternativas disponibles en otros supermercados.
-                    </div>
-                )}
-                {hasIgnored ? (
-                    <>
-                        <Separator />
-                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            Ignorados
-                        </div>
-                        {ignoredProducts.map((product) => (
-                            <div
-                                key={`ignored-${product.id}`}
-                                className="flex items-center gap-3 rounded-md border border-border p-3"
-                            >
-                                <div className="size-14 relative">
-                                    <ProductImage
-                                        src={product.image ? product.image : "/no-product-found.jpg"}
-                                        fill
-                                        alt={product.name + product.unit}
-                                        sizes="56px"
-                                        style={{
-                                            objectFit: "contain",
-                                        }}
-                                        placeholder="blur"
-                                        blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-                                        className="max-w-none"
-                                    />
-                                </div>
-                                <div className="flex flex-1 flex-col gap-1">
-                                    <p className="text-sm font-semibold">
-                                        {product.name} {product.unit}
-                                    </p>
-                                </div>
-                                <Button
-                                    size="xs"
-                                    variant="outline"
-                                    onClick={() => handleRestore(product)}
-                                    disabled={ignorePending}
-                                >
-                                    Agregar
-                                </Button>
-                            </div>
-                        ))}
-                    </>
-                ) : null}
-            </div>
+                            ))}
+                        </>
+                    ) : null}
+                </div>
+            </ScrollArea>
             {type === "drawer" ? (
                 <DrawerFooter>
                     <div className="flex justify-end">

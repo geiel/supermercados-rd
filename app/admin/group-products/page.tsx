@@ -22,12 +22,12 @@ import { ProductBrand } from "@/components/product-brand";
 import { validateAdminUser } from "@/lib/authentication";
 import { GroupProductsToolbar } from "./client";
 import { TypographyH3 } from "@/components/typography-h3";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { GroupProductActionButton } from "./group-product-action-button";
 
 type Props = {
   searchParams: Promise<{
@@ -73,12 +73,15 @@ async function addProductToGroup(formData: FormData) {
     return;
   }
 
-  await db
+  const inserted = await db
     .insert(productsGroups)
     .values({ productId, groupId })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ productId: productsGroups.productId });
 
-  revalidatePath("/admin/group-products");
+  if (inserted.length > 0) {
+    revalidatePath("/admin/group-products");
+  }
 }
 
 async function createGroup(formData: FormData) {
@@ -153,16 +156,19 @@ async function removeProductFromGroup(formData: FormData) {
     return;
   }
 
-  await db
+  const deleted = await db
     .delete(productsGroups)
     .where(
       and(
         eq(productsGroups.productId, productId),
         eq(productsGroups.groupId, groupId)
       )
-    );
+    )
+    .returning({ productId: productsGroups.productId });
 
-  revalidatePath("/admin/group-products");
+  if (deleted.length > 0) {
+    revalidatePath("/admin/group-products");
+  }
 }
 
 export default function Page({ searchParams }: Props) {
@@ -336,13 +342,11 @@ async function GroupProductsPage({ searchParams }: Props) {
                         name="groupId"
                         value={resolvedGroupId ?? ""}
                       />
-                      <Button
+                      <GroupProductActionButton
                         variant="destructive"
-                        size="xs"
+                        label="Remover"
                         disabled={!resolvedGroupId}
-                      >
-                        Remover
-                      </Button>
+                      />
                     </form>
                   ) : (
                     <form action={addProductToGroup}>
@@ -356,13 +360,11 @@ async function GroupProductsPage({ searchParams }: Props) {
                         name="groupId"
                         value={resolvedGroupId ?? ""}
                       />
-                      <Button
+                      <GroupProductActionButton
                         variant="outline"
-                        size="xs"
+                        label="Agregar"
                         disabled={!resolvedGroupId}
-                      >
-                        Agregar
-                      </Button>
+                      />
                     </form>
                   )}
                 </div>

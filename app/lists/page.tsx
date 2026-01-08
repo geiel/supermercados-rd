@@ -324,6 +324,7 @@ export default async function Page({ searchParams }: Props) {
     type GroupProductRow = {
         groupId: number;
         groupName: string;
+        groupCompareBy: string | null;
         productId: number;
         productCategoryId: number;
         productName: string;
@@ -348,6 +349,7 @@ export default async function Page({ searchParams }: Props) {
     type GroupWithProducts = {
         id: number;
         name: string;
+        compareBy: string | null;
         products: Array<{ product: ProductWithPrices | null }>;
     };
 
@@ -356,6 +358,7 @@ export default async function Page({ searchParams }: Props) {
             .select({
                 groupId: groups.id,
                 groupName: groups.name,
+                groupCompareBy: groups.compareBy,
                 productId: products.id,
                 productCategoryId: products.categoryId,
                 productName: products.name,
@@ -417,6 +420,7 @@ export default async function Page({ searchParams }: Props) {
                 group = {
                     id: row.groupId,
                     name: row.groupName,
+                    compareBy: row.groupCompareBy ?? null,
                     products: [],
                 };
                 groupsMap.set(row.groupId, group);
@@ -760,12 +764,19 @@ export default async function Page({ searchParams }: Props) {
     const getBestValueGroupPicks = (
         products: ProductWithPrices[],
         shopIds: number[],
+        compareBy?: string | null,
     ): GroupPickResult | null => {
         if (shopIds.length === 0) {
             return null;
         }
 
-        const productInfos = products
+        type ProductInfo = {
+            product: ProductWithPrices;
+            parsed: ParsedUnit;
+            comparisonType: ComparableType;
+        };
+
+        const productInfos: ProductInfo[] = products
             .map((product) => {
                 const parsed = parseUnit(product.unit);
                 if (!parsed) {
@@ -777,45 +788,87 @@ export default async function Page({ searchParams }: Props) {
 
                 return { product, parsed, comparisonType };
             })
-            .filter(
-                (info): info is { product: ProductWithPrices; parsed: ParsedUnit; comparisonType: ComparableType } =>
-                    Boolean(info)
-            );
+            .filter((info): info is ProductInfo => Boolean(info));
 
         if (productInfos.length === 0) {
             return null;
         }
 
-        const coverageByType: Record<ComparableType, Set<number>> = {
-            measure: new Set(),
-            count: new Set(),
-        };
-        const countByType: Record<ComparableType, number> = { measure: 0, count: 0 };
+        const buildCoverage = (infos: ProductInfo[]) => {
+            const coverageByType: Record<ComparableType, Set<number>> = {
+                measure: new Set(),
+                count: new Set(),
+            };
+            const countByType: Record<ComparableType, number> = { measure: 0, count: 0 };
 
-        for (const info of productInfos) {
-            countByType[info.comparisonType] += 1;
+            for (const info of infos) {
+                countByType[info.comparisonType] += 1;
 
-            for (const shopPrice of info.product.shopCurrentPrices) {
-                const price = Number(shopPrice.currentPrice);
-                if (!Number.isFinite(price)) {
-                    continue;
+                for (const shopPrice of info.product.shopCurrentPrices) {
+                    const price = Number(shopPrice.currentPrice);
+                    if (!Number.isFinite(price)) {
+                        continue;
+                    }
+
+                    const unitPrice = getUnitPrice(price, info.parsed);
+                    if (!unitPrice) {
+                        continue;
+                    }
+
+                    coverageByType[info.comparisonType].add(shopPrice.shopId);
                 }
-
-                const unitPrice = getUnitPrice(price, info.parsed);
-                if (!unitPrice) {
-                    continue;
-                }
-
-                coverageByType[info.comparisonType].add(shopPrice.shopId);
             }
-        }
 
-        const candidateTypes = (["measure", "count"] as const).filter((type) =>
+            return { coverageByType, countByType };
+        };
+
+        let effectiveInfos = productInfos;
+        let { coverageByType, countByType } = buildCoverage(effectiveInfos);
+        let candidateTypes = (["measure", "count"] as const).filter((type) =>
             shopIds.every((shopId) => coverageByType[type].has(shopId))
         );
 
         if (candidateTypes.length === 0) {
-            return null;
+            const wantsCount =
+                typeof compareBy === "string" && compareBy.toLowerCase() === "count";
+
+            if (wantsCount && countByType.count > countByType.measure) {
+                const forcedCountInfos: ProductInfo[] = effectiveInfos.map((info) => {
+                    if (info.comparisonType === "count") {
+                        return info;
+                    }
+
+                    const forcedParsed: ParsedUnit = {
+                        measurement: "count",
+                        base: 1,
+                        display: "1 UND",
+                        amount: 1,
+                        normalizedUnit: "UND",
+                    };
+
+                    return {
+                        ...info,
+                        comparisonType: "count",
+                        parsed: forcedParsed,
+                    };
+                });
+
+                const rebuilt = buildCoverage(forcedCountInfos);
+                const forcedCandidateTypes = (["measure", "count"] as const).filter((type) =>
+                    shopIds.every((shopId) => rebuilt.coverageByType[type].has(shopId))
+                );
+
+                if (forcedCandidateTypes.length === 0) {
+                    return null;
+                }
+
+                effectiveInfos = forcedCountInfos;
+                coverageByType = rebuilt.coverageByType;
+                countByType = rebuilt.countByType;
+                candidateTypes = forcedCandidateTypes;
+            } else {
+                return null;
+            }
         }
 
         const selectedType = candidateTypes.reduce((best, type) => {
@@ -826,7 +879,7 @@ export default async function Page({ searchParams }: Props) {
             return best;
         }, candidateTypes[0]);
 
-        const candidates = productInfos.filter((info) => info.comparisonType === selectedType);
+        const candidates = effectiveInfos.filter((info) => info.comparisonType === selectedType);
         const hasWeight = candidates.some((info) => info.parsed.measurement === "weight");
         const hasVolume = candidates.some((info) => info.parsed.measurement === "volume");
         const unitLabel =
@@ -962,7 +1015,7 @@ export default async function Page({ searchParams }: Props) {
 
         const pickResult =
             compareMode === "value"
-                ? getBestValueGroupPicks(products, selectedShopIds) ??
+                ? getBestValueGroupPicks(products, selectedShopIds, group.compareBy) ??
                   getCheapestGroupPicks(products, selectedShopIds)
                 : getCheapestGroupPicks(products, selectedShopIds);
 

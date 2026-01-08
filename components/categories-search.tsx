@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useContext, useState, useTransition } from "react";
 import Link from "next/link";
 import { TypographyH3 } from "./typography-h3";
 import { Button } from "./ui/button";
@@ -8,15 +8,10 @@ import { Check, Plus } from "lucide-react";
 import { addGroupToUserList, deleteGroupItem } from "@/lib/compare";
 import { Spinner } from "./ui/spinner";
 import { toast } from "sonner";
-import useSWR from "swr";
-import { createSelectSchema } from "drizzle-zod";
-import { listGroupItems as listGroupItemsTable } from "@/db/schema";
 import { useRouter } from "next/navigation";
+import { ListGroupContext } from "./list-provider";
 
 type GroupResult = { name: string; humanId: string; groupId: number };
-type ListGroupItem = typeof listGroupItemsTable.$inferSelect;
-
-const listGroupItemsSchema = createSelectSchema(listGroupItemsTable);
 
 export function CategorySearch({ groupResults }: { groupResults: Array<GroupResult> }) {
     const [showAllMobile, setShowAllMobile] = useState(false);
@@ -24,10 +19,7 @@ export function CategorySearch({ groupResults }: { groupResults: Array<GroupResu
     const [pendingRemoveGroupIds, setPendingRemoveGroupIds] = useState<Set<number>>(new Set());
     const [, startTransition] = useTransition();
     const router = useRouter();
-    const { data: listGroupItems, mutate: mutateGroupItems, isLoading: isLoadingGroupItems } = useSWR<ListGroupItem[]>('/api/user/lists/groups', async (key: string | URL | Request) => {
-        const response = await fetch(key, { credentials: 'include' });
-        return listGroupItemsSchema.array().parse(await response.json());
-    });
+    const { listGroupItems, mutate: mutateGroupItems, isLoading: isLoadingGroupItems } = useContext(ListGroupContext);
     const mobileGroups = showAllMobile ? groupResults : groupResults.slice(0, 4);
     const groupItemByGroupId = new Map(listGroupItems?.map((item) => [item.groupId, item]) ?? []);
 
