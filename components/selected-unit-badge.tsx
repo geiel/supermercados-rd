@@ -56,7 +56,7 @@ export function SelectedUnitBadge() {
         params.delete("unit_filter");
       }
 
-      params.set("page", "1");
+      params.delete("page");
 
       const query = params.toString();
       return query ? `${pathname}?${query}` : pathname;

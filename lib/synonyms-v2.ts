@@ -608,7 +608,9 @@ const base: Array<Synonym> = [
     { synonyms: ["zukini", "zucchini"], query: ["zukini", "zucchini"]},
     { synonyms: ["coulotte", "culotte"], query: ["coulotte", "culotte"]},
     { synonyms: ["fajita", "ricitos"], query: ["fajita", "ricitos"]},
-    { synonyms: ["yodada", "iodized"], query: ["yodada", "iodized"]}
+    { synonyms: ["yodada", "iodized"], query: ["yodada", "iodized"]},
+    { synonyms: ["royal canin", "royal c"], query: ["royal & canin", "royal & c"]},
+    { synonyms: ["prescription diet"], query: ["prescription & diet", "pd"]}
 ]; 
 
 function pluralizeWord(word: string) {

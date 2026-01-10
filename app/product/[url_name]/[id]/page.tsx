@@ -1,5 +1,4 @@
-import { AddGroupToListButton } from "@/components/add-group-to-list";
-import { AddListButton } from "@/components/add-list";
+import { AddToListMenuButton } from "@/components/add-to-list-menu";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductBrand } from "@/components/product-brand";
@@ -122,8 +121,7 @@ export default async function Page({ params }: Props) {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <AddListButton productId={product.id} type="button" />
-                  <AddGroupToListButton groups={productGroups} />
+                  <AddToListMenuButton productId={product.id} groups={productGroups} />
                 </div>
               </div>
             </div>

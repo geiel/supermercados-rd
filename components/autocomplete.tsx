@@ -22,7 +22,7 @@ import { Button } from "./ui/button";
 
 import { cn } from "@/lib/utils";
 import { productsSelect } from "@/db/schema";
-import { ArrowUpLeft, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpLeft } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type ProductSuggestion = {
@@ -220,6 +220,10 @@ export const AutoComplete = ({
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+      
       const input = inputRef.current;
       if (!input) {
         return;
@@ -291,6 +295,14 @@ export const AutoComplete = ({
   }
 
   const displaySuggestions = inputValue.length > 0 ? suggestions : [];
+  const hasSearchValue = inputValue.trim().length > 0;
+  const hasMultipleSuggestions = displaySuggestions.length >= 1;
+  const inputBottomRadiusClass = hasMultipleSuggestions
+    ? "md:rounded-b-none"
+    : "md:rounded-b-3xl";
+  const commandListBorder = hasMultipleSuggestions 
+    ? "md:border md:border-t-0 md:border-slate-200"
+    : ""
 
   return (
     <CommandPrimitive
@@ -301,13 +313,45 @@ export const AutoComplete = ({
     >
       <div
         className={cn(
-          "relative flex flex-col mt-1",
+          "fixed inset-0 z-40 bg-black/30 transition-opacity duration-200",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        aria-hidden="true"
+      />
+      <div
+        className={cn(
+          "relative flex flex-col",
           isOpen &&
-            "fixed inset-0 z-50 bg-white p-4 md:relative md:z-auto md:bg-transparent md:p-0"
+            "fixed inset-0 z-50 bg-white p-0 md:relative md:z-50 md:bg-transparent md:p-0"
         )}
       >
-        <div className={cn("flex items-center gap-2", isOpen && "md:block")}>
-          <div className={cn("flex-1 rounded-full bg-white")}>
+        <div
+          className={cn(
+            "flex items-center gap-2",
+            isOpen && "border-b border-slate-200 md:border-none"
+          )}
+        >
+          {isOpen ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="ml-2 md:hidden"
+              aria-label="Cancelar"
+              onClick={() => {
+                setOpen(false);
+                inputRef.current?.blur();
+              }}
+            >
+              <ArrowLeft className="size-5" />
+            </Button>
+          ) : null}
+          <div
+            className={cn(
+              "flex-1 rounded-full bg-white",
+              isOpen && cn("md:rounded-t-3xl", inputBottomRadiusClass)
+            )}
+          >
             <CommandInput
               ref={inputRef}
               value={inputValue}
@@ -324,34 +368,49 @@ export const AutoComplete = ({
                 "text-base",
                 isOpen && "text-lg md:text-base"
               )}
+              wrapperClassName={cn(
+                isOpen &&
+                  cn(
+                    "border-0 md:border md:border-slate-200 md:rounded-t-3xl",
+                    inputBottomRadiusClass
+                  )
+              )}
+              searchIconClassName="hidden md:block"
+              rightAdornment={
+                isOpen ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Buscar"
+                    disabled={!hasSearchValue}
+                    onClick={() => {
+                      if (!hasSearchValue) {
+                        return;
+                      }
+
+                      handleSearch(inputValue);
+                      inputRef.current?.blur();
+                    }}
+                  >
+                    <ArrowRight className="size-5" />
+                  </Button>
+                ) : null
+              }
               onClean={clean}
             />
           </div>
-          {isOpen ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={() => {
-                setOpen(false);
-                inputRef.current?.blur();
-              }}
-            >
-              Cancelar
-            </Button>
-          ) : null}
         </div>
-        <div className={cn("relative mt-1", isOpen && "mt-4 md:mt-1")}>
+        <div className="relative">
           <div
             className={cn(
-              "animate-in fade-in-0 zoom-in-95 z-50 w-full rounded-xl bg-white outline-none",
+              "z-50 w-full rounded-xl bg-white outline-none overflow-hidden",
               isOpen
-                ? "block md:absolute md:top-0"
-                : "hidden absolute top-0"
+                ? "block md:absolute md:top-0 md:rounded-b-3xl md:rounded-t-none"
+                : "hidden absolute top-0", commandListBorder
             )}
           >
-            <CommandList className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-xl ring-0 md:ring-1 ring-slate-200 md:max-h-[400px]">
+            <CommandList className={cn("max-h-[calc(100vh-9rem)] overflow-y-auto md:max-h-[400px]")}>
               {isLoading ? (
                 <CommandPrimitive.Loading>
                   <div className="p-1">
@@ -361,7 +420,7 @@ export const AutoComplete = ({
               ) : null}
 
               {displaySuggestions.length > 0 && !isLoading ? (
-                <CommandGroup heading="Productos">
+                <CommandGroup>
                   <CommandItem
                     key="hidden"
                     value={inputValue}
@@ -377,7 +436,7 @@ export const AutoComplete = ({
                           event.stopPropagation();
                         }}
                         onSelect={() => handleSelectProduct(suggestion)}
-                        className={cn("flex w-full items-center gap-2")}
+                        className={cn("flex w-full items-center gap-2 text-base")}
                       >
                         <span className="flex-1 whitespace-pre-wrap text-left">
                           {renderHighlightedPhrase(
@@ -401,11 +460,6 @@ export const AutoComplete = ({
                     );
                   })}
                 </CommandGroup>
-              ) : null}
-              {!isLoading ? (
-                <CommandPrimitive.Empty className="select-none rounded-sm px-2 py-3 text-center text-sm">
-                  {emptyMessage}
-                </CommandPrimitive.Empty>
               ) : null}
             </CommandList>
           </div>

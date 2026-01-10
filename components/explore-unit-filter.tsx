@@ -15,6 +15,17 @@ import {
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import { ChevronDown } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "./ui/drawer";
+import { Checkbox } from "./ui/checkbox";
 
 type UnitOption = { label: string; value: string; count: number };
 
@@ -36,6 +47,7 @@ export function ExploreUnitFilter() {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const isMobile = useIsMobile();
 
   const selectedUnits = Array.from(
     new Set(parseUnitFilterParam(searchParams.get("unit_filter")))
@@ -61,7 +73,7 @@ export function ExploreUnitFilter() {
         params.delete("unit_filter");
       }
 
-      params.set("page", "1");
+      params.delete("page");
 
       const query = params.toString();
       const href = query ? `${pathname}?${query}` : pathname;
@@ -90,6 +102,70 @@ export function ExploreUnitFilter() {
   );
 
   const isBusy = isLoading || isPending;
+
+  if (isMobile) {
+    return (
+      <Drawer>
+        <DrawerTrigger asChild>
+          <Button variant="outline" disabled={isBusy} aria-busy={isBusy}>
+            {isBusy ? (
+              <>
+                <Spinner /> Unidades
+              </>
+            ) : (
+              <>
+                Unidades <ChevronDown />
+              </>
+            )}
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Filtrar por unidad</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-0">
+            <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+              {unitsData?.map((option) => {
+                const checkboxId = `unit-filter-${option.value}`;
+
+                return (
+                  <div key={option.value} className="flex items-center gap-3">
+                    <Checkbox
+                      id={checkboxId}
+                      checked={selectedUnits.includes(option.value)}
+                      onCheckedChange={(value) =>
+                        handleToggle(option.value, value)
+                      }
+                      disabled={isPending}
+                    />
+                    <label
+                      htmlFor={checkboxId}
+                      className="flex-1 truncate text-sm"
+                    >
+                      {option.label}
+                    </label>
+                    <span className="text-muted-foreground text-xs tabular-nums">
+                      {option.count}
+                    </span>
+                  </div>
+                );
+              })}
+              {error ? (
+                <p className="text-sm text-destructive">
+                  No se pudieron cargar las unidades.
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <DrawerFooter>
+            <DrawerClose asChild>
+              <Button variant="outline">Cerrar</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
   return (
     <DropdownMenu>

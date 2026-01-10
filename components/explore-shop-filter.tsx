@@ -47,8 +47,6 @@ export function ExploreFilters({ selectedShopIds }: ExploreShopFilterProps) {
           <ExploreShopFilterClient shops={shops} selectedShopIds={selectedShopIds} />
 
           <ExploreUnitFilter />
-
-          <ExploreSupermarketToggle />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>

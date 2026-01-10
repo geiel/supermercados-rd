@@ -24,7 +24,7 @@ export function ExploreSupermarketToggle() {
         params.delete("only_shop_products");
       }
 
-      params.set("page", "1");
+      params.delete("page");
 
       const query = params.toString();
       const href = query ? `${pathname}?${query}` : pathname;

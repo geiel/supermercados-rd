@@ -410,7 +410,7 @@ export function CompareProducts({ shops, productPrices, totalsByShopId, listItem
     return (
         <div>
             <div className="relative">
-                <ScrollArea className="h-[calc(100dvh_-_76px)]">
+                <ScrollArea className="h-[calc(100dvh_-_70px)]">
                     <div className="flex gap-4">
                         <div className="min-w-0 flex-1">
                             <div className="m-2 flex items-center gap-2 rounded-sm border bg-muted/30 px-3 py-2 text-sm text-muted-foreground w-fit">

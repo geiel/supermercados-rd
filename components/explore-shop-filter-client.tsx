@@ -14,6 +14,17 @@ import { Button } from "./ui/button";
 import { ChevronDown } from "lucide-react";
 import { shopsSelect } from "@/db/schema";
 import { Spinner } from "./ui/spinner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "./ui/drawer";
+import { Checkbox } from "./ui/checkbox";
 
 type ExploreShopFilterClientProps = {
   shops: shopsSelect[];
@@ -28,6 +39,7 @@ export function ExploreShopFilterClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const isMobile = useIsMobile();
 
   const buildHref = useCallback(
     (shopId: number, shouldSelect: boolean) => {
@@ -58,7 +70,7 @@ export function ExploreShopFilterClient({
         params.delete("shop_ids");
       }
 
-      params.set("page", "1");
+      params.delete("page");
 
       const query = params.toString();
 
@@ -77,6 +89,59 @@ export function ExploreShopFilterClient({
     },
     [buildHref, router, startTransition]
   );
+
+  if (isMobile) {
+    return (
+      <Drawer>
+        <DrawerTrigger asChild>
+          <Button variant="outline" disabled={isPending} aria-busy={isPending}>
+            {isPending ? (
+              <>
+                <Spinner /> Supermercados
+              </>
+            ) : (
+              <>
+                Supermercados <ChevronDown />
+              </>
+            )}
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Filtrar por supermercados</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4">
+            <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+              {shops.map((shop) => {
+                const checkboxId = `shop-filter-${shop.id}`;
+
+                return (
+                  <div key={shop.id} className="flex items-center gap-3">
+                    <Checkbox
+                      id={checkboxId}
+                      checked={selectedShopIds?.includes(shop.id)}
+                      onCheckedChange={(value) =>
+                        handleCheckedChange(value, shop.id)
+                      }
+                      disabled={isPending}
+                    />
+                    <label htmlFor={checkboxId} className="text-sm">
+                      {shop.name}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <DrawerFooter className="pt-0">
+            <DrawerClose asChild>
+              <Button variant="outline">Cerrar</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
   return (
     <DropdownMenu>

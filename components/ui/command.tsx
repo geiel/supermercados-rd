@@ -4,7 +4,7 @@ import { Search, X } from "lucide-react";
 
 import { Dialog, DialogContent } from "./dialog";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const Command = ({
@@ -35,31 +35,57 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
 const CommandInput = ({
   className,
   onClean,
+  wrapperClassName,
+  searchIconClassName,
+  rightAdornment,
   ...props
 }: ComponentProps<typeof CommandPrimitive.Input> & {
   onClean?: () => void;
-}) => (
-  <div
-    className="flex items-center rounded-full border px-3"
-    cmdk-input-wrapper=""
-  >
-    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-    <CommandPrimitive.Input
-      className={cn(
-        "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-50 ",
-        className
-      )}
-      {...props}
-    />
+  wrapperClassName?: string;
+  searchIconClassName?: string;
+  rightAdornment?: ReactNode;
+}) => {
+  const showTrailing = Boolean(props.value) || Boolean(rightAdornment);
 
-    {props.value ? (
-      <X
-        className="ml-2 h-4.5 w-4.5 shrink-0 opacity-80 cursor-pointer"
-        onClick={onClean}
+  return (
+    <div
+      className={cn(
+        "flex items-center rounded-full border px-3",
+        wrapperClassName
+      )}
+      cmdk-input-wrapper=""
+    >
+      <Search
+        className={cn(
+          "mr-2 h-4 w-4 shrink-0 opacity-50",
+          searchIconClassName
+        )}
       />
-    ) : null}
-  </div>
-);
+      <CommandPrimitive.Input
+        className={cn(
+          "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-50 ",
+          className
+        )}
+        {...props}
+      />
+
+      {showTrailing ? (
+        <div className="ml-2 flex items-center gap-1">
+          {props.value ? (
+            <X
+              className="h-4.5 w-4.5 shrink-0 cursor-pointer opacity-80"
+              onMouseDown={(event) => {
+                event.preventDefault();
+              }}
+              onClick={onClean}
+            />
+          ) : null}
+          {rightAdornment}
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 const CommandList = ({
   className,
