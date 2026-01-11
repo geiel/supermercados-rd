@@ -335,6 +335,8 @@ export default async function Page({ searchParams }: Props) {
         productRank: string | null;
         productRelevance: string | null;
         productPossibleBrandId: number | null;
+        productBaseUnit: string | null;
+        productBaseUnitAmount: string | null;
         shopId: number | null;
         priceUrl: string | null;
         priceApi: string | null;
@@ -369,6 +371,8 @@ export default async function Page({ searchParams }: Props) {
                 productRank: products.rank,
                 productRelevance: products.relevance,
                 productPossibleBrandId: products.possibleBrandId,
+                productBaseUnit: products.baseUnit,
+                productBaseUnitAmount: products.baseUnitAmount,
                 shopId: productsShopsPricesTable.shopId,
                 priceUrl: productsShopsPricesTable.url,
                 priceApi: productsShopsPricesTable.api,
@@ -445,6 +449,8 @@ export default async function Page({ searchParams }: Props) {
                     rank: row.productRank,
                     relevance: row.productRelevance,
                     possibleBrandId: row.productPossibleBrandId,
+                    baseUnit: row.productBaseUnit ?? null,
+                    baseUnitAmount: row.productBaseUnitAmount ?? null,
                     shopCurrentPrices: [],
                 } as ProductWithPrices;
                 productsMap.set(row.productId, product);

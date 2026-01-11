@@ -7,14 +7,23 @@ import ScrollPeek from "@/components/ui/scroll-peek";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
-import { toSlug } from "@/lib/utils";
+import { formatDropPercentage, toSlug } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/searchbar";
+import { SearchBarSkeleton } from "@/components/searchbar-skeleton";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
+const SUPERMARKET_DEALS = [
+  { id: 6, name: "Bravo", logo: "bravo.png" },
+  { id: 3, name: "Jumbo Market", logo: "jumbo.webp" },
+  { id: 1, name: "Sirena", logo: "sirena.png" },
+  { id: 2, name: "Nacional", logo: "nacional.webp" },
+  { id: 4, name: "Plaza Lama", logo: "plaza_lama.png" },
+  { id: 5, name: "PriceSmart", logo: "pricesmart.png" },
+] as const;
 
 export default function Home() {
   return (
@@ -32,7 +41,7 @@ export default function Home() {
           </p>
         </div>
         <div className="w-full md:w-[60%]">
-          <Suspense fallback={<div>loading...</div>}>
+          <Suspense fallback={<SearchBarSkeleton />}>
             <SearchBar />
           </Suspense>
         </div>
@@ -48,77 +57,24 @@ export default function Home() {
           
           <ScrollPeek>
             <div className="flex gap-4">
-              <Button className="h-30 w-42" variant="outline">
-                <Image
-                    src={`/supermarket-logo/bravo.png`}
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    className="w-[70px] h-auto"
-                    alt="logo bravo"
-                    unoptimized
-                  />
-              </Button>
-
-              <Button className="h-30 w-42" variant="outline">
-                <Image
-                    src={`/supermarket-logo/jumbo.webp`}
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    className="w-[70px] h-auto"
-                    alt="logo bravo"
-                    unoptimized
-                  />
-              </Button>
-
-              <Button className="h-30 w-42" variant="outline">
-                <Image
-                    src={`/supermarket-logo/sirena.png`}
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    className="w-[70px] h-auto"
-                    alt="logo bravo"
-                    unoptimized
-                  />
-              </Button>
-
-              <Button className="h-30 w-42" variant="outline">
-                <Image
-                    src={`/supermarket-logo/nacional.webp`}
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    className="w-[70px] h-auto"
-                    alt="logo bravo"
-                    unoptimized
-                  />
-              </Button>
-
-              <Button className="h-30 w-42" variant="outline">
-                <Image
-                    src={`/supermarket-logo/plaza_lama.png`}
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    className="w-[70px] h-auto"
-                    alt="logo bravo"
-                    unoptimized
-                  />
-              </Button>
-
-              <Button className="h-30 w-42" variant="outline">
-                <Image
-                    src={`/supermarket-logo/pricesmart.png`}
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    className="w-[70px] h-auto"
-                    alt="logo bravo"
-                    unoptimized
-                  />
-              </Button>
+              {SUPERMARKET_DEALS.map((shop) => (
+                <Button key={shop.id} className="h-30 w-42" variant="outline" asChild>
+                  <Link
+                    href={`/deals?shop_id=${shop.id}`}
+                    aria-label={`Ver ofertas en ${shop.name}`}
+                  >
+                    <Image
+                      src={`/supermarket-logo/${shop.logo}`}
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      className="w-[70px] h-auto"
+                      alt={`Logo ${shop.name}`}
+                      unoptimized
+                    />
+                  </Link>
+                </Button>
+              ))}
             </div>
           </ScrollPeek>
         </div>
@@ -133,7 +89,8 @@ export default function Home() {
 
 async function TodaysDealsSection() {
   const todaysDeals = await db.query.todaysDeals.findMany({
-    orderBy: (deals, { desc }) => [desc(deals.dropPercentage), desc(deals.rank)]
+    orderBy: (deals, { desc }) => [desc(deals.dropPercentage), desc(deals.rank)],
+    limit: 20
   });
 
   return (
@@ -152,7 +109,9 @@ async function TodaysDealsSection() {
                   key={deal.productId}
                 >
                   <div className="absolute top-0 left-0 z-10">
-                    <Badge variant="destructive">-{Math.round(Number(deal.dropPercentage))}%</Badge>
+                    <Badge variant="destructive">
+                      -{formatDropPercentage(deal.dropPercentage)}%
+                    </Badge>
                   </div>
                   <div className="relative w-full max-w-[180px] aspect-square mx-auto">
                     {deal.image ? (

@@ -42,6 +42,7 @@ export async function searchGroups(value: string) {
         SELECT group_name, human_id, group_id
         FROM combined
         ORDER BY similarity(unaccent(lower(group_name)), unaccent(lower(${value}))) DESC
+        LIMIT 20
     `;
 
     const rows = await db.execute<{ group_name: string; human_id: string; group_id: number }>(query);

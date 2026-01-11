@@ -418,7 +418,7 @@ const base: Array<Synonym> = [
     { synonyms: ["aparato", "device", "electrico", "electrica", "maquina"], query: ["aparato", "device", "electric:*", "maquina"], id: "aparato"},
     { synonyms: ["oxiclean", "oxi clean"], query: ["oxiclean", "oxi & clean"]},
     { synonyms: ["storage", "almacenar", "almacenamiento"], query: ["storage", "almacenar", "almacenamiento"]},
-    { synonyms: ["snack", "picadera", "bocadillo", "alimento"], query: ["snack", "picadera", "bocadillo", "alimento"]},
+    { synonyms: ["snack", "picadera", "bocadillo", "alimento", "comida"], query: ["snack", "picadera", "bocadillo", "alimento", "comida", "alim"]},
     { synonyms: ["bolsillo", "pocket"], query: ["bolsillo", "pocket"]},
     { synonyms: ["sorbete", "calimete", "straw"], query: ["sorbete", "calimete", "straw"], id: "sorbete"},
     { synonyms: ["plastifar"], query: ["plastifar"], id: "plastifar"},

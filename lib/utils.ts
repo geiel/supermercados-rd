@@ -24,6 +24,24 @@ export function toSlug(text: string): string {
     .replace(/\s+/g, "-"); // Replace spaces with hyphens
 }
 
+export function formatDropPercentage(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "0";
+  }
+
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric)) {
+    return "0";
+  }
+
+  if (numeric > 0 && numeric < 1) {
+    return "<1";
+  }
+
+  return String(Math.round(numeric));
+}
+
 export function isToday(d: Date): boolean {
   const today = new Date();
   return (

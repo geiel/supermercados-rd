@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import { integer, numeric, pgTable, text } from "drizzle-orm/pg-core";
-import { products } from "./products";
+import { products, shops } from "./products";
 
 export const todaysDeals = pgTable("todays_deals", {
     productId: integer().primaryKey().references(() => products.id),
@@ -13,7 +13,9 @@ export const todaysDeals = pgTable("todays_deals", {
     priceBeforeToday: numeric(),
     priceToday: numeric().notNull(),
     dropAmount: numeric().notNull(),
-    dropPercentage: numeric().notNull()
+    dropPercentage: numeric().notNull(),
+    shopId: integer().notNull().references(() => shops.id),
+    amountOfShops: numeric().notNull()
 });
 
 export const todaysDealsRelations = relations(todaysDeals, ({ one }) => ({

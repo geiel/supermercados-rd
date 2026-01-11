@@ -232,6 +232,20 @@
       "when": 1767617252888,
       "tag": "0032_optimal_nico_minoru",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1768057667805,
+      "tag": "0033_secret_azazel",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1768098539663,
+      "tag": "0034_last_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

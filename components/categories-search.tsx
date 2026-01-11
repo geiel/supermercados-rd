@@ -127,7 +127,7 @@ export function CategorySearch({ groupResults }: { groupResults: Array<GroupResu
     };
 
     return (
-        <div className="px-2 md:px-0">
+      <div className="px-2 md:px-0">
         <div className="flex items-baseline gap-2">
           <TypographyH3>Categorías</TypographyH3>
           <span className="text-sm text-muted-foreground">

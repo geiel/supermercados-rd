@@ -3,7 +3,7 @@
 import { ExploreFilters } from "@/components/explore-shop-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getShopsIds } from "@/lib/utils";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 export default function ExploreLayout({ children }: LayoutProps<"/explore/[value]">) {
@@ -13,7 +13,26 @@ export default function ExploreLayout({ children }: LayoutProps<"/explore/[value
                 <Suspense fallback={<ExploreFiltersFallback />}>
                     <ExploreFiltersWithParams />
                 </Suspense>
+                <Suspense>
+                    <SearchFor />
+                </Suspense>
                 {children}
+            </div>
+        </div>
+    )
+}
+
+function SearchFor() {
+    const params = useParams<{ value: string; }>();
+    const rawSearchValue = decodeURIComponent(params.value).trim();
+
+    return (
+        <div className="px-2 md:px-0">
+            <h1 className="text-2xl font-semibold tracking-tight">
+            Buscaste &quot;{rawSearchValue}&quot;
+            </h1>
+            <div className="text-sm opacity-70">
+            Agrega y compara categorías y productos con el +
             </div>
         </div>
     )
