@@ -1,3 +1,5 @@
+export const maxDuration = 50;
+
 import "server-only";
 
 import { db } from "@/db";
