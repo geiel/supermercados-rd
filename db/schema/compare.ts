@@ -7,6 +7,7 @@ export const list = pgTable("list", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     userId: text().notNull(),
     selectedShops: text().array().notNull().default(sql`ARRAY[]::text[]`),
+    name: text().notNull()
 });
 
 export const listRelations = relations(list, ({ many }) => ({

@@ -3,8 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { HeaderSearchSlot } from "@/components/header-search-slot";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, NotepadText, User } from "lucide-react";
-import { LoginUserGoogle, LogOutUser } from "@/lib/authentication";
+import { LogOut, NotepadText, User } from "lucide-react";
+import { LogOutUser } from "@/lib/authentication";
+import { LoginDialog } from "@/components/login-dialog";
 import Link from "next/link";
 import ListItemsProvider from "@/components/list-provider";
 import { getUser } from "@/lib/supabase";
@@ -81,9 +82,7 @@ async function LogInLogOut() {
 
   if (!user) {
     return (
-      <Button onClick={LoginUserGoogle} size="icon-lg">
-        <LogIn />
-      </Button>
+      <LoginDialog />
     )
   }
 

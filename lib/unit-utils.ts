@@ -1,4 +1,4 @@
-export type Measurement = "weight" | "volume" | "count";
+export type Measurement = "weight" | "volume" | "count" | "length";
 
 export const measurementByUnit: Record<string, Measurement | undefined> = {
   LB: "weight",
@@ -11,12 +11,18 @@ export const measurementByUnit: Record<string, Measurement | undefined> = {
   CL: "volume",
   GL: "volume",
   UND: "count",
+  M: "length",
+  FT: "length",
+  YD: "length",
 };
 
 export const EQUIVALENCE_TOLERANCE = 0.5; // allow small rounding differences when grouping (e.g. 16 OZ vs 1 LB)
 
 export const FLUID_OUNCE_IN_ML = 29.5735;
 export const OUNCES_IN_POUND = 16;
+export const CENTIMETERS_IN_METER = 100;
+export const CENTIMETERS_IN_FOOT = 30.48;
+export const CENTIMETERS_IN_YARD = 91.44;
 
 export function convertToBase(amount: number, unit: string, measurement: Measurement): number {
   switch (measurement) {
@@ -59,6 +65,18 @@ export function convertToBase(amount: number, unit: string, measurement: Measure
     }
     case "count":
       return amount;
+    case "length": {
+      switch (unit) {
+        case "M":
+          return amount * CENTIMETERS_IN_METER;
+        case "FT":
+          return amount * CENTIMETERS_IN_FOOT;
+        case "YD":
+          return amount * CENTIMETERS_IN_YARD;
+        default:
+          return 0;
+      }
+    }
   }
 }
 
@@ -175,6 +193,24 @@ export function expandUnitFilter(unitRaw: string): string[] {
     addUnit(variants, kilograms, "KG");
     addUnit(variants, roundToStep(kilograms, 0.25), "KG");
     addUnit(variants, Math.round(kilograms), "KG");
+  }
+
+  const centimeters = parsed.measurement === "length" ? parsed.base : null;
+  if (centimeters) {
+    const meters = centimeters / CENTIMETERS_IN_METER;
+    addUnit(variants, meters, "M");
+    addUnit(variants, roundToStep(meters, 0.25), "M");
+    addUnit(variants, Math.round(meters), "M");
+
+    const feet = centimeters / CENTIMETERS_IN_FOOT;
+    addUnit(variants, feet, "FT");
+    addUnit(variants, roundToStep(feet, 0.25), "FT");
+    addUnit(variants, Math.round(feet), "FT");
+
+    const yards = centimeters / CENTIMETERS_IN_YARD;
+    addUnit(variants, yards, "YD");
+    addUnit(variants, roundToStep(yards, 0.25), "YD");
+    addUnit(variants, Math.round(yards), "YD");
   }
 
   return Array.from(variants);

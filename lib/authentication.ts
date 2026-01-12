@@ -19,10 +19,10 @@ export async function LoginUserGoogle() {
 
     if (error || !data?.url) {
         console.error('Google sign-in failed', error)
-        throw new Error('Unable to start Google sign-in')
+        return { error: 'Unable to start Google sign-in' }
     }
 
-    redirect(data.url)
+    return { url: data.url }
 }
 
 export async function LoginUserEmailPassword(email: string, password: string) {
@@ -36,7 +36,31 @@ export async function LoginUserEmailPassword(email: string, password: string) {
         return { error: error.message }
     }
 
-    redirect("/")
+    return { ok: true }
+}
+
+export async function RegisterUserEmailPassword(
+    name: string,
+    email: string,
+    password: string
+) {
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            data: {
+                name
+            },
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
+        }
+    })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { ok: true, sessionCreated: Boolean(data.session) }
 }
 
 export async function LogOutUser() {

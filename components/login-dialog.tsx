@@ -1,0 +1,287 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, LogIn } from "lucide-react";
+import { toast } from "sonner";
+import {
+  LoginUserEmailPassword,
+  LoginUserGoogle,
+  RegisterUserEmailPassword,
+} from "@/lib/authentication";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+export function LoginDialog() {
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailAction, setEmailAction] = useState<
+    "signin" | "signup" | null
+  >(null);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const router = useRouter();
+  const isEmailLoading = emailAction !== null;
+
+  const handleEmailLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setEmailAction("signin");
+
+    try {
+      const result = await LoginUserEmailPassword(email, password);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      setOpen(false);
+      setPassword("");
+      router.refresh();
+    } catch (error) {
+      console.log(error);
+      toast.error("An error occurred during login");
+    } finally {
+      setEmailAction(null);
+    }
+  };
+
+  const handleEmailRegister = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!name.trim() || !email || !password) {
+      toast.error("Enter your name, email, and password to create an account.");
+      return;
+    }
+
+    setEmailAction("signup");
+
+    try {
+      const result = await RegisterUserEmailPassword(name.trim(), email, password);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      if (result?.sessionCreated) {
+        setOpen(false);
+        setPassword("");
+        setName("");
+        router.refresh();
+        return;
+      }
+
+      setPassword("");
+      setName("");
+      toast.success("Check your email to confirm your account.");
+    } catch (error) {
+      console.log(error);
+      toast.error("An error occurred during registration");
+    } finally {
+      setEmailAction(null);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const result = await LoginUserGoogle();
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+      toast.error(result?.error ?? "Failed to start Google sign-in");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to start Google sign-in");
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="icon-lg" aria-label="Sign in">
+          <LogIn />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>
+            {view === "signin" ? "Sign in" : "Create account"}
+          </DialogTitle>
+          <DialogDescription>
+            {view === "signin"
+              ? "Use your email and password or continue with Google."
+              : "Enter your name, email, and password to get started."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          {view === "signin" ? (
+            <form onSubmit={handleEmailLogin} className="grid gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="login-email">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  disabled={isEmailLoading || isGoogleLoading}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="login-password">Password</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={isEmailLoading || isGoogleLoading}
+                  required
+                />
+              </div>
+              <Button type="submit" disabled={isEmailLoading || isGoogleLoading}>
+                {emailAction === "signin" && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Sign in
+              </Button>
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto px-0"
+                onClick={() => setView("signup")}
+                disabled={isEmailLoading || isGoogleLoading}
+              >
+                Create account
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleEmailRegister} className="grid gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="signup-name">Name</Label>
+                <Input
+                  id="signup-name"
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  disabled={isEmailLoading || isGoogleLoading}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="signup-email">Email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  disabled={isEmailLoading || isGoogleLoading}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="signup-password">Password</Label>
+                <Input
+                  id="signup-password"
+                  type="password"
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={isEmailLoading || isGoogleLoading}
+                  required
+                />
+              </div>
+              <Button type="submit" disabled={isEmailLoading || isGoogleLoading}>
+                {emailAction === "signup" && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Create account
+              </Button>
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto px-0"
+                onClick={() => setView("signin")}
+                disabled={isEmailLoading || isGoogleLoading}
+              >
+                Back to sign in
+              </Button>
+            </form>
+          )}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+          <Button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isEmailLoading || isGoogleLoading}
+          >
+            {isGoogleLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <GoogleIcon className="mr-2 h-4 w-4" />
+            )}
+            Continue with Google
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+      role="img"
+      viewBox="0 0 48 48"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      ></path>
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      ></path>
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      ></path>
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      ></path>
+      <path
+        fill="none"
+        d="M0 0h48v48H0z"
+      ></path>
+    </svg>
+  );
+}

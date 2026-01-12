@@ -96,7 +96,12 @@ async function TodaysDealsSection() {
   return (
     <section>
         <div className="space-y-4">
-          <TypographyH3>Mejores ofertas de hoy</TypographyH3>
+          <div className="flex justify-between items-center">
+            <TypographyH3>Mejores ofertas de hoy</TypographyH3>
+            <Button variant="link" size="sm" asChild>
+              <Link href="/deals">Ver todas</Link>
+            </Button>
+          </div>
           <ScrollPeek
             itemWidth="min(max(35vw, 110px), 218px)"
             itemWidthMd="224px"

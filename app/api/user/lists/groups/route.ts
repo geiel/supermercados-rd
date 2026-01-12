@@ -8,22 +8,23 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        return new Response(JSON.stringify([]));
+        return Response.json([]);
     }
 
-    const userList = await db.query.list.findFirst({
+    const userLists = await db.query.list.findMany({
         columns: {
-            id: true
+            id: true,
         },
-        where: (list, { eq }) => eq(list.userId, user.id)
+        where: (list, { eq }) => eq(list.userId, user.id),
     });
 
-    if (!userList) {
+    if (userLists.length === 0) {
         return Response.json([]);
     }
 
     const groupItems = await db.query.listGroupItems.findMany({
-        where: (listGroupItems, { eq }) => eq(listGroupItems.listId, userList.id)
+        where: (listGroupItems, { inArray }) =>
+            inArray(listGroupItems.listId, userLists.map((list) => list.id)),
     });
 
     return Response.json(groupItems);

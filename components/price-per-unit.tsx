@@ -43,7 +43,7 @@ function convertToMilliliters(quantity: number, unit: string): number {
 }
 
 function convertToPounds(quantity: number, unit: string): number {
-  switch (unit) {
+  switch (unit.toUpperCase()) {
     case "LB":
       return quantity;
     case "OZ":
@@ -52,6 +52,19 @@ function convertToPounds(quantity: number, unit: string): number {
       return quantity / 453.59237;
     case "KG":
       return quantity * 2.20462;
+    default:
+      return 0;
+  }
+}
+
+function convertToCentimeters(quantity: number, unit: string): number {
+  switch (unit.toUpperCase()) {
+    case "M":
+      return quantity * 100;
+    case "FT":
+      return quantity * 30.48;
+    case "YD":
+      return quantity * 91.44;
     default:
       return 0;
   }
@@ -73,6 +86,13 @@ function getPricePer100Milliliters(
 
   const pricePerMilliliter = price / milliliterVolume;
   return +(pricePerMilliliter * 100).toFixed(2);
+}
+
+function getPricePerMeter(price: number, quantity: number, unit: string) {
+  const centimeterLength = convertToCentimeters(quantity, unit);
+
+  const pricePerCentimeter = price / centimeterLength;
+  return +(pricePerCentimeter * 100).toFixed(2);
 }
 
 export function PricePerUnit({
@@ -101,11 +121,15 @@ export function PricePerUnit({
   }
 
   const amount = Number(amountAndUnit[0]);
-  const unitOnly = amountAndUnit[1];
+  const unitOnly = amountAndUnit[1]?.toUpperCase();
   const pricePerUndFromName = pricePerAmountInName({
     name: productName,
     price,
   });
+
+  if (!unitOnly) {
+    return null;
+  }
 
   if (
     unitOnly !== "LB" &&
@@ -117,7 +141,10 @@ export function PricePerUnit({
     unitOnly !== "CC" &&
     unitOnly !== "LT" &&
     unitOnly !== "CL" &&
-    unitOnly !== "GL"
+    unitOnly !== "GL" &&
+    unitOnly !== "FT" &&
+    unitOnly !== "M" &&
+    unitOnly !== "YD"
   ) {
     if (pricePerUndFromName) {
       return (
@@ -155,6 +182,17 @@ export function PricePerUnit({
     return (
       <div className={cn("text-xs", className)}>
         ${getPricePer100Milliliters(price, amount, unitOnly)} por 100 ML
+        <div>
+          {perUndSuffix}
+        </div>
+      </div>
+    );
+  }
+
+  if (unitOnly === "FT" || unitOnly === "M" || unitOnly === "YD") {
+    return (
+      <div className={cn("text-xs", className)}>
+        ${getPricePerMeter(price, amount, unitOnly)} por M
         <div>
           {perUndSuffix}
         </div>
