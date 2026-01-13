@@ -226,7 +226,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                     <div>
                         <ShopSelector
                             shops={shops}
-                            selectedShops={selectedShops.length > 0 ? selectedShops : stats.selectedShopIds}
+                            selectedShops={selectedShops}
                             cheapestSingleShopIds={stats.cheapestSingleShopIds}
                             cheapestPairShopIds={stats.cheapestPairShopIds}
                             bestValueSingleShopIds={stats.bestValueSingleShopIds}
@@ -442,17 +442,19 @@ function ShopSelector({
 
     const triggerButton = (
         <Button className="relative" variant="outline" size="icon">
-            <div className="absolute top-[-5px] right-[-5px] z-50">
-                {isRecalculating ? (
-                    <Badge className="h-5 min-w-5 rounded-full px-1" variant="destructive">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                    </Badge>
-                ) : (
-                    <Badge className="h-5 min-w-5 rounded-full px-1 font-mono tabular-nums" variant="destructive">
-                        {selectedShops.length || shops.length}
-                    </Badge>
-                )}
-            </div>
+            {(isRecalculating || selectedShops.length > 0) && (
+                <div className="absolute top-[-5px] right-[-5px] z-50">
+                    {isRecalculating ? (
+                        <Badge className="h-5 min-w-5 rounded-full px-1" variant="destructive">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                        </Badge>
+                    ) : (
+                        <Badge className="h-5 min-w-5 rounded-full px-1 font-mono tabular-nums" variant="destructive">
+                            {selectedShops.length}
+                        </Badge>
+                    )}
+                </div>
+            )}
             <Store />
         </Button>
     );
@@ -514,9 +516,7 @@ function ShopSelectorList({
     onSelectionChange,
 }: ShopSelectorListProps) {
     const searchParams = useSearchParams();
-    const [selectedShops, setSelectedShops] = useState<number[]>(
-        initialSelectedShops.length > 0 ? initialSelectedShops : shops.map((s) => s.id)
-    );
+    const [selectedShops, setSelectedShops] = useState<number[]>(initialSelectedShops);
 
     const currentCompareMode: CompareMode = searchParams.get("compare") === "value" ? "value" : "cheapest";
     const [pendingCompareMode, setPendingCompareMode] = useState<CompareMode>(currentCompareMode);

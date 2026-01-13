@@ -428,8 +428,12 @@ export function getBestValueGroupPicks(
 
     let effectiveInfos = productInfos;
     let { coverageByType, countByType } = buildCoverage(effectiveInfos);
+
+    // For value comparison to be meaningful, we need at least 2 shops with coverage
+    // (or at least 1 if only 1 shop is selected)
+    const minCoverageRequired = Math.min(2, shopIds.length);
     let candidateTypes = (["measure", "count"] as const).filter((type) =>
-        shopIds.every((shopId) => coverageByType[type].has(shopId))
+        shopIds.filter((shopId) => coverageByType[type].has(shopId)).length >= minCoverageRequired
     );
 
     if (candidateTypes.length === 0) {
@@ -453,7 +457,7 @@ export function getBestValueGroupPicks(
 
             const rebuilt = buildCoverage(forcedCountInfos);
             const forcedCandidateTypes = (["measure", "count"] as const).filter(
-                (type) => shopIds.every((shopId) => rebuilt.coverageByType[type].has(shopId))
+                (type) => shopIds.filter((shopId) => rebuilt.coverageByType[type].has(shopId)).length >= minCoverageRequired
             );
 
             if (forcedCandidateTypes.length === 0) return null;
@@ -542,7 +546,10 @@ export function getBestValueGroupPicks(
         }
     }
 
-    if (!bestPick || shopPicks.length !== shopIds.length) return null;
+    // For value comparison to work, we need at least 2 shops with valid picks
+    // (or at least 1 if only 1 shop is selected) to make a meaningful comparison
+    const minPicksRequired = Math.min(2, shopIds.length);
+    if (!bestPick || shopPicks.length < minPicksRequired) return null;
 
     return {
         bestPick,
