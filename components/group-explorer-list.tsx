@@ -3,23 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
-import { AddListButton } from "@/components/add-list";
+import { AddToListButton } from "@/components/add-to-list-button";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductBrand } from "@/components/product-brand";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Drawer,
   DrawerClose,
@@ -29,6 +21,15 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toSlug } from "@/lib/utils";
 import {
@@ -312,29 +313,25 @@ export function GroupExplorerList({
               <DrawerHeader>
                 <DrawerTitle>Ordenar productos</DrawerTitle>
               </DrawerHeader>
-              <div className="px-4 pb-0">
-                <div className="space-y-2">
-                  {GROUP_EXPLORER_SORT_OPTIONS.map((option) => {
-                    const isSelected = option.value === sort;
-
-                    return (
-                      <Button
-                        key={option.value}
-                        variant="ghost"
-                        className="w-full justify-between"
-                        onClick={() => handleSortChange(option.value)}
+              <div className="px-4 pb-4">
+                <RadioGroup value={sort} onValueChange={handleSelectChange}>
+                  {GROUP_EXPLORER_SORT_OPTIONS.map((option) => (
+                    <div
+                      key={option.value}
+                      className="flex items-center space-x-3 py-2 cursor-pointer"
+                      onClick={() => handleSortChange(option.value)}
+                    >
+                      <RadioGroupItem
+                        value={option.value}
                         disabled={isSorting}
-                      >
-                        <span className="text-sm">{option.label}</span>
-                        {isSelected ? (
-                          <Check className="size-4" />
-                        ) : (
-                          <span className="size-4" aria-hidden />
-                        )}
-                      </Button>
-                    );
-                  })}
-                </div>
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className="text-sm font-medium leading-none flex-1">
+                        {option.label}
+                      </span>
+                    </div>
+                  ))}
+                </RadioGroup>
               </div>
               <DrawerFooter>
                 <DrawerClose asChild>
@@ -422,7 +419,7 @@ function GroupExplorerCard({ product }: { product: GroupExplorerProduct }) {
         </div>
       ) : null}
       <div className="absolute top-2 right-2 z-10">
-        <AddListButton productId={product.id} type="icon" />
+        <AddToListButton productId={product.id} variant="icon" />
       </div>
       <Link
         href={`/product/${toSlug(product.name)}/${product.id}`}

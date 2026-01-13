@@ -113,21 +113,22 @@ export function ExploreShopFilterClient({
           <div className="px-4 pb-4">
             <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
               {shops.map((shop) => {
-                const checkboxId = `shop-filter-${shop.id}`;
+                const isChecked = selectedShopIds?.includes(shop.id) ?? false;
 
                 return (
-                  <div key={shop.id} className="flex items-center gap-3">
+                  <div
+                    key={shop.id}
+                    className="flex items-center space-x-3 py-2 cursor-pointer"
+                    onClick={() => handleCheckedChange(!isChecked, shop.id)}
+                  >
                     <Checkbox
-                      id={checkboxId}
-                      checked={selectedShopIds?.includes(shop.id)}
-                      onCheckedChange={(value) =>
-                        handleCheckedChange(value, shop.id)
-                      }
+                      checked={isChecked}
                       disabled={isPending}
+                      onClick={(e) => e.stopPropagation()}
                     />
-                    <label htmlFor={checkboxId} className="text-sm">
+                    <span className="text-sm font-medium leading-none flex-1">
                       {shop.name}
-                    </label>
+                    </span>
                   </div>
                 );
               })}

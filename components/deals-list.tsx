@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
-import { AddListButton } from "@/components/add-list";
+import { AddToListButton } from "@/components/add-to-list-button";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
@@ -20,6 +20,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -306,29 +307,25 @@ export function DealsList({
               <DrawerHeader>
                 <DrawerTitle>Ordenar ofertas</DrawerTitle>
               </DrawerHeader>
-              <div className="px-4 pb-0">
-                <div className="space-y-2">
-                  {DEALS_SORT_OPTIONS.map((option) => {
-                    const isSelected = option.value === sort;
-
-                    return (
-                      <Button
-                        key={option.value}
-                        variant="ghost"
-                        className="w-full justify-between"
-                        onClick={() => handleSortChange(option.value)}
+              <div className="px-4 pb-4">
+                <RadioGroup value={sort} onValueChange={handleSelectChange}>
+                  {DEALS_SORT_OPTIONS.map((option) => (
+                    <div
+                      key={option.value}
+                      className="flex items-center space-x-3 py-2 cursor-pointer"
+                      onClick={() => handleSortChange(option.value)}
+                    >
+                      <RadioGroupItem
+                        value={option.value}
                         disabled={isSorting}
-                      >
-                        <span className="text-sm">{option.label}</span>
-                        {isSelected ? (
-                          <Check className="size-4" />
-                        ) : (
-                          <span className="size-4" aria-hidden />
-                        )}
-                      </Button>
-                    );
-                  })}
-                </div>
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className="text-sm font-medium leading-none flex-1">
+                        {option.label}
+                      </span>
+                    </div>
+                  ))}
+                </RadioGroup>
               </div>
               <DrawerFooter>
                 <DrawerClose asChild>
@@ -405,13 +402,13 @@ function mergeDeals(current: DealItem[], incoming: DealItem[]) {
 function DealCard({ deal }: { deal: DealItem }) {
   return (
     <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative">
-      <div className="absolute top-2 right-2 z-10">
-        <AddListButton productId={deal.productId} type="icon" />
-      </div>
       <div className="absolute top-2 left-2 z-10">
         <Badge variant="destructive">
           -{formatDropPercentage(deal.dropPercentage)}%
         </Badge>
+      </div>
+      <div className="absolute top-2 right-2 z-10">
+        <AddToListButton productId={deal.productId} variant="icon" />
       </div>
       <Link
         href={`/product/${toSlug(deal.name)}/${deal.productId}`}

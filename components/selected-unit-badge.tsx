@@ -4,7 +4,7 @@ import { useCallback, useMemo, useTransition } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 import { parseUnitFilterParam, serializeUnitFilters } from "@/utils/unit-filter";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 
 type UnitOption = { label: string; value: string };
 
@@ -31,11 +31,14 @@ export function SelectedUnitBadge() {
     new Set(parseUnitFilterParam(searchParams.get("unit_filter")))
   );
 
-  const { data: unitsData } = useSWR<UnitOption[]>(
-    searchValue ? `/api/search-units?value=${encodeURIComponent(searchValue)}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  const shouldFetch = Boolean(searchValue);
+  const { data: unitsData } = useQuery({
+    queryKey: ["search-units", searchValue],
+    enabled: shouldFetch,
+    queryFn: () =>
+      fetcher(`/api/search-units?value=${encodeURIComponent(searchValue)}`),
+    refetchOnWindowFocus: false,
+  });
 
   const unitsByValue = useMemo(() => {
     const map = new Map<string, string>();

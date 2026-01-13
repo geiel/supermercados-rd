@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LocalListsPage } from "@/components/local-lists-page";
 import { db } from "@/db";
 import { listGroupItems, listItems } from "@/db/schema";
 import { getUser } from "@/lib/supabase";
@@ -10,7 +11,7 @@ export default async function Page() {
     const user = await getUser();
 
     if (!user) {
-        return <div>Inicia sesión para ver tus listas.</div>;
+        return <LocalListsPage />;
     }
 
     const lists = await db.query.list.findMany({

@@ -1,6 +1,6 @@
 'use client';
 
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useTransition } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { parseUnitFilterParam, serializeUnitFilters } from "@/utils/unit-filter";
@@ -42,6 +42,7 @@ const fetcher = async (url: string) => {
 export function ExploreUnitFilter() {
   const params = useParams<{ value?: string }>();
   const searchValue = params?.value ? params.value : "";
+  const shouldFetch = Boolean(searchValue);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -56,12 +57,14 @@ export function ExploreUnitFilter() {
   const {
     data: unitsData,
     error,
-    isLoading,
-  } = useSWR<UnitOption[]>(
-    searchValue ? `/api/search-units?value=${encodeURIComponent(searchValue)}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+    isPending: isUnitsPending,
+  } = useQuery({
+    queryKey: ["search-units", searchValue],
+    enabled: shouldFetch,
+    queryFn: () =>
+      fetcher(`/api/search-units?value=${encodeURIComponent(searchValue)}`),
+    refetchOnWindowFocus: false,
+  });
 
   const updateUnits = useCallback(
     (nextUnits: string[]) => {
@@ -101,7 +104,7 @@ export function ExploreUnitFilter() {
     [selectedUnits, updateUnits]
   );
 
-  const isBusy = isLoading || isPending;
+  const isBusy = isUnitsPending || isPending;
 
   if (isMobile) {
     return (
@@ -126,24 +129,22 @@ export function ExploreUnitFilter() {
           <div className="px-4 pb-0">
             <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
               {unitsData?.map((option) => {
-                const checkboxId = `unit-filter-${option.value}`;
+                const isChecked = selectedUnits.includes(option.value);
 
                 return (
-                  <div key={option.value} className="flex items-center gap-3">
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-3 py-2 cursor-pointer"
+                    onClick={() => handleToggle(option.value, !isChecked)}
+                  >
                     <Checkbox
-                      id={checkboxId}
-                      checked={selectedUnits.includes(option.value)}
-                      onCheckedChange={(value) =>
-                        handleToggle(option.value, value)
-                      }
+                      checked={isChecked}
                       disabled={isPending}
+                      onClick={(e) => e.stopPropagation()}
                     />
-                    <label
-                      htmlFor={checkboxId}
-                      className="flex-1 truncate text-sm"
-                    >
+                    <span className="text-sm font-medium leading-none flex-1 truncate">
                       {option.label}
-                    </label>
+                    </span>
                     <span className="text-muted-foreground text-xs tabular-nums">
                       {option.count}
                     </span>

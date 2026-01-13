@@ -1,6 +1,6 @@
 'use client';
 
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import type { shopsSelect } from "@/db/schema";
 import { ExploreShopFilterClient } from "./explore-shop-filter-client";
 import { SelectedShopBadge } from "./selected-shop-badge";
@@ -27,16 +27,18 @@ export function ExploreFilters({ selectedShopIds }: ExploreShopFilterProps) {
   const {
     data: shopsData,
     error,
-    isLoading,
-  } = useSWR<shopsSelect[]>("/api/shops", fetcher, {
-    revalidateOnFocus: false,
+    isPending,
+  } = useQuery({
+    queryKey: ["shops"],
+    queryFn: () => fetcher("/api/shops"),
+    refetchOnWindowFocus: false,
   });
 
   const shops = shopsData ?? [];
 
   return (
     <div className="px-2 md:px-0 space-y-2">
-      {!isLoading && error ? (
+      {!isPending && error ? (
         <p className="text-sm text-destructive">
           No se pudieron cargar los supermercados.
         </p>

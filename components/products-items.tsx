@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "./ui/drawer";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { updateGroupIgnoredProducts, updateItemAmount, deleteItem, deleteGroupItem } from "@/lib/compare";
-import { ArrowRightSquare, Trash } from "lucide-react";
+import { ArrowRightSquare, Loader2, Trash } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toSlug } from "@/lib/utils";
@@ -82,9 +82,19 @@ type ProductItemEntry = {
 
 type ProductItemsProps = {
     items: ProductItemEntry[]
+    openRowKey?: string | null
+    onOpenChange?: (rowKey: string | null) => void
+    onLocalDeleteProduct?: (productId: number, listItemId?: number) => void
+    onLocalDeleteGroup?: (groupId: number, listGroupItemId?: number) => void
+    onLocalIgnoreProduct?: (groupId: number, productId: number, listGroupItemId?: number) => void
+    onLocalRestoreProduct?: (groupId: number, productId: number, listGroupItemId?: number) => void
+    /** Product IDs currently being processed (show loading overlay) */
+    loadingProductIds?: Set<number>
+    /** Group IDs currently being processed (show loading overlay) */
+    loadingGroupIds?: Set<number>
 }
 
-export function ProductItems({ items }: ProductItemsProps ) {
+export function ProductItems({ items, openRowKey, onOpenChange, onLocalDeleteProduct, onLocalDeleteGroup, onLocalIgnoreProduct, onLocalRestoreProduct, loadingProductIds, loadingGroupIds }: ProductItemsProps ) {
     const isMobile = useIsMobile()
     const [localItems, setLocalItems] = React.useState(items);
 
@@ -111,6 +121,9 @@ export function ProductItems({ items }: ProductItemsProps ) {
         );
     }, []);
 
+    // Only pass controlled props if parent provided them
+    const isControlledMode = onOpenChange !== undefined;
+
     if (isMobile) {
         return (
             <ItemGroup className="gap-2">
@@ -118,7 +131,15 @@ export function ProductItems({ items }: ProductItemsProps ) {
                     <ItemProductDrawer
                         key={entry.rowKey}
                         entry={entry}
+                        isOpen={isControlledMode ? openRowKey === entry.rowKey : undefined}
+                        onOpenChange={isControlledMode ? (open) => onOpenChange(open ? entry.rowKey : null) : undefined}
                         onAmountChange={handleAmountChange}
+                        onLocalDeleteProduct={onLocalDeleteProduct}
+                        onLocalDeleteGroup={onLocalDeleteGroup}
+                        onLocalIgnoreProduct={onLocalIgnoreProduct}
+                        onLocalRestoreProduct={onLocalRestoreProduct}
+                        loadingProductIds={loadingProductIds}
+                        loadingGroupIds={loadingGroupIds}
                     />
                 ))}
             </ItemGroup>
@@ -131,7 +152,15 @@ export function ProductItems({ items }: ProductItemsProps ) {
                 <ItemProductDialog
                     key={entry.rowKey}
                     entry={entry}
+                    isOpen={isControlledMode ? openRowKey === entry.rowKey : undefined}
+                    onOpenChange={isControlledMode ? (open) => onOpenChange(open ? entry.rowKey : null) : undefined}
                     onAmountChange={handleAmountChange}
+                    onLocalDeleteProduct={onLocalDeleteProduct}
+                    onLocalDeleteGroup={onLocalDeleteGroup}
+                    onLocalIgnoreProduct={onLocalIgnoreProduct}
+                    onLocalRestoreProduct={onLocalRestoreProduct}
+                    loadingProductIds={loadingProductIds}
+                    loadingGroupIds={loadingGroupIds}
                 />
             ))}
         </ItemGroup>
@@ -140,15 +169,28 @@ export function ProductItems({ items }: ProductItemsProps ) {
 
 type DialogDrawerProps = {
     entry: ProductItemEntry
+    isOpen?: boolean
+    onOpenChange?: (open: boolean) => void
     onAmountChange?: (itemId: number, nextAmount: number) => void
+    onLocalDeleteProduct?: (productId: number, listItemId?: number) => void
+    onLocalDeleteGroup?: (groupId: number, listGroupItemId?: number) => void
+    onLocalIgnoreProduct?: (groupId: number, productId: number, listGroupItemId?: number) => void
+    onLocalRestoreProduct?: (groupId: number, productId: number, listGroupItemId?: number) => void
+    loadingProductIds?: Set<number>
+    loadingGroupIds?: Set<number>
 }
 
-function ItemProductDialog({ entry, onAmountChange }: DialogDrawerProps) {
-    const [open, setOpen] = React.useState(false);
+function ItemProductDialog({ entry, isOpen, onOpenChange, onAmountChange, onLocalDeleteProduct, onLocalDeleteGroup, onLocalIgnoreProduct, onLocalRestoreProduct, loadingProductIds, loadingGroupIds }: DialogDrawerProps) {
+    // Use external open state only if onOpenChange is provided (controlled mode)
+    const [internalOpen, setInternalOpen] = React.useState(false);
+    const isControlled = onOpenChange !== undefined;
+    const open = isControlled ? (isOpen ?? false) : internalOpen;
+    const setOpen = isControlled ? onOpenChange : setInternalOpen;
     const amount = entry.amount ?? entry.listItem?.amount;
     const isGroup = Boolean(entry.group);
+    const canShowDialog = entry.listItem || isGroup || onLocalDeleteProduct || onLocalDeleteGroup;
 
-    if (!entry.listItem && !isGroup) {
+    if (!canShowDialog) {
         return (
             <Item asChild role="listItem" variant="outline">
                 <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
@@ -168,13 +210,22 @@ function ItemProductDialog({ entry, onAmountChange }: DialogDrawerProps) {
                 <DialogTitle>{isGroup ? entry.group?.name : "Acciones"}</DialogTitle>
                 </DialogHeader>
                 {isGroup && entry.group ? (
-                    <GroupDetails group={entry.group} type="dialog" onClose={() => setOpen(false)} />
+                    <GroupDetails 
+                        group={entry.group} 
+                        type="dialog" 
+                        onClose={() => setOpen(false)} 
+                        onLocalDeleteGroup={onLocalDeleteGroup}
+                        onLocalIgnoreProduct={onLocalIgnoreProduct}
+                        onLocalRestoreProduct={onLocalRestoreProduct}
+                        externalLoadingProductIds={loadingProductIds}
+                    />
                 ) : (
                     <ProductDetails
                         product={entry.product}
                         item={entry.listItem}
                         onItemClose={() => setOpen(false)}
                         onAmountChange={onAmountChange}
+                        onLocalDeleteProduct={onLocalDeleteProduct}
                     />
                 )}
             </DialogContent>
@@ -182,12 +233,17 @@ function ItemProductDialog({ entry, onAmountChange }: DialogDrawerProps) {
     )    
 }
 
-function ItemProductDrawer({ entry, onAmountChange }: DialogDrawerProps) {
-    const [open, setOpen] = React.useState(false);
+function ItemProductDrawer({ entry, isOpen, onOpenChange, onAmountChange, onLocalDeleteProduct, onLocalDeleteGroup, onLocalIgnoreProduct, onLocalRestoreProduct, loadingProductIds, loadingGroupIds }: DialogDrawerProps) {
+    // Use external open state only if onOpenChange is provided (controlled mode)
+    const [internalOpen, setInternalOpen] = React.useState(false);
+    const isControlled = onOpenChange !== undefined;
+    const open = isControlled ? (isOpen ?? false) : internalOpen;
+    const setOpen = isControlled ? onOpenChange : setInternalOpen;
     const amount = entry.amount ?? entry.listItem?.amount;
     const isGroup = Boolean(entry.group);
+    const canShowDrawer = entry.listItem || isGroup || onLocalDeleteProduct || onLocalDeleteGroup;
 
-    if (!entry.listItem && !isGroup) {
+    if (!canShowDrawer) {
         return (
             <Item asChild role="listItem" variant="outline">
                 <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
@@ -207,13 +263,22 @@ function ItemProductDrawer({ entry, onAmountChange }: DialogDrawerProps) {
                     <DrawerTitle>{isGroup ? entry.group?.name : "Acciones"}</DrawerTitle>
                 </DrawerHeader>
                 {isGroup && entry.group ? (
-                    <GroupDetails group={entry.group} type="drawer" onClose={() => setOpen(false)} />
+                    <GroupDetails 
+                        group={entry.group} 
+                        type="drawer" 
+                        onClose={() => setOpen(false)} 
+                        onLocalDeleteGroup={onLocalDeleteGroup}
+                        onLocalIgnoreProduct={onLocalIgnoreProduct}
+                        onLocalRestoreProduct={onLocalRestoreProduct}
+                        externalLoadingProductIds={loadingProductIds}
+                    />
                 ) : (
                     <ProductDetails
                         product={entry.product}
                         item={entry.listItem}
                         onItemClose={() => setOpen(false)}
                         onAmountChange={onAmountChange}
+                        onLocalDeleteProduct={onLocalDeleteProduct}
                     />
                 )}
             </DrawerContent>
@@ -369,23 +434,51 @@ type GroupDetailsProps = {
     group: GroupEntryInfo
     type: "drawer" | "dialog"
     onClose?: () => void
+    onLocalDeleteGroup?: (groupId: number, listGroupItemId?: number) => void
+    onLocalIgnoreProduct?: (groupId: number, productId: number, listGroupItemId?: number) => void
+    onLocalRestoreProduct?: (groupId: number, productId: number, listGroupItemId?: number) => void
+    /** External loading product IDs (from parent mutations hook) */
+    externalLoadingProductIds?: Set<number>
 }
 
-function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
+function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreProduct, onLocalRestoreProduct, externalLoadingProductIds }: GroupDetailsProps) {
     const router = useRouter();
     const [alternatives, setAlternatives] = React.useState(group.alternatives);
     const [ignoredProducts, setIgnoredProducts] = React.useState(group.ignoredProducts);
     const [ignorePending, startIgnoreTransition] = useTransition();
+    const [isDeletingGroup, setIsDeletingGroup] = React.useState(false);
+    // Track product IDs that are being ignored/restored (showing loading state)
+    const [internalLoadingProductIds, setInternalLoadingProductIds] = React.useState<Set<number>>(new Set());
     const alternativesRef = React.useRef(group.alternatives);
     const ignoredProductsRef = React.useRef(group.ignoredProducts);
+    // Store full alternative data for ignored products so we can restore them properly
+    const ignoredAlternativesRef = React.useRef<Map<number, GroupAlternative>>(new Map());
     const scrollAreaClassName =
         type === "dialog" ? "max-h-[60vh] w-full" : "w-full overflow-auto";
 
+    // Combine internal and external loading states
+    const loadingProductIds = React.useMemo(() => {
+        if (!externalLoadingProductIds) return internalLoadingProductIds;
+        const combined = new Set(internalLoadingProductIds);
+        for (const id of externalLoadingProductIds) combined.add(id);
+        return combined;
+    }, [internalLoadingProductIds, externalLoadingProductIds]);
+
+    // Setter for internal loading state
+    const setLoadingProductIds = setInternalLoadingProductIds;
+
+    // When group data updates from parent, sync local state and clear loading states
     React.useEffect(() => {
         setAlternatives(group.alternatives);
         setIgnoredProducts(group.ignoredProducts);
         alternativesRef.current = group.alternatives;
         ignoredProductsRef.current = group.ignoredProducts;
+        
+        // Clear all internal loading states when new data arrives - operations are complete
+        setInternalLoadingProductIds((current) => {
+            if (current.size === 0) return current;
+            return new Set();
+        });
     }, [group.alternatives, group.ignoredProducts]);
 
     const commitIgnoredProducts = (nextIgnoredProducts: Product[]) => {
@@ -394,54 +487,86 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
             return;
         }
 
-        startIgnoreTransition(() => {
-            void updateGroupIgnoredProducts(
+        startIgnoreTransition(async () => {
+            await updateGroupIgnoredProducts(
                 listItemId,
                 nextIgnoredProducts.map((product) => product.id)
-            ).then(() => {
-                router.refresh();
-            });
+            );
+            // Refresh to get the new best product for the group
+            router.refresh();
         });
     };
 
     const handleIgnore = (alternative: GroupAlternative) => {
-        if (!group.listItemId) {
+        const productId = alternative.product.id;
+        
+        // Check if already being processed
+        if (loadingProductIds.has(productId)) {
             return;
         }
-
-        const nextAlternatives = alternativesRef.current.filter(
-            (entry) => entry.product.id !== alternative.product.id
-        );
+        
+        // Store full alternative data for restoration later
+        ignoredAlternativesRef.current.set(productId, alternative);
+        
+        // Add to loading state - show loading on this product (and any duplicates)
+        setLoadingProductIds((current) => new Set([...current, productId]));
+        
+        // Build the next ignored products list for the API call
         const alreadyIgnored = ignoredProductsRef.current.some(
-            (product) => product.id === alternative.product.id
+            (product) => product.id === productId
         );
-
-        alternativesRef.current = nextAlternatives;
-        setAlternatives(nextAlternatives);
-
+        
         if (alreadyIgnored) {
             return;
         }
 
         const nextIgnored = [...ignoredProductsRef.current, alternative.product];
-        ignoredProductsRef.current = nextIgnored;
-        setIgnoredProducts(nextIgnored);
+
+        // Handle via callback (for both local and logged users with new hooks)
+        if (onLocalIgnoreProduct) {
+            onLocalIgnoreProduct(group.id, productId, group.listItemId);
+            return;
+        }
+
         commitIgnoredProducts(nextIgnored);
     };
 
     const handleRestore = (product: Product) => {
-        if (!group.listItemId) {
+        const productId = product.id;
+        
+        // Check if already being processed
+        if (loadingProductIds.has(productId)) {
+            return;
+        }
+        
+        // Add to loading state
+        setLoadingProductIds((current) => new Set([...current, productId]));
+        
+        const nextIgnored = ignoredProductsRef.current.filter((entry) => entry.id !== productId);
+
+        // Handle via callback (for both local and logged users with new hooks)
+        if (onLocalRestoreProduct) {
+            onLocalRestoreProduct(group.id, productId, group.listItemId);
             return;
         }
 
-        const nextIgnored = ignoredProductsRef.current.filter((entry) => entry.id !== product.id);
-        ignoredProductsRef.current = nextIgnored;
-        setIgnoredProducts(nextIgnored);
         commitIgnoredProducts(nextIgnored);
     };
+    
+    // Check if a product ID is loading
+    const isProductLoading = (productId: number) => loadingProductIds.has(productId);
 
-    const handleDeleteGroup = () => {
+    const handleDeleteGroup = async () => {
         const listItemId = group.listItemId;
+        
+        // Handle via callback (for both local and logged users with new hooks)
+        if (onLocalDeleteGroup) {
+            setIsDeletingGroup(true);
+            await onLocalDeleteGroup(group.id, listItemId);
+            // Parent handles closing the dialog/drawer
+            return;
+        }
+        
         if (!listItemId) {
             return;
         }
@@ -483,17 +608,17 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
 
     const hasAlternatives = alternatives.length > 0;
     const hasIgnored = ignoredProducts.length > 0;
-    const canDeleteGroup = Boolean(group.listItemId);
+    const canDeleteGroup = Boolean(group.listItemId) || Boolean(onLocalDeleteGroup);
     const deleteGroupButton = canDeleteGroup ? (
         <Button
             size="sm"
             variant="destructive"
             className="gap-2"
             onClick={handleDeleteGroup}
-            disabled={ignorePending}
+            disabled={ignorePending || isDeletingGroup}
         >
-            <Trash className="size-4" />
-            Eliminar grupo
+            {isDeletingGroup ? <Loader2 className="size-4 animate-spin" /> : <Trash className="size-4" />}
+            {isDeletingGroup ? "Eliminando..." : "Eliminar grupo"}
         </Button>
     ) : null;
 
@@ -514,12 +639,18 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
                             const priceLabel = Number.isFinite(alternative.price)
                                 ? `RD$${alternative.price.toFixed(2)}`
                                 : "RD$--";
+                            const isLoading = isProductLoading(alternative.product.id);
 
                             return (
                                 <div
                                     key={`${alternative.product.id}-${alternative.shopId}`}
-                                    className="rounded-md border border-border p-3 space-y-2"
+                                    className="relative rounded-md border border-border p-3 space-y-2"
                                 >
+                                    {isLoading ? (
+                                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/80">
+                                            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                                        </div>
+                                    ) : null}
                                     <div className="flex items-center gap-3">
                                         <div className="size-14 relative">
                                             <ProductImage
@@ -553,7 +684,7 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
                                             size="xs"
                                             variant="ghost"
                                             onClick={() => handleIgnore(alternative)}
-                                            disabled={ignorePending}
+                                            disabled={ignorePending || isLoading}
                                         >
                                             Ignorar
                                         </Button>
@@ -583,40 +714,48 @@ function GroupDetails({ group, type, onClose }: GroupDetailsProps) {
                             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 Ignorados
                             </div>
-                            {ignoredProducts.map((product) => (
-                                <div
-                                    key={`ignored-${product.id}`}
-                                    className="flex items-center gap-3 rounded-md border border-border p-3"
-                                >
-                                    <div className="size-14 relative">
-                                        <ProductImage
-                                            src={product.image ? product.image : "/no-product-found.jpg"}
-                                            fill
-                                            alt={product.name + product.unit}
-                                            sizes="56px"
-                                            style={{
-                                                objectFit: "contain",
-                                            }}
-                                            placeholder="blur"
-                                            blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-                                            className="max-w-none"
-                                        />
-                                    </div>
-                                    <div className="flex flex-1 flex-col gap-1">
-                                        <p className="text-sm font-semibold">
-                                            {product.name} {product.unit}
-                                        </p>
-                                    </div>
-                                    <Button
-                                        size="xs"
-                                        variant="outline"
-                                        onClick={() => handleRestore(product)}
-                                        disabled={ignorePending}
+                            {ignoredProducts.map((product) => {
+                                const isLoading = isProductLoading(product.id);
+                                return (
+                                    <div
+                                        key={`ignored-${product.id}`}
+                                        className="relative flex items-center gap-3 rounded-md border border-border p-3"
                                     >
-                                        Agregar
-                                    </Button>
-                                </div>
-                            ))}
+                                        {isLoading ? (
+                                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/80">
+                                                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                                            </div>
+                                        ) : null}
+                                        <div className="size-14 relative">
+                                            <ProductImage
+                                                src={product.image ? product.image : "/no-product-found.jpg"}
+                                                fill
+                                                alt={product.name + product.unit}
+                                                sizes="56px"
+                                                style={{
+                                                    objectFit: "contain",
+                                                }}
+                                                placeholder="blur"
+                                                blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                                className="max-w-none"
+                                            />
+                                        </div>
+                                        <div className="flex flex-1 flex-col gap-1">
+                                            <p className="text-sm font-semibold">
+                                                {product.name} {product.unit}
+                                            </p>
+                                        </div>
+                                        <Button
+                                            size="xs"
+                                            variant="outline"
+                                            onClick={() => handleRestore(product)}
+                                            disabled={ignorePending || isLoading}
+                                        >
+                                            Agregar
+                                        </Button>
+                                    </div>
+                                );
+                            })}
                         </>
                     ) : null}
                 </div>
@@ -641,9 +780,11 @@ type ProductDetailsProps = {
     item?: listItemsSelect
     onItemClose: () => void
     onAmountChange?: (itemId: number, nextAmount: number) => void
+    onLocalDeleteProduct?: (productId: number, listItemId?: number) => void
 }
 
-function ProductDetails({ product, item, onItemClose, onAmountChange }: ProductDetailsProps ) {
+function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDeleteProduct }: ProductDetailsProps ) {
+    const router = useRouter();
     const [quantity, setQuantity] = React.useState(item?.amount ? item.amount : 1)
     const [, startUpdateTransition] = useTransition();
     const amountUpdateTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -653,6 +794,19 @@ function ProductDetails({ product, item, onItemClose, onAmountChange }: ProductD
 
     const price = product.shopCurrentPrices[0]?.currentPrice
     const formattedPrice = price !== undefined ? `RD$${price}` : ""
+    const isLocalOnly = !item && Boolean(onLocalDeleteProduct);
+
+    const handleViewProduct = (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (event.defaultPrevented) return;
+        if (event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) return;
+        
+        event.preventDefault();
+        const href = `/product/${toSlug(product.name)}/${product.id}`;
+        onItemClose();
+        setTimeout(() => {
+            router.push(href);
+        }, 0);
+    };
 
     React.useEffect(() => {
         return () => {
@@ -670,7 +824,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange }: ProductD
         };
     }, [itemId]);
 
-    if (!item) {
+    if (!item && !isLocalOnly) {
         return null;
     }
 
@@ -717,11 +871,62 @@ function ProductDetails({ product, item, onItemClose, onAmountChange }: ProductD
         applyQuantityChange(nextQuantity);
     }
 
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
     const handleDeleteItemFromList = async () => {
-        await deleteItem(item.id);
-        onItemClose();
+        // Handle via callback (for both local and logged users with new hooks)
+        if (onLocalDeleteProduct) {
+            setIsDeleting(true);
+            await onLocalDeleteProduct(product.id, item?.id);
+            // Parent handles closing the dialog/drawer
+            return;
+        }
+        
+        if (item) {
+            await deleteItem(item.id);
+            onItemClose();
+        }
     }
 
+    // For local-only mode, show simplified UI without quantity controls
+    if (isLocalOnly) {
+        return (
+            <div className="flex flex-col gap-6 pb-4">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="size-40 relative">
+                        <ProductImage
+                            src={product.image ? product.image : "/no-product-found.jpg"}
+                            fill
+                            alt={product.name + product.unit}
+                            sizes="160px"
+                            style={{
+                                objectFit: "contain",
+                            }}
+                            placeholder="blur"
+                            blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                            className="max-w-none"
+                        />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-lg font-semibold">
+                            {product.name} {product.unit}
+                        </p>
+                        <p className="text-base text-muted-foreground">{formattedPrice}</p>
+                    </div>
+                </div>
+                <div className="flex gap-2 items-center justify-center">
+                    <Button size="icon-lg" variant="outline" onClick={handleDeleteItemFromList} disabled={isDeleting} aria-label="Eliminar producto lista">
+                        {isDeleting ? <Loader2 className="animate-spin" /> : <Trash />}
+                    </Button>
+                    <Button size="icon-lg" variant="outline" aria-label="Ver producto" asChild>
+                        <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct}>
+                            <ArrowRightSquare />
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col gap-6 pb-4">
@@ -770,11 +975,11 @@ function ProductDetails({ product, item, onItemClose, onAmountChange }: ProductD
                 </Button>
             </div>
             <div className="flex gap-2 items-center justify-center">
-                <Button size="icon-lg" variant="outline" onClick={handleDeleteItemFromList} aria-label="Eliminar producto lista">
-                    <Trash />
+                <Button size="icon-lg" variant="outline" onClick={handleDeleteItemFromList} disabled={isDeleting} aria-label="Eliminar producto lista">
+                    {isDeleting ? <Loader2 className="animate-spin" /> : <Trash />}
                 </Button>
                 <Button size="icon-lg" variant="outline" aria-label="Ver producto" asChild>
-                    <Link href={`/product/${toSlug(product.name)}/${product.id}`}>
+                    <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct}>
                         <ArrowRightSquare />
                     </Link>
                 </Button>

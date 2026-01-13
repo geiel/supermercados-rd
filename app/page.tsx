@@ -1,13 +1,10 @@
 import { ExploreSection } from "@/components/explore-section";
-import { ProductImage } from "@/components/product-image";
+import { FrontPageDealCard } from "@/components/front-page-deal-card";
 import { TypographyH3 } from "@/components/typography-h3";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import ScrollPeek from "@/components/ui/scroll-peek";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Unit } from "@/components/unit";
 import { db } from "@/db";
-import { formatDropPercentage, toSlug } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 import Image from "next/image";
@@ -15,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/searchbar";
 import { SearchBarSkeleton } from "@/components/searchbar-skeleton";
 
-const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 const SUPERMARKET_DEALS = [
   { id: 6, name: "Bravo", logo: "bravo.png" },
   { id: 3, name: "Jumbo Market", logo: "jumbo.webp" },
@@ -108,41 +104,7 @@ async function TodaysDealsSection() {
           >
             <div className="flex space-x-2 p-2 relative">
               {todaysDeals.map(deal => (
-                <Link
-                  href={`/product/${toSlug(deal.name)}/${deal.productId}`}
-                  className="flex flex-col gap-2 relative"
-                  key={deal.productId}
-                >
-                  <div className="absolute top-0 left-0 z-10">
-                    <Badge variant="destructive">
-                      -{formatDropPercentage(deal.dropPercentage)}%
-                    </Badge>
-                  </div>
-                  <div className="relative w-full max-w-[180px] aspect-square mx-auto">
-                    {deal.image ? (
-                      <ProductImage
-                        src={deal.image}
-                        fill
-                        alt={deal.name + deal.unit}
-                        sizes="(min-width: 1024px) 180px, 32vw"
-                        style={{
-                          objectFit: "contain",
-                        }}
-                        placeholder="blur"
-                        blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-                        className="max-w-none"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="px-2">
-                    <Unit unit={deal.unit} />
-                    <div>
-                      <BrandName name={deal.brandName} possibleName={deal.possibleBrandName} />
-                      {deal.name}
-                    </div>
-                    <div className="font-bold text-lg">RD${deal.priceToday}</div>
-                  </div>
-                </Link>
+                <FrontPageDealCard key={deal.productId} deal={deal} />
               ))}
             </div>
           </ScrollPeek>
@@ -211,14 +173,3 @@ function ExploreSectionSkeleton() {
   )
 }
 
-function BrandName({ name, possibleName }: { name: string; possibleName: string | null }) {
-  if (!possibleName) {
-    return <div className="font-bold">{name}</div>;
-  }
-
-  if (SUPERMARKET_BRAND_NAMES.includes(name)) {
-    return <div className="font-bold">{possibleName}</div>;
-  }
-
-  return <div className="font-bold">{name}</div>;
-}

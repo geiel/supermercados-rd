@@ -7,7 +7,6 @@ import { LogOut, NotepadText, User } from "lucide-react";
 import { LogOutUser } from "@/lib/authentication";
 import { LoginDialog } from "@/components/login-dialog";
 import Link from "next/link";
-import ListItemsProvider from "@/components/list-provider";
 import { getUser } from "@/lib/supabase";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
@@ -15,6 +14,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Suspense } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import Image from "next/image";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +42,7 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <ListItemsProvider>
+          <Providers>
             <header className="h-[70px]">
               <div className="px-2 py-2 container mx-auto">
                 <div className="flex items-center">
@@ -69,9 +69,9 @@ export default function RootLayout({
               </div>
             </header>
             {children}
-            <Toaster richColors />
+            <Toaster richColors position="top-center" />
             <SpeedInsights />
-          </ListItemsProvider>
+          </Providers>
         </body>
     </html>
   );

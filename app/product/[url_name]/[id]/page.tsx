@@ -1,4 +1,5 @@
-import { AddToListMenuButton } from "@/components/add-to-list-menu";
+import { AddToListButton } from "@/components/add-to-list-button";
+import { CategoryBadge } from "@/components/category-badge";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductBrand } from "@/components/product-brand";
@@ -7,7 +8,7 @@ import { RelatedProducts } from "@/components/related-products";
 import { Button } from "@/components/ui/button";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
-import { groups, productsGroups, productsShopsPrices } from "@/db/schema";
+import { productsShopsPrices } from "@/db/schema";
 import { bravo } from "@/lib/scrappers/bravo";
 import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
@@ -17,7 +18,6 @@ import { sirena } from "@/lib/scrappers/sirena";
 import { searchProducts } from "@/lib/search-query";
 import { getUser } from "@/lib/supabase";
 import { sanitizeForTsQuery } from "@/lib/utils";
-import { asc, eq } from "drizzle-orm";
 import { MessageCircleWarning } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
@@ -56,6 +56,11 @@ export default async function Page({ params }: Props) {
       possibleBrand: true,
       pricesHistory: true,
       visibilityHistory: true,
+      groupProduct: {
+        with: {
+          group: true,
+        },
+      },
     },
   });
 
@@ -66,17 +71,6 @@ export default async function Page({ params }: Props) {
   const user = await getUser();
   const canSeeHiddenProducts = user?.email?.toLowerCase() === "geielpeguero@gmail.com";
 
-  const productGroups = await db
-    .select({
-      id: groups.id,
-      name: groups.name,
-      humanId: groups.humanNameId,
-    })
-    .from(groups)
-    .innerJoin(productsGroups, eq(productsGroups.groupId, groups.id))
-    .where(eq(productsGroups.productId, product.id))
-    .orderBy(asc(groups.name));
-
   const relatedProducts = await searchRelatedProducts(product.name, canSeeHiddenProducts);
   relatedProducts.products.splice(
     relatedProducts.products.findIndex((i) => i.id === product.id),
@@ -85,13 +79,35 @@ export default async function Page({ params }: Props) {
 
   const shops = await getShops();
 
+  const groups = product.groupProduct.map((gp) => gp.group);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
+          {groups.length > 0 ? (
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:flex-wrap">
+              <span className="text-sm text-muted-foreground">
+                {groups.length === 1 ? "Categoría" : "Categorías"}
+              </span>
+              <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:gap-2">
+                {groups.map((group) => (
+                  <CategoryBadge
+                    key={group.id}
+                    groupId={group.id}
+                    groupName={group.name}
+                    groupHumanNameId={group.humanNameId}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div>
             <ProductBrand brand={product.brand} possibleBrand={product.possibleBrand} type="product" />
-            <div className="text-xl">{product.name}</div>
+            <div className="flex items-center gap-2">
+              <div className="text-xl">{product.name}</div>
+              <AddToListButton productId={product.id} />
+            </div>
           </div>
           <Unit unit={product.unit} className="font-bold" />
           <div className="px-4 py-8">
@@ -118,11 +134,6 @@ export default async function Page({ params }: Props) {
                       placeholder="blur"
                       blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
                       className="max-w-none" />}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <AddToListMenuButton productId={product.id} groups={productGroups} />
-                </div>
               </div>
             </div>
           </div>

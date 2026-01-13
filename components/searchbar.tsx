@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { AutoComplete } from "./autocomplete";
-import useSWR from "swr";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 type SearchBarProps = {
   open?: boolean;
@@ -24,19 +24,19 @@ export function SearchBar({ open, onOpenChange, autoFocus }: SearchBarProps) {
     );
   }
 
-  const { data } = useSWR(
-    value ? `/api/suggestions?value=${value}` : null,
-    async (key) => {
-      const response = await fetch(key);
+  const shouldFetch = Boolean(value);
+  const { data } = useQuery({
+    queryKey: ["suggestions", value],
+    enabled: shouldFetch,
+    queryFn: async () => {
+      const response = await fetch(`/api/suggestions?value=${value}`);
 
       return z
         .array(z.object({ phrase: z.string(), sml: z.number() }))
         .parse(await response.json());
     },
-    {
-      keepPreviousData: true,
-    }
-  );
+    placeholderData: shouldFetch ? keepPreviousData : undefined,
+  });
 
   function explore(value: string) {
     if (!value) return;

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AddListButton } from "@/components/add-list";
+import { AddToListButton } from "@/components/add-to-list-button";
 import { ProductImage } from "@/components/product-image";
 import { ProductBrand } from "@/components/product-brand";
 import { PricePerUnit } from "@/components/price-per-unit";
@@ -32,6 +33,11 @@ type ExploreProductsListProps = {
   };
 };
 
+type ExplorePageParam = {
+  offset: number;
+  prefetchIds: number[];
+};
+
 export function ExploreProductsList({
   initialProducts,
   initialPrefetch,
@@ -39,75 +45,47 @@ export function ExploreProductsList({
   initialOffset,
   query,
 }: ExploreProductsListProps) {
-  const [products, setProducts] = useState(initialProducts);
-  const [prefetch, setPrefetch] = useState(initialPrefetch);
-  const [totalCount, setTotalCount] = useState(total);
-  const [offset, setOffset] = useState(initialOffset);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  const hasLoadedMoreRef = useRef(false);
   const hasAdjustedForMobileRef = useRef(false);
-  const lastQueryKeyRef = useRef<string | null>(null);
 
-  const queryKey = useMemo(
+  const queryKeyParts = useMemo(
     () =>
-      `${query.value}|${query.shop_ids ?? ""}|${query.only_shop_products ?? ""}|${query.unit_filter ?? ""}`,
+      [
+        "explore-products",
+        query.value,
+        query.shop_ids ?? "",
+        query.only_shop_products ?? "",
+        query.unit_filter ?? "",
+      ] as const,
     [query.only_shop_products, query.shop_ids, query.unit_filter, query.value]
   );
 
-  useEffect(() => {
-    if (lastQueryKeyRef.current === queryKey && lastQueryKeyRef.current !== null) {
-      return;
-    }
-
-    lastQueryKeyRef.current = queryKey;
-    hasLoadedMoreRef.current = false;
-    hasAdjustedForMobileRef.current = false;
-
-    const { visible, prefetch: nextPrefetch } = splitForMobile(
+  const initialPage = useMemo(() => {
+    const { visible, prefetch } = splitForMobile(
       initialProducts,
       initialPrefetch,
       isMobile
     );
 
-    setProducts(visible);
-    setPrefetch(nextPrefetch);
-    setTotalCount(total);
-    setOffset(initialOffset);
-    setIsLoading(false);
-    setErrorMessage(null);
-  }, [initialOffset, initialPrefetch, initialProducts, isMobile, queryKey, total]);
+    return {
+      products: visible,
+      prefetch,
+      total,
+      nextOffset: initialOffset,
+    };
+  }, [initialOffset, initialPrefetch, initialProducts, isMobile, total]);
 
-  useEffect(() => {
-    if (!isMobile || hasAdjustedForMobileRef.current || hasLoadedMoreRef.current) {
-      return;
-    }
-
-    setProducts((current) => {
-      if (current.length <= MOBILE_VISIBLE_COUNT) {
-        hasAdjustedForMobileRef.current = true;
-        return current;
-      }
-
-      const overflow = current.slice(MOBILE_VISIBLE_COUNT);
-      setPrefetch((currentPrefetch) => [...overflow, ...currentPrefetch]);
-      hasAdjustedForMobileRef.current = true;
-      return current.slice(0, MOBILE_VISIBLE_COUNT);
-    });
-  }, [isMobile, queryKey]);
-
-  const hasMore = products.length < totalCount;
-
-  const handleShowMore = useCallback(async () => {
-    if (!hasMore || isLoading) {
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    try {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchNextPageError,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: queryKeyParts,
+    queryFn: async ({ pageParam }: { pageParam: ExplorePageParam; }) => {
       const response = await fetch("/api/explore-products", {
         method: "POST",
         headers: {
@@ -115,8 +93,8 @@ export function ExploreProductsList({
         },
         body: JSON.stringify({
           value: query.value,
-          offset,
-          prefetch_ids: prefetch.map((product) => product.id),
+          offset: pageParam.offset,
+          prefetch_ids: pageParam.prefetchIds,
           shop_ids: query.shop_ids,
           only_shop_products: query.only_shop_products,
           unit_filter: query.unit_filter,
@@ -134,28 +112,98 @@ export function ExploreProductsList({
         isMobile
       );
 
-      setProducts((current) => [...current, ...visible]);
-      setPrefetch(nextPrefetch);
-      setTotalCount(data.total);
-      setOffset(data.nextOffset);
-      hasLoadedMoreRef.current = true;
-    } catch (error) {
-      console.error("[explore-products] Failed to load more", error);
-      setErrorMessage("No se pudieron cargar más productos.");
-    } finally {
-      setIsLoading(false);
+      return {
+        ...data,
+        products: visible,
+        prefetch: nextPrefetch,
+      };
+    },
+    initialPageParam: { offset: 0, prefetchIds: [] },
+    initialData: {
+      pages: [initialPage],
+      pageParams: [{ offset: 0, prefetchIds: [] }],
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const visibleCount = allPages.reduce(
+        (sum, page) => sum + page.products.length,
+        0
+      );
+
+      if (visibleCount >= lastPage.total) {
+        return undefined;
+      }
+
+      return {
+        offset: lastPage.nextOffset,
+        prefetchIds: lastPage.prefetch.map((product) => product.id),
+      };
+    },
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  useEffect(() => {
+    hasAdjustedForMobileRef.current = false;
+  }, [queryKeyParts]);
+
+  useEffect(() => {
+    if (!isMobile || hasAdjustedForMobileRef.current || !data) {
+      return;
     }
-  }, [
-    hasMore,
-    isLoading,
-    offset,
-    prefetch,
-    query.only_shop_products,
-    query.shop_ids,
-    query.unit_filter,
-    query.value,
-    isMobile,
-  ]);
+
+    if (data.pages.length > 1) {
+      hasAdjustedForMobileRef.current = true;
+      return;
+    }
+
+    const firstPage = data.pages[0];
+    const { visible, prefetch } = splitForMobile(
+      firstPage.products,
+      firstPage.prefetch,
+      true
+    );
+
+    if (visible.length === firstPage.products.length) {
+      hasAdjustedForMobileRef.current = true;
+      return;
+    }
+
+    queryClient.setQueryData(queryKeyParts, {
+      ...data,
+      pages: [
+        { ...firstPage, products: visible, prefetch },
+        ...data.pages.slice(1),
+      ],
+    });
+    hasAdjustedForMobileRef.current = true;
+  }, [data, isMobile, queryClient, queryKeyParts]);
+
+  useEffect(() => {
+    if (!isFetchNextPageError || !error) {
+      return;
+    }
+
+    console.error("[explore-products] Failed to load more", error);
+  }, [error, isFetchNextPageError]);
+
+  const products = useMemo(
+    () => data?.pages.flatMap((page) => page.products) ?? [],
+    [data]
+  );
+  const totalCount =
+    data && data.pages.length > 0
+      ? data.pages[data.pages.length - 1].total
+      : total;
+  const hasMore = Boolean(hasNextPage && products.length < totalCount);
+
+  const handleShowMore = useCallback(() => {
+    if (!hasMore || isFetchingNextPage) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [fetchNextPage, hasMore, isFetchingNextPage]);
 
   return (
     <>
@@ -170,10 +218,10 @@ export function ExploreProductsList({
             variant="secondary"
             className="w-full md:w-auto"
             onClick={handleShowMore}
-            disabled={isLoading}
-            aria-busy={isLoading}
+            disabled={isFetchingNextPage}
+            aria-busy={isFetchingNextPage}
           >
-            {isLoading ? (
+            {isFetchingNextPage ? (
               <>
                 <Spinner /> Cargando...
               </>
@@ -183,9 +231,9 @@ export function ExploreProductsList({
           </Button>
         </div>
       ) : null}
-      {errorMessage ? (
+      {isFetchNextPageError ? (
         <div className="text-center text-sm text-destructive">
-          {errorMessage}
+          No se pudieron cargar más productos.
         </div>
       ) : null}
     </>
@@ -212,7 +260,7 @@ function ExploreProductCard({ product }: { product: ExploreProduct }) {
   return (
     <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative">
       <div className="absolute top-2 right-2 z-10">
-        <AddListButton productId={product.id} type="icon" />
+        <AddToListButton productId={product.id} variant="icon" />
       </div>
       <Link
         href={`/product/${toSlug(product.name)}/${product.id}`}

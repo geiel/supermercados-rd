@@ -46,3 +46,4 @@ export const listItemsRelations = relations(listItems, ({ one }) => ({
 
 export type ListSelect = typeof list.$inferSelect;
 export type listItemsSelect = typeof listItems.$inferSelect;
+export type listGroupItemsSelect = typeof listGroupItems.$inferSelect;
