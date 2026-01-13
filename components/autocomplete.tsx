@@ -213,9 +213,11 @@ export const AutoComplete = ({
   const handleSearch = useCallback(
     (nextValue: string) => {
       onSearch(nextValue);
-      // Don't close dropdown - let navigation handle it for instant UX
+      setTimeout(() => {
+        setOpen(false);
+      }, 100);
     },
-    [onSearch]
+    [onSearch, setOpen]
   );
 
   const handleKeyDown = useCallback(
