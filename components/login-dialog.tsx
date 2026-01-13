@@ -21,8 +21,27 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export function LoginDialog() {
-  const [open, setOpen] = useState(false);
+type LoginDialogProps = {
+  /** Custom title to display in the dialog header */
+  customTitle?: string;
+  /** Custom description to display in the dialog header */
+  customDescription?: string;
+  /** Controlled open state */
+  open?: boolean;
+  /** Callback when open state changes */
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the trigger button (for controlled mode) */
+  hideTrigger?: boolean;
+};
+
+export function LoginDialog({
+  customTitle,
+  customDescription,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger = false,
+}: LoginDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [view, setView] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,6 +52,11 @@ export function LoginDialog() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
   const isEmailLoading = emailAction !== null;
+
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (controlledOnOpenChange ?? (() => {})) : setInternalOpen;
 
   const handleEmailLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -108,23 +132,29 @@ export function LoginDialog() {
     }
   };
 
+  // Determine the title and description
+  const defaultTitle = view === "signin" ? "Iniciar sesión" : "Crear cuenta";
+  const defaultDescription =
+    view === "signin"
+      ? "Usa tu email y contraseña o continúa con Google."
+      : "Ingresa tu nombre, email y contraseña para comenzar.";
+
+  const title = customTitle ?? defaultTitle;
+  const description = customDescription ?? defaultDescription;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="icon-lg" aria-label="Sign in">
-          <LogIn />
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button size="icon-lg" aria-label="Sign in">
+            <LogIn />
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>
-            {view === "signin" ? "Sign in" : "Create account"}
-          </DialogTitle>
-          <DialogDescription>
-            {view === "signin"
-              ? "Use your email and password or continue with Google."
-              : "Enter your name, email, and password to get started."}
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           {view === "signin" ? (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateListCard } from "@/components/create-list-card";
 import { LocalListsPage } from "@/components/local-lists-page";
 import { db } from "@/db";
 import { listGroupItems, listItems } from "@/db/schema";
@@ -19,43 +20,38 @@ export default async function Page() {
         orderBy: (list, { asc }) => [asc(list.id)],
     });
 
-    if (lists.length === 0) {
-        return (
-            <div className="container mx-auto max-w-4xl px-2 pb-8">
-                <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">Listas</div>
-                </div>
-                <div className="mt-6 flex justify-center">
+    // Even if there are no lists, we still need to show the create card
+    // Get counts only if there are lists
+    const listIds = lists.length > 0 ? lists.map((entry) => entry.id) : [];
+    // Only fetch counts if there are lists
+    let countByListId = new Map<number, number>();
+    let groupCountByListId = new Map<number, number>();
 
-                </div>
-            </div>
+    if (listIds.length > 0) {
+        const listItemCounts = await db
+            .select({
+                listId: listItems.listId,
+                count: sql<number>`count(*)`,
+            })
+            .from(listItems)
+            .where(inArray(listItems.listId, listIds))
+            .groupBy(listItems.listId);
+        const listGroupCounts = await db
+            .select({
+                listId: listGroupItems.listId,
+                count: sql<number>`count(*)`,
+            })
+            .from(listGroupItems)
+            .where(inArray(listGroupItems.listId, listIds))
+            .groupBy(listGroupItems.listId);
+
+        countByListId = new Map(
+            listItemCounts.map((entry) => [entry.listId, Number(entry.count ?? 0)])
+        );
+        groupCountByListId = new Map(
+            listGroupCounts.map((entry) => [entry.listId, Number(entry.count ?? 0)])
         );
     }
-
-    const listIds = lists.map((entry) => entry.id);
-    const listItemCounts = await db
-        .select({
-            listId: listItems.listId,
-            count: sql<number>`count(*)`,
-        })
-        .from(listItems)
-        .where(inArray(listItems.listId, listIds))
-        .groupBy(listItems.listId);
-    const listGroupCounts = await db
-        .select({
-            listId: listGroupItems.listId,
-            count: sql<number>`count(*)`,
-        })
-        .from(listGroupItems)
-        .where(inArray(listGroupItems.listId, listIds))
-        .groupBy(listGroupItems.listId);
-
-    const countByListId = new Map(
-        listItemCounts.map((entry) => [entry.listId, Number(entry.count ?? 0)])
-    );
-    const groupCountByListId = new Map(
-        listGroupCounts.map((entry) => [entry.listId, Number(entry.count ?? 0)])
-    );
 
     return (
         <div className="container mx-auto max-w-4xl px-2 pb-8">
@@ -87,6 +83,9 @@ export default async function Page() {
                         </Link>
                     );
                 })}
+                
+                {/* Create List Card - at the end */}
+                <CreateListCard />
             </div>
         </div>
     );

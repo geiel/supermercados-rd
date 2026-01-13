@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateListCard } from "@/components/create-list-card";
 import { useListItems } from "@/hooks/use-list-items";
 
 export function LocalListsPage() {
@@ -29,6 +30,9 @@ export function LocalListsPage() {
             </CardContent>
           </Card>
         </Link>
+        
+        {/* Create List Card - at the end, prompts login for guests */}
+        <CreateListCard />
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Info, Loader2, Store } from "lucide-react";
+import { Info, Loader2, Pencil, ShoppingCart, Store } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,7 +15,9 @@ import { Separator } from "@/components/ui/separator";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { ProductItems } from "@/components/products-items";
+import { EditListDialog } from "@/components/edit-list-dialog";
 import { useListItems } from "@/hooks/use-list-items";
 import { useListStats } from "@/hooks/use-list-stats";
 import { useShops } from "@/hooks/use-shops";
@@ -85,6 +87,9 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
     // Track loading states for individual items
     const [loadingProductIds, setLoadingProductIds] = useState<Set<number>>(new Set());
     const [loadingGroupIds, setLoadingGroupIds] = useState<Set<number>>(new Set());
+
+    // Edit list dialog state
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
 
     // Get compare mode from URL
     const compareMode: CompareMode = searchParams.get("compare") === "value" ? "value" : "cheapest";
@@ -201,13 +206,56 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
         });
     }, [listItems, stats]);
 
+    // Handle list deletion - navigate back to lists page
+    const handleListDeleted = useCallback(() => {
+        router.push("/lists");
+    }, [router]);
+
+    const displayName = userList?.name ?? listName;
+
     // Empty list state
     if (listItems.products.length === 0 && listItems.groups.length === 0 && !listItems.isLoading) {
         return (
             <div className="container mx-auto pb-4 px-2 max-w-4xl">
-                <div className="text-center py-8 text-muted-foreground">
-                    Tu lista está vacía. Agrega productos desde las ofertas o el explorador.
+                {/* Header */}
+                <div className="flex justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="font-bold text-2xl">{displayName}</div>
+                        {listId && userList && (
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => setEditDialogOpen(true)}
+                                aria-label="Editar lista"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
                 </div>
+
+                {/* Empty state */}
+                <Empty className="mt-8">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <ShoppingCart />
+                        </EmptyMedia>
+                        <EmptyTitle>Tu lista está vacía</EmptyTitle>
+                        <EmptyDescription>
+                            Agrega productos desde las ofertas o el explorador.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
+
+                {/* Edit List Dialog */}
+                {listId && userList && (
+                    <EditListDialog
+                        list={userList}
+                        open={editDialogOpen}
+                        onOpenChange={setEditDialogOpen}
+                        onDeleted={handleListDeleted}
+                    />
+                )}
             </div>
         );
     }
@@ -227,8 +275,6 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
             </div>
         );
     }
-
-    const displayName = listName;
     const shopsGroupedKeys = Object.keys(stats.shopsGrouped);
     const isRecalculating = stats.isFetching;
 
@@ -237,7 +283,20 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
             <div className="flex flex-1 flex-col">
                 {/* Header */}
                 <div className="flex justify-between">
-                    <div className="font-bold text-2xl">{displayName}</div>
+                    <div className="flex items-center gap-2">
+                        <div className="font-bold text-2xl">{displayName}</div>
+                        {/* Edit button - only for logged users with a list */}
+                        {listId && userList && (
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => setEditDialogOpen(true)}
+                                aria-label="Editar lista"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
                     <div>
                         <ShopSelector
                             shops={shops}
@@ -369,6 +428,16 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                     </section>
                 ) : null}
             </div>
+
+            {/* Edit List Dialog */}
+            {listId && userList && (
+                <EditListDialog
+                    list={userList}
+                    open={editDialogOpen}
+                    onOpenChange={setEditDialogOpen}
+                    onDeleted={handleListDeleted}
+                />
+            )}
         </div>
     );
 }

@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -23,6 +24,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CreateListDialog } from "@/components/create-list-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAddToList } from "@/hooks/use-add-to-list";
 
@@ -36,6 +38,7 @@ type AddToListButtonProps = {
 
 export function AddToListButton({ productId, variant = "default" }: AddToListButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [createListOpen, setCreateListOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // Unified hook for both guests and logged-in users
@@ -117,6 +120,13 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
     [lists, productId, isProductInList, addProduct, removeProduct]
   );
 
+  // Handler for when a new list is created (must be before early returns to respect Rules of Hooks)
+  const handleListCreated = useCallback(() => {
+    // The list is automatically added to the query cache by CreateListDialog
+    // Close the create dialog and keep the main dropdown open
+    setCreateListOpen(false);
+  }, []);
+
   const isMutating = isCreatingList;
   const isIconVariant = variant === "icon";
 
@@ -156,8 +166,82 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
   // Multiple lists - show dropdown/drawer so user can choose which list(s)
   if (isMobile) {
     return (
-      <Drawer open={isOpen} onOpenChange={setIsOpen}>
-        <DrawerTrigger asChild>
+      <>
+        <Drawer open={isOpen} onOpenChange={setIsOpen}>
+          <DrawerTrigger asChild>
+            <Button
+              variant="outline"
+              size={isIconVariant ? "icon" : "sm"}
+              className={buttonClassName}
+              style={buttonStyle}
+              disabled={isLoading || isLoadingLists || isMutating}
+            >
+              {buttonContent}
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Agregar a lista</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-4 space-y-3">
+              {lists.map((list) => {
+                const isChecked = isProductInList(productId, list.id);
+                return (
+                  <div
+                    key={list.id}
+                    className="flex items-center space-x-3 py-2 cursor-pointer"
+                    onClick={() => handleToggleList(list.id)}
+                  >
+                    <Checkbox
+                      checked={isChecked}
+                      disabled={isMutating}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="text-sm font-medium leading-none flex-1">
+                      {list.name}
+                    </span>
+                  </div>
+                );
+              })}
+              
+              {/* Create new list option */}
+              <div className="pt-2 border-t">
+                <div
+                  className="flex items-center space-x-3 py-2 cursor-pointer text-primary"
+                  onClick={() => {
+                    setIsOpen(false);
+                    setCreateListOpen(true);
+                  }}
+                >
+                  <Plus className="size-4" />
+                  <span className="text-sm font-medium leading-none">
+                    Crear nueva lista
+                  </span>
+                </div>
+              </div>
+            </div>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="outline">Cerrar</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+
+        {/* Create List Dialog */}
+        <CreateListDialog
+          open={createListOpen}
+          onOpenChange={setCreateListOpen}
+          onSuccess={handleListCreated}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
             size={isIconVariant ? "icon" : "sm"}
@@ -167,72 +251,42 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
           >
             {buttonContent}
           </Button>
-        </DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Agregar a lista</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-3">
-            {lists.map((list) => {
-              const isChecked = isProductInList(productId, list.id);
-              return (
-                <div
-                  key={list.id}
-                  className="flex items-center space-x-3 py-2 cursor-pointer"
-                  onClick={() => handleToggleList(list.id)}
-                >
-                  <Checkbox
-                    checked={isChecked}
-                    disabled={isMutating}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <span className="text-sm font-medium leading-none flex-1">
-                    {list.name}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <DrawerFooter>
-            <DrawerClose asChild>
-              <Button variant="outline">Cerrar</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuLabel>Agregar a lista</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {lists.map((list) => {
+            const isChecked = isProductInList(productId, list.id);
+            return (
+              <DropdownMenuCheckboxItem
+                key={list.id}
+                checked={isChecked}
+                onCheckedChange={() => handleToggleList(list.id)}
+                disabled={isMutating}
+              >
+                {list.name}
+              </DropdownMenuCheckboxItem>
+            );
+          })}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => {
+              setIsOpen(false);
+              setCreateListOpen(true);
+            }}
+          >
+            <Plus className="size-4 mr-2" />
+            Crear nueva lista
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-  return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size={isIconVariant ? "icon" : "sm"}
-          className={buttonClassName}
-          style={buttonStyle}
-          disabled={isLoading || isLoadingLists || isMutating}
-        >
-          {buttonContent}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuLabel>Agregar a lista</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {lists.map((list) => {
-          const isChecked = isProductInList(productId, list.id);
-          return (
-            <DropdownMenuCheckboxItem
-              key={list.id}
-              checked={isChecked}
-              onCheckedChange={() => handleToggleList(list.id)}
-              disabled={isMutating}
-            >
-              {list.name}
-            </DropdownMenuCheckboxItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      {/* Create List Dialog */}
+      <CreateListDialog
+        open={createListOpen}
+        onOpenChange={setCreateListOpen}
+        onSuccess={handleListCreated}
+      />
+    </>
   );
 }

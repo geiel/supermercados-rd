@@ -49,6 +49,7 @@ const LOCAL_STORAGE_KEY = "shopping-list";
 const SERVER_SNAPSHOT: number[] = [];
 let cachedSnapshot: number[] = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
+let productsInitialized = false;
 
 function readProductsFromStorage(): number[] {
     if (typeof window === "undefined") return SERVER_SNAPSHOT;
@@ -68,18 +69,48 @@ function getProductsServerSnapshot(): number[] {
     return SERVER_SNAPSHOT;
 }
 
+function initProductsListener() {
+    if (productsInitialized || typeof window === "undefined") return;
+    productsInitialized = true;
+    
+    // Initialize cache from storage
+    cachedSnapshot = readProductsFromStorage();
+    
+    // Listen for storage events (cross-tab sync)
+    window.addEventListener("storage", (e) => {
+        if (e.key === LOCAL_STORAGE_KEY) {
+            updateProductsCache();
+        }
+    });
+}
+
 function subscribeProducts(callback: () => void): () => void {
+    initProductsListener();
     listeners.add(callback);
-    if (typeof window !== "undefined") {
-        cachedSnapshot = readProductsFromStorage();
+    
+    // Sync cache with storage on each new subscription
+    const currentStorage = readProductsFromStorage();
+    if (JSON.stringify(currentStorage) !== JSON.stringify(cachedSnapshot)) {
+        cachedSnapshot = currentStorage;
+        // Notify all listeners of the change
+        queueMicrotask(() => {
+            for (const listener of listeners) {
+                listener();
+            }
+        });
     }
+    
     return () => listeners.delete(callback);
 }
 
 function updateProductsCache() {
-    cachedSnapshot = readProductsFromStorage();
-    for (const listener of listeners) {
-        listener();
+    const newSnapshot = readProductsFromStorage();
+    // Only update if actually changed
+    if (JSON.stringify(newSnapshot) !== JSON.stringify(cachedSnapshot)) {
+        cachedSnapshot = newSnapshot;
+        for (const listener of listeners) {
+            listener();
+        }
     }
 }
 
@@ -91,6 +122,7 @@ const LOCAL_STORAGE_GROUPS_KEY = "shopping-list-groups";
 const SERVER_SNAPSHOT_GROUPS: number[] = [];
 let cachedSnapshotGroups: number[] = SERVER_SNAPSHOT_GROUPS;
 const listenersGroups = new Set<() => void>();
+let groupsInitialized = false;
 
 function readGroupsFromStorage(): number[] {
     if (typeof window === "undefined") return SERVER_SNAPSHOT_GROUPS;
@@ -110,18 +142,48 @@ function getGroupsServerSnapshot(): number[] {
     return SERVER_SNAPSHOT_GROUPS;
 }
 
+function initGroupsListener() {
+    if (groupsInitialized || typeof window === "undefined") return;
+    groupsInitialized = true;
+    
+    // Initialize cache from storage
+    cachedSnapshotGroups = readGroupsFromStorage();
+    
+    // Listen for storage events (cross-tab sync)
+    window.addEventListener("storage", (e) => {
+        if (e.key === LOCAL_STORAGE_GROUPS_KEY) {
+            updateGroupsCache();
+        }
+    });
+}
+
 function subscribeGroups(callback: () => void): () => void {
+    initGroupsListener();
     listenersGroups.add(callback);
-    if (typeof window !== "undefined") {
-        cachedSnapshotGroups = readGroupsFromStorage();
+    
+    // Sync cache with storage on each new subscription
+    const currentStorage = readGroupsFromStorage();
+    if (JSON.stringify(currentStorage) !== JSON.stringify(cachedSnapshotGroups)) {
+        cachedSnapshotGroups = currentStorage;
+        // Notify all listeners of the change
+        queueMicrotask(() => {
+            for (const listener of listenersGroups) {
+                listener();
+            }
+        });
     }
+    
     return () => listenersGroups.delete(callback);
 }
 
 function updateGroupsCache() {
-    cachedSnapshotGroups = readGroupsFromStorage();
-    for (const listener of listenersGroups) {
-        listener();
+    const newSnapshot = readGroupsFromStorage();
+    // Only update if actually changed
+    if (JSON.stringify(newSnapshot) !== JSON.stringify(cachedSnapshotGroups)) {
+        cachedSnapshotGroups = newSnapshot;
+        for (const listener of listenersGroups) {
+            listener();
+        }
     }
 }
 
@@ -329,7 +391,7 @@ function useDatabaseAddToList(): UseAddToListReturn {
         },
     });
 
-    // Add product mutation
+    // Add product mutation with optimistic update
     const addProductMutation = useMutation({
         mutationFn: async ({ productId, listId }: { productId: number; listId: number }) => {
             const response = await fetch("/api/user/lists/items", {
@@ -340,14 +402,36 @@ function useDatabaseAddToList(): UseAddToListReturn {
             if (!response.ok) throw new Error("Failed to add product");
             return response.json() as Promise<listItemsSelect>;
         },
-        onSuccess: (newItem) => {
+        onMutate: async ({ productId, listId }) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: LIST_ITEMS_QUERY_KEY });
+            // Snapshot previous value
+            const previousItems = queryClient.getQueryData<listItemsSelect[]>(LIST_ITEMS_QUERY_KEY);
+            // Optimistically update
             queryClient.setQueryData<listItemsSelect[]>(LIST_ITEMS_QUERY_KEY, (old) =>
-                old ? [...old, newItem] : [newItem]
+                old ? [...old, { id: -1, listId, productId, amount: null }] : [{ id: -1, listId, productId, amount: null }]
+            );
+            return { previousItems };
+        },
+        onError: (_err, _variables, context) => {
+            // Rollback on error
+            if (context?.previousItems) {
+                queryClient.setQueryData(LIST_ITEMS_QUERY_KEY, context.previousItems);
+            }
+        },
+        onSuccess: (newItem) => {
+            // Replace optimistic item with real one
+            queryClient.setQueryData<listItemsSelect[]>(LIST_ITEMS_QUERY_KEY, (old) =>
+                old?.map((item) =>
+                    item.id === -1 && item.productId === newItem.productId && item.listId === newItem.listId
+                        ? newItem
+                        : item
+                ) ?? [newItem]
             );
         },
     });
 
-    // Remove product mutation
+    // Remove product mutation with optimistic update
     const removeProductMutation = useMutation({
         mutationFn: async ({ productId, listId }: { productId: number; listId: number }) => {
             const response = await fetch("/api/user/lists/items", {
@@ -358,16 +442,23 @@ function useDatabaseAddToList(): UseAddToListReturn {
             if (!response.ok) throw new Error("Failed to remove product");
             return { productId, listId };
         },
-        onSuccess: ({ productId, listId }) => {
+        onMutate: async ({ productId, listId }) => {
+            await queryClient.cancelQueries({ queryKey: LIST_ITEMS_QUERY_KEY });
+            const previousItems = queryClient.getQueryData<listItemsSelect[]>(LIST_ITEMS_QUERY_KEY);
+            // Optimistically remove
             queryClient.setQueryData<listItemsSelect[]>(LIST_ITEMS_QUERY_KEY, (old) =>
-                old?.filter(
-                    (item) => !(item.productId === productId && item.listId === listId)
-                ) ?? []
+                old?.filter((item) => !(item.productId === productId && item.listId === listId)) ?? []
             );
+            return { previousItems };
+        },
+        onError: (_err, _variables, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(LIST_ITEMS_QUERY_KEY, context.previousItems);
+            }
         },
     });
 
-    // Add group mutation
+    // Add group mutation with optimistic update
     const addGroupMutation = useMutation({
         mutationFn: async ({ groupId, listId }: { groupId: number; listId: number }) => {
             const response = await fetch("/api/user/lists/groups", {
@@ -378,14 +469,32 @@ function useDatabaseAddToList(): UseAddToListReturn {
             if (!response.ok) throw new Error("Failed to add group");
             return response.json() as Promise<listGroupItemsSelect>;
         },
+        onMutate: async ({ groupId, listId }) => {
+            await queryClient.cancelQueries({ queryKey: LIST_GROUP_ITEMS_QUERY_KEY });
+            const previousItems = queryClient.getQueryData<listGroupItemsSelect[]>(LIST_GROUP_ITEMS_QUERY_KEY);
+            // Optimistically add
+            queryClient.setQueryData<listGroupItemsSelect[]>(LIST_GROUP_ITEMS_QUERY_KEY, (old) =>
+                old ? [...old, { id: -1, listId, groupId, amount: null, ignoredProducts: [] }] : [{ id: -1, listId, groupId, amount: null, ignoredProducts: [] }]
+            );
+            return { previousItems };
+        },
+        onError: (_err, _variables, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(LIST_GROUP_ITEMS_QUERY_KEY, context.previousItems);
+            }
+        },
         onSuccess: (newItem) => {
             queryClient.setQueryData<listGroupItemsSelect[]>(LIST_GROUP_ITEMS_QUERY_KEY, (old) =>
-                old ? [...old, newItem] : [newItem]
+                old?.map((item) =>
+                    item.id === -1 && item.groupId === newItem.groupId && item.listId === newItem.listId
+                        ? newItem
+                        : item
+                ) ?? [newItem]
             );
         },
     });
 
-    // Remove group mutation
+    // Remove group mutation with optimistic update
     const removeGroupMutation = useMutation({
         mutationFn: async ({ groupId, listId }: { groupId: number; listId: number }) => {
             const response = await fetch("/api/user/lists/groups", {
@@ -396,12 +505,19 @@ function useDatabaseAddToList(): UseAddToListReturn {
             if (!response.ok) throw new Error("Failed to remove group");
             return { groupId, listId };
         },
-        onSuccess: ({ groupId, listId }) => {
+        onMutate: async ({ groupId, listId }) => {
+            await queryClient.cancelQueries({ queryKey: LIST_GROUP_ITEMS_QUERY_KEY });
+            const previousItems = queryClient.getQueryData<listGroupItemsSelect[]>(LIST_GROUP_ITEMS_QUERY_KEY);
+            // Optimistically remove
             queryClient.setQueryData<listGroupItemsSelect[]>(LIST_GROUP_ITEMS_QUERY_KEY, (old) =>
-                old?.filter(
-                    (item) => !(item.groupId === groupId && item.listId === listId)
-                ) ?? []
+                old?.filter((item) => !(item.groupId === groupId && item.listId === listId)) ?? []
             );
+            return { previousItems };
+        },
+        onError: (_err, _variables, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(LIST_GROUP_ITEMS_QUERY_KEY, context.previousItems);
+            }
         },
     });
 
