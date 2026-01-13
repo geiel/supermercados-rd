@@ -108,7 +108,7 @@ export function CreateListDialog({
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={isLoading}
-          autoFocus
+          autoFocus={!isMobile}
         />
       </div>
       <Button type="submit" disabled={isLoading || !name.trim()}>

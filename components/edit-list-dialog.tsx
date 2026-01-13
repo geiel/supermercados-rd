@@ -162,7 +162,7 @@ export function EditListDialog({
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={isLoading}
-          autoFocus
+          autoFocus={!isMobile}
         />
       </div>
       <div className="flex justify-end gap-2">
