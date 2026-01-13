@@ -11,34 +11,22 @@ import {
 } from "./logs";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { hideProductPrice, showProductPrice } from "../db-utils";
+import { getBravoHeaders, fetchWithRetry } from "./http-client";
 
 const scrapper = "Bravo";
 
-async function getProductInfo(api: string | null, shopId: number) {
+async function getProductInfo(api: string | null) {
   if (!api) {
     return null;
   }
 
-  const headers: Record<string, string> = {
-    "User-Agent": "Domicilio/118090 CFNetwork/3826.400.120 Darwin/24.3.0",
-    "Accept-Language": "en-US,en;q=0.9",
-  };
-
-  const scrapperHeaders = await db.query.scrapperHeaders.findMany({
-    where: (scrapperHeaders, { eq }) => eq(scrapperHeaders.shopId, shopId),
-  });
-
-  scrapperHeaders.forEach((h) => {
-    headers[h.name] = h.value;
-  });
+  const headers = getBravoHeaders();
 
   let jsonResponse: unknown;
 
   try {
-    const response = await fetch(api, {
-      headers,
-      signal: AbortSignal.timeout(15000),
-    });
+    const response = await fetchWithRetry(api, { headers });
+    if (!response) return null;
     jsonResponse = await response.json();
   } catch (err) {
     console.log(err);
@@ -90,10 +78,7 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice);
-  const productInfo = await getProductInfo(
-    productShopPrice.api,
-    productShopPrice.shopId
-  );
+  const productInfo = await getProductInfo(productShopPrice.api);
 
   if (!productInfo) {
     processErrorLog(scrapper, productShopPrice);

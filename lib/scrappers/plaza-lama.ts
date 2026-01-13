@@ -11,6 +11,7 @@ import { db } from "@/db";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { hideProductPrice, showProductPrice } from "../db-utils";
+import { getPlazaLamaHeaders, fetchWithRetry } from "./http-client";
 
 const scrapper = "Plaza Lama";
 
@@ -39,20 +40,17 @@ async function getProductInfo(sku: string | null) {
   raw[0].variables.getProductsBySkuInput.skus = [sku];
 
   try {
-    const response = await fetch(
+    const headers = getPlazaLamaHeaders();
+    const response = await fetchWithRetry(
       "https://nextgentheadless.instaleap.io/api/v3",
       {
         method: "POST",
         body: JSON.stringify(raw),
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Content-Type": "application/json",
-        },
-        signal: AbortSignal.timeout(19000),
+        headers,
       }
     );
 
+    if (!response) return null;
     jsonResponse = await response.json();
   } catch (err) {
     console.log(err);

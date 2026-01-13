@@ -6,6 +6,7 @@ import { jumbo } from "@/lib/scrappers/jumbo";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
+import { randomDelay } from "@/lib/scrappers/http-client";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
 
@@ -48,7 +49,8 @@ async function main() {
       case 6:
         await bravo.processByProductShopPrice(shopPrice);
     }
-    await new Promise((r) => setTimeout(r, 800));
+    // Random delay between 1.5-4 seconds to mimic human behavior
+    await randomDelay(1500, 4000);
   }
 
   process.exit(0);

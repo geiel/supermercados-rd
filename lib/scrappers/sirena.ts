@@ -14,6 +14,7 @@ import { db } from "@/db";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { isLessThan12HoursAgo } from "./utils";
 import { hideProductPrice, showProductPrice } from "../db-utils";
+import { getSirenaHeaders, fetchWithRetry } from "./http-client";
 
 const scrapper = "La Sirena";
 
@@ -22,24 +23,13 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
     return null;
   }
 
-  const headers: Record<string, string> = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    "Accept-Language": "en-US,en;q=0.9",
-  };
-
-  const scrapperHeaders = await db.query.scrapperHeaders.findMany({
-    where: (scrapperHeaders, { eq }) =>
-      eq(scrapperHeaders.shopId, productShopPrice.shopId),
-  });
-
-  scrapperHeaders.forEach((h) => {
-    headers[h.name] = h.value;
-  });
+  const headers = getSirenaHeaders();
 
   let jsonResponse: unknown;
 
   try {
-    const response = await fetch(productShopPrice.api, { headers });
+    const response = await fetchWithRetry(productShopPrice.api, { headers });
+    if (!response) return null;
     jsonResponse = await response.json();
   } catch (err) {
     console.log(err);

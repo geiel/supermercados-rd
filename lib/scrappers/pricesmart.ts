@@ -11,6 +11,7 @@ import { isLessThan12HoursAgo } from "./utils";
 import { db } from "@/db";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { hideProductPrice, showProductPrice } from "../db-utils";
+import { getPricesmartHeaders, fetchWithRetry } from "./http-client";
 
 const scrapper = "Pricesmart";
 type Price = {
@@ -32,7 +33,8 @@ async function getProductInfo(
   let jsonResponse: unknown;
 
   try {
-    const response = await fetch(
+    const headers = getPricesmartHeaders();
+    const response = await fetchWithRetry(
       "https://www.pricesmart.com/api/ct/getProduct",
       {
         method: "POST",
@@ -44,15 +46,11 @@ async function getProductInfo(
             products: "getProductBySKU",
           },
         ]),
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Content-Type": "application/json",
-        },
-        signal: AbortSignal.timeout(19000),
+        headers,
       }
     );
 
+    if (!response) return price;
     jsonResponse = await response.json();
   } catch (err) {
     console.log(err);
