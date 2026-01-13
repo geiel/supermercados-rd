@@ -22,8 +22,35 @@ import { Button } from "./ui/button";
 
 import { cn } from "@/lib/utils";
 import { productsSelect } from "@/db/schema";
-import { ArrowLeft, ArrowRight, ArrowUpLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpLeft, Search, Clock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+const RECENT_SEARCHES_KEY = "recent-searches";
+const MAX_RECENT_SEARCHES = 5;
+
+type SuggestionType = "suggestion" | "recent";
+
+const getRecentSearches = (): string[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveRecentSearch = (query: string) => {
+  if (typeof window === "undefined" || !query.trim()) return;
+  try {
+    const recent = getRecentSearches();
+    const filtered = recent.filter((item) => item.toLowerCase() !== query.toLowerCase());
+    const updated = [query, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+  } catch {
+    // Ignore localStorage errors
+  }
+};
 
 type ProductSuggestion = {
   phrase: string;
@@ -179,6 +206,7 @@ export const AutoComplete = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isOpenInternal, setOpenInternal] = useState(false);
   const isOpen = open ?? isOpenInternal;
   const setOpen = useCallback(
@@ -197,6 +225,10 @@ export const AutoComplete = ({
   );
 
   useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
+
+  useEffect(() => {
     inputRef.current?.addEventListener("focus", () => {
       setTimeout(() => {
         window.scrollTo({ top: 0 });
@@ -212,6 +244,10 @@ export const AutoComplete = ({
 
   const handleSearch = useCallback(
     (nextValue: string) => {
+      if (nextValue.trim()) {
+        saveRecentSearch(nextValue.trim());
+        setRecentSearches(getRecentSearches());
+      }
       onSearch(nextValue);
       setTimeout(() => {
         setOpen(false);
@@ -296,9 +332,14 @@ export const AutoComplete = ({
     onInputChange?.("");
   }
 
-  const displaySuggestions = inputValue.length > 0 ? suggestions : [];
   const hasSearchValue = inputValue.trim().length > 0;
-  const hasMultipleSuggestions = displaySuggestions.length >= 1;
+  
+  // When input is empty, show recent searches; otherwise show suggestions
+  const displayItems: { phrase: string; type: SuggestionType }[] = hasSearchValue
+    ? suggestions.map((s) => ({ phrase: s.phrase, type: "suggestion" as const }))
+    : recentSearches.map((phrase) => ({ phrase, type: "recent" as const }));
+  
+  const hasMultipleSuggestions = displayItems.length >= 1;
   const inputBottomRadiusClass = hasMultipleSuggestions
     ? "md:rounded-b-none"
     : "md:rounded-b-3xl";
@@ -421,30 +462,35 @@ export const AutoComplete = ({
                 </CommandPrimitive.Loading>
               ) : null}
 
-              {displaySuggestions.length > 0 && !isLoading ? (
+              {displayItems.length > 0 && !isLoading ? (
                 <CommandGroup>
                   <CommandItem
                     key="hidden"
                     value={inputValue}
                     className="hidden"
                   />
-                  {displaySuggestions.map((suggestion, key) => {
+                  {displayItems.map((item, key) => {
+                    const isRecent = item.type === "recent";
                     return (
                       <CommandItem
                         key={key}
-                        value={suggestion.phrase}
+                        value={item.phrase}
                         onMouseDown={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
                         }}
-                        onSelect={() => handleSelectProduct(suggestion)}
+                        onSelect={() => handleSelectProduct({ phrase: item.phrase, sml: 0 })}
                         className={cn("flex w-full items-center gap-2 text-base")}
                       >
+                        {isRecent ? (
+                          <Clock className="size-4 shrink-0 text-muted-foreground" />
+                        ) : (
+                          <Search className="size-4 shrink-0 text-muted-foreground" />
+                        )}
                         <span className="flex-1 whitespace-pre-wrap text-left">
-                          {renderHighlightedPhrase(
-                            suggestion.phrase,
-                            inputValue
-                          )}
+                          {isRecent
+                            ? item.phrase
+                            : renderHighlightedPhrase(item.phrase, inputValue)}
                         </span>
                         <Button
                           variant="ghost"
@@ -453,7 +499,7 @@ export const AutoComplete = ({
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            applySuggestionToInput(suggestion.phrase);
+                            applySuggestionToInput(item.phrase);
                           }}
                         >
                           <ArrowUpLeft className="size-5" />

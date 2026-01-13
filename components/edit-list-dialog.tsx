@@ -226,7 +226,7 @@ export function EditListDialog({
   if (isMobile) {
     return (
       <>
-        <Drawer open={open && !showDeleteConfirm} onOpenChange={handleOpenChange}>
+        <Drawer open={open && !showDeleteConfirm} onOpenChange={handleOpenChange} repositionInputs={false}>
           <DrawerContent>
             <DrawerHeader className="flex flex-row items-center justify-between px-4">
               <div className="w-10">{deleteButton}</div>
