@@ -120,7 +120,7 @@ export function CreateListDialog({
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={handleOpenChange}>
+      <Drawer open={open} onOpenChange={handleOpenChange} repositionInputs={false}>
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Crear nueva lista</DrawerTitle>
