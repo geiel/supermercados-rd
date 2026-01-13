@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 
 import { CategorySearch } from "@/components/categories-search";
+
+export const maxDuration = 50;
 import { ExploreProductsList } from "@/components/explore-products-list";
 import { TypographyH3 } from "@/components/typography-h3";
 import { getExploreProducts } from "@/lib/explore-products";
