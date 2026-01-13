@@ -20,6 +20,8 @@ import { useListItems } from "@/hooks/use-list-items";
 import { useListStats } from "@/hooks/use-list-stats";
 import { useShops } from "@/hooks/use-shops";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserList } from "@/hooks/use-user-list";
+import { updateListSelectedShops } from "@/lib/compare";
 import type { CompareMode } from "@/lib/list-calculations";
 import type { shopsSelect } from "@/db/schema";
 
@@ -70,6 +72,9 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
     // 2. Get items from unified hook
     const listItems = useListItems({ listId });
 
+    // 3. Get user list data (for logged-in users to get saved selectedShops)
+    const { data: userList, isLoading: isLoadingUserList } = useUserList(listId);
+
     // State for selected shops
     const [selectedShops, setSelectedShops] = useState<number[]>([]);
     const [hasInitializedShops, setHasInitializedShops] = useState(false);
@@ -84,7 +89,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
     // Get compare mode from URL
     const compareMode: CompareMode = searchParams.get("compare") === "value" ? "value" : "cheapest";
 
-    // 3. Get stats (depends on items)
+    // 4. Get stats (depends on items)
     const stats = useListStats({
         products: listItems.products,
         groups: listItems.groups,
@@ -94,24 +99,31 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
         enabled: hasInitializedShops && !listItems.isLoading,
     });
 
-    // Initialize selected shops from stats or localStorage
+    // Initialize selected shops from database (logged-in) or localStorage (guest)
     useEffect(() => {
         if (hasInitializedShops) return;
 
         if (listItems.isLocalMode) {
+            // Guest user: load from localStorage
             const stored = getLocalSelectedShops();
             if (stored.length > 0) {
                 setSelectedShops(stored);
             }
             setHasInitializedShops(true);
-        } else if (stats.selectedShopIds.length > 0) {
-            setSelectedShops(stats.selectedShopIds);
-            setHasInitializedShops(true);
-        } else if (!stats.isLoading && !listItems.isLoading) {
-            // No selected shops, use defaults
+        } else if (!isLoadingUserList) {
+            // Logged-in user: load from database
+            if (userList?.selectedShops && userList.selectedShops.length > 0) {
+                // Convert string[] from DB to number[]
+                const shopIds = userList.selectedShops
+                    .map((id) => Number(id))
+                    .filter(Number.isFinite);
+                if (shopIds.length > 0) {
+                    setSelectedShops(shopIds);
+                }
+            }
             setHasInitializedShops(true);
         }
-    }, [listItems.isLocalMode, listItems.isLoading, stats.selectedShopIds, stats.isLoading, hasInitializedShops]);
+    }, [listItems.isLocalMode, isLoadingUserList, userList, hasInitializedShops]);
 
     // Handlers
     const handleCompareModeChange = useCallback((nextValue: string) => {
@@ -132,9 +144,12 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
         setSelectedShops(nextShops);
         if (listItems.isLocalMode) {
             setLocalSelectedShops(nextShops);
+        } else if (listId) {
+            // Save to database for logged-in users
+            updateListSelectedShops(listId, nextShops);
         }
         // Stats will auto-refetch due to selectedShops dependency
-    }, [listItems.isLocalMode]);
+    }, [listItems.isLocalMode, listId]);
 
     const handleDeleteProduct = useCallback(async (productId: number) => {
         setLoadingProductIds((prev) => new Set([...prev, productId]));
@@ -198,7 +213,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
     }
 
     // First load skeleton
-    if (listItems.isLoading || isLoadingShops || (stats.isLoading && !stats.entriesWithShop.length)) {
+    if (listItems.isLoading || isLoadingShops || isLoadingUserList || (stats.isLoading && !stats.entriesWithShop.length)) {
         return <ListSkeleton />;
     }
 
