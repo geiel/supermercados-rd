@@ -24,16 +24,15 @@ const SUPERMARKET_DEALS = [
 export default function Home() {
   return (
     <main className="container mx-auto p-2 space-y-6">
-      <section className="bg-purple-900 p-6 rounded-3xl flex flex-col items-center gap-6 md:py-10 lg:px-40 lg:py-20">
+      <section className="p-6 rounded-3xl flex flex-col items-center gap-6 md:py-10 lg:px-40 lg:py-20" style={{ background: 'radial-gradient(120% 120% at 50% 0%, #4A2169 0%, #3A1857 60%, #2E1248 100%)' }}>
         <div>
-          <h1 className="scroll-m-20 text-center text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance text-white">
+          <h1 className="scroll-m-20 text-center text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance text-white">
             <span className="block">Busca, compara y ahorra</span>
             <span className="block">Encuentra el supermercado más barato hoy</span>
           </h1>
           
           <p className="leading-7 [&:not(:first-child)]:mt-4 text-center text-white">
-            Compara precios de productos de supermercado en República Dominicana 
-            y decide dónde comprar antes de salir de casa
+            Compara precios en República Dominicana y decide dónde comprar antes de salir de casa
           </p>
         </div>
         <div className="w-full md:w-[60%]">

@@ -1,0 +1,2 @@
+ALTER TABLE "product_issue_reports" ADD COLUMN "shopId" integer;--> statement-breakpoint
+ALTER TABLE "product_issue_reports" ADD CONSTRAINT "product_issue_reports_shopId_shops_id_fk" FOREIGN KEY ("shopId") REFERENCES "public"."shops"("id") ON DELETE no action ON UPDATE no action;

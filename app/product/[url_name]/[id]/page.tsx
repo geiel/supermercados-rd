@@ -3,9 +3,10 @@ import { CategoryBadge } from "@/components/category-badge";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductBrand } from "@/components/product-brand";
+import { ProductFeedbackSection } from "@/components/product-feedback-section";
 import { ProductImage } from "@/components/product-image";
 import { RelatedProducts } from "@/components/related-products";
-import { Button } from "@/components/ui/button";
+import { ShopPriceRowActions } from "@/components/shop-price-row";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
@@ -162,9 +163,13 @@ export default async function Page({ params }: Props) {
                 categoryId={product.categoryId}
                 productName={product.name}
               />
-              <div className="place-self-end self-center">
-                <SearchProductButton shopPrice={shopPrice} />
-              </div>
+              <ShopPriceRowActions
+                shopId={shopPrice.shopId}
+                productId={product.id}
+                url={shopPrice.url}
+                api={shopPrice.api}
+                shops={shops}
+              />
             </div>
           ))}
 
@@ -190,37 +195,10 @@ export default async function Page({ params }: Props) {
           <div className="font-bold text-2xl">Productos relacionados</div>
           <RelatedProducts relatedProducts={relatedProducts.products} />
         </section>
+
+        <ProductFeedbackSection productId={product.id} shops={shops} />
       </div>
     </div>
-  );
-}
-
-function SearchProductButton({
-  shopPrice,
-}: {
-  shopPrice: productsShopsPrices;
-}) {
-  if (shopPrice.shopId === 6) {
-    const productId = shopPrice.api?.replace(
-      "https://bravova-api.superbravo.com.do/public/articulo/get?idArticulo=",
-      ""
-    );
-
-    return (
-      <Button size="xs" asChild>
-        <a href={`${shopPrice.url}/articulos/${productId}`} target="_blank" className="text-xs">
-          Buscar
-        </a>
-      </Button>
-    );
-  }
-
-  return (
-    <Button size="xs" asChild>
-      <a href={shopPrice.url} target="_blank" className="text-xs">
-        Buscar
-      </a>
-    </Button>
   );
 }
 
