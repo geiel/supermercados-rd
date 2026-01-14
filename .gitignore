@@ -42,3 +42,6 @@ next-env.d.ts
 
 # VS Code
 .vscode
+
+# Chromium binary (generated during Vercel build)
+/public/chromium-pack.tar

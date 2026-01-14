@@ -13,16 +13,12 @@ import * as cheerio from "cheerio";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { formatUnit } from "./utils";
+import { fetchWithBrowser } from "./http-client";
 
 async function getHtml(url: string) {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      "Accept-Language": "en-US,en;q=0.9",
-    },
-  });
-
-  return await response.text();
+  // Use browser-based fetch to bypass Cloudflare
+  const html = await fetchWithBrowser(url);
+  return html ?? "";
 }
 
 export async function getProductListJumbo(categoryId: number, url: string) {

@@ -3,6 +3,167 @@
  * Each supermarket has specific header requirements to avoid blocking
  */
 
+import type { Browser, Page } from 'puppeteer-core';
+
+/**
+ * Check if running in production (Vercel)
+ */
+function isProduction(): boolean {
+  return process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+}
+
+/**
+ * Get the Chromium URL for production
+ * Uses self-hosted chromium-pack.tar from the deployment
+ */
+function getChromiumUrl(): string {
+  // Priority: Production URL > Vercel URL > Fallback
+  const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL 
+    || process.env.VERCEL_URL 
+    || process.env.NEXT_PUBLIC_SITE_URL;
+  
+  if (baseUrl) {
+    const protocol = baseUrl.startsWith('http') ? '' : 'https://';
+    return `${protocol}${baseUrl}/chromium-pack.tar`;
+  }
+  
+  // Fallback to a known working remote URL
+  return 'https://github.com/nicholaschun/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar';
+}
+
+/**
+ * Apply stealth settings to a page to avoid bot detection
+ */
+async function applyStealthSettings(page: Page): Promise<void> {
+  // Override webdriver property
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  });
+
+  // Override plugins to look more realistic
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => [1, 2, 3, 4, 5],
+    });
+  });
+
+  // Override languages
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['en-US', 'en'],
+    });
+  });
+
+  // Set realistic user agent
+  await page.setUserAgent(
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  );
+
+  // Set extra HTTP headers
+  await page.setExtraHTTPHeaders({
+    'Accept-Language': 'en-US,en;q=0.9',
+  });
+}
+
+/**
+ * Launch a browser instance - handles both local and Vercel environments
+ */
+async function launchBrowser(): Promise<Browser> {
+  if (isProduction()) {
+    // Production (Vercel): Use puppeteer-core with chromium-min
+    const puppeteer = await import('puppeteer-core');
+    const chromium = await import('@sparticuz/chromium-min');
+    
+    const executablePath = await chromium.default.executablePath(getChromiumUrl());
+    
+    return await puppeteer.default.launch({
+      args: chromium.default.args,
+      defaultViewport: { width: 1920, height: 1080 },
+      executablePath,
+      headless: true,
+    });
+  } else {
+    // Local development: Use regular puppeteer with bundled Chromium
+    const puppeteer = await import('puppeteer');
+    
+    return await puppeteer.default.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-blink-features=AutomationControlled',
+      ],
+    });
+  }
+}
+
+/**
+ * Fetch HTML using a real browser to bypass Cloudflare
+ * Use this for sites with aggressive bot protection
+ * Note: Creates a new browser instance per request for serverless compatibility
+ */
+export async function fetchWithBrowser(url: string, timeout = 60000): Promise<string | null> {
+  let browser: Browser | null = null;
+  
+  try {
+    browser = await launchBrowser();
+    const page = await browser.newPage();
+    
+    // Apply stealth settings to avoid detection
+    await applyStealthSettings(page);
+    
+    // Set viewport to look like a real browser
+    await page.setViewport({ width: 1920, height: 1080 });
+    
+    // Navigate with less strict wait condition
+    await page.goto(url, { 
+      waitUntil: 'domcontentloaded',
+      timeout 
+    });
+    
+    // Wait for Cloudflare challenge to complete (if any)
+    // Check for common content indicators
+    try {
+      await page.waitForFunction(
+        () => {
+          // Check if we're past Cloudflare challenge
+          const title = document.title.toLowerCase();
+          const isCloudflare = title.includes('just a moment') || 
+                               title.includes('attention required') ||
+                               title.includes('checking your browser');
+          return !isCloudflare;
+        },
+        { timeout: 15000 }
+      );
+    } catch {
+      // If still on Cloudflare page, wait a bit more and try anyway
+      console.log('[Browser] Cloudflare challenge detected, waiting...');
+      await new Promise(r => setTimeout(r, 5000));
+    }
+    
+    // Additional wait for dynamic content
+    await new Promise(r => setTimeout(r, 2000));
+    
+    const html = await page.content();
+    
+    // Check if we got blocked
+    if (html.includes('Attention Required') || html.includes('Sorry, you have been blocked')) {
+      console.log('[Browser] Cloudflare blocked the request');
+      return null;
+    }
+    
+    return html;
+  } catch (error) {
+    console.log(`[Browser] Error fetching ${url}:`, error instanceof Error ? error.message : error);
+    return null;
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+}
+
 // Modern Chrome user agents (rotate these)
 const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',

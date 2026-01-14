@@ -14,15 +14,13 @@ import {
 } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
 import { hideProductPrice, showProductPrice } from "../db-utils";
-import { getJumboHeaders, fetchWithRetry } from "./http-client";
+import { fetchWithBrowser } from "./http-client";
 
 async function getHtml(url: string) {
   try {
-    const headers = getJumboHeaders(url);
-    const response = await fetchWithRetry(url, { headers });
-
-    if (!response) return undefined;
-    return await response.text();
+    // Use browser-based fetch to bypass Cloudflare
+    const html = await fetchWithBrowser(url);
+    return html ?? undefined;
   } catch (err) {
     console.log(err);
   }

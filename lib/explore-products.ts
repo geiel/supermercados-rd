@@ -4,7 +4,6 @@ import { db } from "@/db";
 import type { productsShopsPrices } from "@/db/schema";
 import { searchProducts } from "@/lib/search-query";
 import { sirena } from "@/lib/scrappers/sirena";
-import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
@@ -48,8 +47,6 @@ async function updateShopPrices(shopPrices: productsShopsPrices[]) {
           return sirena.processByProductShopPrice(shopPrice);
         case 2:
           return nacional.processByProductShopPrice(shopPrice);
-        case 3:
-          return jumbo.processByProductShopPrice(shopPrice);
         case 4:
           return plazaLama.processByProductShopPrice(shopPrice);
         case 5:

@@ -2,7 +2,6 @@
 
 import { sirena } from "@/lib/scrappers/sirena";
 import { nacional } from "@/lib/scrappers/nacional";
-import { jumbo } from "@/lib/scrappers/jumbo";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
@@ -36,9 +35,6 @@ async function main() {
         break;
       case 2:
         await nacional.processByProductShopPrice(shopPrice);
-        break;
-      case 3:
-        await jumbo.processByProductShopPrice(shopPrice);
         break;
       case 4:
         await plazaLama.processByProductShopPrice(shopPrice);

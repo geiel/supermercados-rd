@@ -11,7 +11,6 @@ import { Unit } from "@/components/unit";
 import { db } from "@/db";
 import { productsShopsPrices } from "@/db/schema";
 import { bravo } from "@/lib/scrappers/bravo";
-import { jumbo } from "@/lib/scrappers/jumbo";
 import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
@@ -219,9 +218,6 @@ async function ShopPrice({
       break;
     case 2:
       await nacional.processByProductShopPrice(shopPrice);
-      break;
-    case 3:
-      await jumbo.processByProductShopPrice(shopPrice);
       break;
     case 4:
       await plazaLama.processByProductShopPrice(shopPrice);
