@@ -15,6 +15,7 @@ import { Suspense } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import Image from "next/image";
 import { Providers } from "./providers";
+import { Analytics } from "@vercel/analytics/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,6 +72,7 @@ export default function RootLayout({
             {children}
             <Toaster richColors position="top-center" />
             <SpeedInsights />
+            <Analytics />
           </Providers>
         </body>
     </html>
