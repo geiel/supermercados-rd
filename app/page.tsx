@@ -1,5 +1,6 @@
 import { ExploreSection } from "@/components/explore-section";
 import { FrontPageDealCard } from "@/components/front-page-deal-card";
+import { HomePageCategoriesSection } from "@/components/home-page-categories-section";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import ScrollPeek from "@/components/ui/scroll-peek";
@@ -73,7 +74,7 @@ export default function Home() {
           __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <main className="container mx-auto p-2 space-y-6">
+      <main className="container mx-auto p-2 space-y-10">
       <section className="p-6 rounded-3xl flex flex-col items-center gap-6 md:py-10 lg:px-40 lg:py-20" style={{ background: 'radial-gradient(120% 120% at 50% 0%, #4A2169 0%, #3A1857 60%, #2E1248 100%)' }}>
         <div>
           <h1 className="scroll-m-20 text-center text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance text-white">
@@ -124,6 +125,10 @@ export default function Home() {
           </ScrollPeek>
         </div>
       </section>
+
+      <Suspense fallback={<HomePageCategoriesSkeleton />}>
+        <HomePageCategoriesSection />
+      </Suspense>
 
       {/* <Suspense fallback={<ExploreSectionSkeleton />}>
         <ExploreSection />
@@ -181,6 +186,34 @@ function TodaysDealsSkeleton() {
       </div>
     </section>
   )
+}
+
+function HomePageCategoriesSkeleton() {
+  return (
+    <section>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <ScrollPeek
+          itemWidth="min(max(35vw, 110px), 218px)"
+          itemWidthMd="224px"
+        >
+          <div className="flex space-x-2 p-2">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <div key={index} className="flex flex-col gap-2">
+                <Skeleton className="w-[180px] aspect-square" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))}
+          </div>
+        </ScrollPeek>
+      </div>
+    </section>
+  );
 }
 
 function ExploreSectionSkeleton() {

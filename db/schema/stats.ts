@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, numeric, pgTable, text } from "drizzle-orm/pg-core";
+import { integer, numeric, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
 import { products, shops } from "./products";
 
 export const todaysDeals = pgTable("todays_deals", {
@@ -22,5 +22,27 @@ export const todaysDealsRelations = relations(todaysDeals, ({ one }) => ({
     product: one(products, {
       fields: [todaysDeals.productId],
       references: [products.id],
+    }),
+}));
+
+export const homePageCategories = pgTable("home_page_categories", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    name: text().notNull(),
+    description: text(),
+});
+
+export const homePageCategoriesProducts = pgTable("home_page_categories_products", {
+    homePageCategoryId: integer().notNull().references(() => homePageCategories.id),
+    productId: integer().notNull().references(() => products.id),
+}, (table) => [primaryKey({ columns: [table.homePageCategoryId, table.productId] })]);
+
+export const homePageCategoriesProductsRelations = relations(homePageCategoriesProducts, ({ one }) => ({
+    category: one(homePageCategories, {
+        fields: [homePageCategoriesProducts.homePageCategoryId],
+        references: [homePageCategories.id],
+    }),
+    product: one(products, {
+        fields: [homePageCategoriesProducts.productId],
+        references: [products.id],
     }),
 }));

@@ -274,6 +274,13 @@
       "when": 1768501220220,
       "tag": "0038_cheerful_the_santerians",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1768512384909,
+      "tag": "0039_hard_black_widow",
+      "breakpoints": true
     }
   ]
 }
