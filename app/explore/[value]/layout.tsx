@@ -32,7 +32,7 @@ function SearchFor() {
             Buscaste &quot;{rawSearchValue}&quot;
             </h1>
             <div className="text-sm opacity-70">
-            Agrega y compara categorías y productos con el +
+            Agrega categorías o productos con el + para compararlos por precio y valor
             </div>
         </div>
     )

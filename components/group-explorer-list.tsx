@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
 import { AddToListButton } from "@/components/add-to-list-button";
+import { GroupExplorerGridSkeleton } from "@/components/group-explorer-skeleton";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductBrand } from "@/components/product-brand";
 import { ProductImage } from "@/components/product-image";
@@ -360,9 +361,7 @@ export function GroupExplorerList({
         )}
       </div>
       {products.length === 0 && isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-          <Spinner /> Cargando...
-        </div>
+        <GroupExplorerGridSkeleton count={pageSize} />
       ) : (
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
           {products.map((product) => (

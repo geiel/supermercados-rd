@@ -1,0 +1,1 @@
+ALTER TYPE "public"."product_issue" ADD VALUE 'incorrect_unit';

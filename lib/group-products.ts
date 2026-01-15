@@ -17,6 +17,7 @@ import type {
   GroupExplorerSort,
 } from "@/types/group-explorer";
 import { GROUP_EXPLORER_DEFAULT_SORT } from "@/types/group-explorer";
+import { parseUnitWithGroupConversion, type Measurement } from "@/lib/unit-utils";
 
 type GetGroupProductsOptions = {
   humanId: string;
@@ -30,6 +31,7 @@ type GroupRow = {
   name: string;
   humanNameId: string;
   cheaperProductId: number | null;
+  compareBy: string | null;
 };
 
 export async function getGroupProducts({
@@ -44,6 +46,7 @@ export async function getGroupProducts({
       name: true,
       humanNameId: true,
       cheaperProductId: true,
+      compareBy: true,
     },
     where: (groups, { eq }) => eq(groups.humanNameId, humanId),
   })) as GroupRow | undefined;
@@ -74,21 +77,19 @@ export async function getGroupProducts({
   const pBrand = alias(productsBrands, "possible_brand");
   const minCurrentPrice = sql<string>`min(${productsShopsPrices.currentPrice})`;
   const relevanceRank = sql<number>`coalesce(${products.rank}, 0)`;
-  const bestValuePrice = sql<number>`
-    ${minCurrentPrice} / nullif(${products.baseUnitAmount}, 0)
-  `;
+
+  // For best_value sorting, we need to handle it differently based on measurement type
+  // We'll use SQL for non-best_value sorts, and JS sorting for best_value
+  const isBestValueSort = sort === "best_value";
 
   const orderBy = (() => {
     switch (sort) {
       case "highest_price":
         return [desc(minCurrentPrice), asc(products.id)];
       case "best_value":
-        return [
-          asc(sql<number>`case when ${bestValuePrice} is null then 1 else 0 end`),
-          asc(bestValuePrice),
-          asc(minCurrentPrice),
-          asc(products.id),
-        ];
+        // For best_value, we'll fetch more rows and sort in JS to properly handle measurement types
+        // Default to lowest_price order in SQL, then re-sort in JS
+        return [asc(minCurrentPrice), asc(products.id)];
       case "relevance":
         return [desc(relevanceRank), asc(minCurrentPrice), asc(products.id)];
       case "lowest_price":
@@ -96,6 +97,10 @@ export async function getGroupProducts({
         return [asc(minCurrentPrice), asc(products.id)];
     }
   })();
+
+  // For best_value sort, we need to fetch all products to properly compare by measurement type
+  const fetchLimit = isBestValueSort ? 1000 : limit;
+  const fetchOffset = isBestValueSort ? 0 : offset;
 
   const rows = await db
     .select({
@@ -137,10 +142,108 @@ export async function getGroupProducts({
       pBrand.name
     )
     .orderBy(...orderBy)
-    .limit(limit)
-    .offset(offset);
+    .limit(fetchLimit)
+    .offset(fetchOffset);
 
-  const productsList: GroupExplorerProduct[] = rows.map((row) => ({
+  let processedRows = rows;
+
+  // For best_value sort, we need to sort by unit price within compatible measurement types
+  if (isBestValueSort) {
+    type ParsedProduct = {
+      row: (typeof rows)[0];
+      parsed: ReturnType<typeof parseUnitWithGroupConversion>;
+      measurement: Measurement | null;
+      unitPrice: number | null;
+    };
+
+    // Parse all products and calculate unit prices (with group-specific conversions)
+    const parsedProducts: ParsedProduct[] = rows.map((row) => {
+      const parsed = parseUnitWithGroupConversion(row.productUnit, humanId);
+      const price = Number(row.currentPrice);
+      const unitPrice =
+        parsed && Number.isFinite(price) && parsed.base > 0
+          ? price / parsed.base
+          : null;
+
+      return {
+        row,
+        parsed,
+        measurement: parsed?.measurement ?? null,
+        unitPrice,
+      };
+    });
+
+    // Determine the target measurement type
+    // If group has compareBy set, use that preference
+    // Otherwise, pick the measurement type with the most products that have valid unit prices
+    type ComparableType = "measure" | "count";
+
+    const getComparableType = (m: Measurement | null): ComparableType | null => {
+      if (!m) return null;
+      return m === "count" ? "count" : "measure";
+    };
+
+    const wantsCount =
+      typeof group.compareBy === "string" &&
+      group.compareBy.toLowerCase() === "count";
+
+    // Count products by comparable type
+    const countByType: Record<ComparableType, number> = { measure: 0, count: 0 };
+    for (const p of parsedProducts) {
+      if (p.unitPrice !== null && p.measurement) {
+        const type = getComparableType(p.measurement);
+        if (type) countByType[type]++;
+      }
+    }
+
+    // Select the target type
+    let targetType: ComparableType;
+    if (wantsCount && countByType.count > 0) {
+      targetType = "count";
+    } else if (countByType.measure > countByType.count) {
+      targetType = "measure";
+    } else if (countByType.count > 0) {
+      targetType = "count";
+    } else {
+      targetType = "measure";
+    }
+
+    // Sort products:
+    // 1. Products with matching measurement type and valid unit price first
+    // 2. Then products without valid unit price
+    // 3. Sort by unit price within each group
+    parsedProducts.sort((a, b) => {
+      const aMatchesType = getComparableType(a.measurement) === targetType;
+      const bMatchesType = getComparableType(b.measurement) === targetType;
+      const aHasUnitPrice = a.unitPrice !== null;
+      const bHasUnitPrice = b.unitPrice !== null;
+
+      // Products matching target type with valid unit price come first
+      const aValid = aMatchesType && aHasUnitPrice;
+      const bValid = bMatchesType && bHasUnitPrice;
+
+      if (aValid && !bValid) return -1;
+      if (!aValid && bValid) return 1;
+
+      // Both have valid unit prices for target type - sort by unit price
+      if (aValid && bValid) {
+        const diff = (a.unitPrice ?? 0) - (b.unitPrice ?? 0);
+        if (Math.abs(diff) > 1e-9) return diff;
+        // Tie-breaker: lower price
+        return Number(a.row.currentPrice) - Number(b.row.currentPrice);
+      }
+
+      // Neither has valid unit price - sort by price
+      return Number(a.row.currentPrice) - Number(b.row.currentPrice);
+    });
+
+    // Apply pagination after sorting
+    processedRows = parsedProducts
+      .slice(offset, offset + limit)
+      .map((p) => p.row);
+  }
+
+  const productsList: GroupExplorerProduct[] = processedRows.map((row) => ({
     id: row.productId,
     name: row.productName,
     image: row.productImage,

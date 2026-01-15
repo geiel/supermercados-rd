@@ -47,6 +47,7 @@ const ISSUE_LABELS: Record<ProductIssue, string> = {
   incorrect_price: "Precio incorrecto",
   incorrect_image: "Imagen incorrecta",
   incorrect_category: "Categoría incorrecta",
+  incorrect_unit: "Unidad incorrecta",
   link_broken: "Enlace roto",
   link_incorrect: "Enlace incorrecto",
 };

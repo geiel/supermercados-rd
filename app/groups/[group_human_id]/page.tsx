@@ -1,4 +1,5 @@
 import { GroupExplorer } from "@/components/group-explorer";
+import { GroupExplorerSkeleton } from "@/components/group-explorer-skeleton";
 import { db } from "@/db";
 import { Metadata } from "next";
 import { Suspense } from "react";
@@ -59,9 +60,5 @@ async function GroupExplorerPage({ params }: Props) {
 }
 
 function GroupExplorerFallback() {
-    return (
-        <div className="container mx-auto px-2 pb-2 space-y-4">
-            <div className="text-sm text-muted-foreground">Cargando...</div>
-        </div>
-    );
+    return <GroupExplorerSkeleton />;
 }

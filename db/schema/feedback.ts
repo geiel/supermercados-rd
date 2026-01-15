@@ -3,7 +3,8 @@ import { sql } from "drizzle-orm";
 import { products, shops } from "./products";
 
 
-export const productIssueEnum = pgEnum('product_issue', ['incorrect_brand', 'incorrect_price', 'incorrect_image', 'incorrect_category', 'link_broken', 'link_incorrect']);
+export const productIssueEnum = pgEnum('product_issue', ['incorrect_brand', 'incorrect_price', 'incorrect_image', 'incorrect_category', 
+    'link_broken', 'link_incorrect', 'incorrect_unit']);
 
 export const feedback = pgTable("feedback", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),

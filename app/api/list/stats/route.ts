@@ -249,6 +249,7 @@ export async function POST(request: Request) {
                           groupId: groups.id,
                           groupName: groups.name,
                           groupCompareBy: groups.compareBy,
+                          groupHumanId: groups.humanNameId,
                           productId: products.id,
                           productCategoryId: products.categoryId,
                           productName: products.name,
@@ -303,6 +304,7 @@ export async function POST(request: Request) {
             id: number;
             name: string;
             compareBy: string | null;
+            humanId: string | null;
             products: ProductWithPrices[];
         };
 
@@ -319,6 +321,7 @@ export async function POST(request: Request) {
                         id: row.groupId,
                         name: row.groupName,
                         compareBy: row.groupCompareBy ?? null,
+                        humanId: row.groupHumanId ?? null,
                         products: [],
                     };
                     groupsMap.set(row.groupId, group);

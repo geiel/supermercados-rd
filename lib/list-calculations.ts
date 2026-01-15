@@ -1,4 +1,4 @@
-import { parseUnit, type ParsedUnit } from "@/lib/unit-utils";
+import { parseUnit, parseUnitWithGroupConversion, type ParsedUnit } from "@/lib/unit-utils";
 
 // ============================================================================
 // Types
@@ -382,7 +382,8 @@ export function getCheapestGroupPicks(
 export function getBestValueGroupPicks(
     products: ProductWithPrices[],
     shopIds: number[],
-    compareBy?: string | null
+    compareBy?: string | null,
+    groupHumanId?: string | null
 ): GroupPickResult | null {
     if (shopIds.length === 0) return null;
 
@@ -394,7 +395,7 @@ export function getBestValueGroupPicks(
 
     const productInfos: ProductInfo[] = products
         .map((product) => {
-            const parsed = parseUnit(product.unit);
+            const parsed = parseUnitWithGroupConversion(product.unit, groupHumanId);
             if (!parsed) return null;
             const comparisonType: ComparableType =
                 parsed.measurement === "count" ? "count" : "measure";
@@ -633,7 +634,7 @@ export function addValueLineItem(
  * Build list entry for a group with the best product pick.
  */
 export function buildGroupEntry(
-    group: { id: number; name: string; compareBy: string | null },
+    group: { id: number; name: string; compareBy: string | null; humanId?: string | null },
     allProductsUnfiltered: ProductWithPrices[],
     ignoredProductIds: Set<number>,
     selectedShopIds: number[],
@@ -666,7 +667,7 @@ export function buildGroupEntry(
 
     const pickResult =
         compareMode === "value"
-            ? getBestValueGroupPicks(productsForPicking, selectedShopIds, group.compareBy) ??
+            ? getBestValueGroupPicks(productsForPicking, selectedShopIds, group.compareBy, group.humanId) ??
               getCheapestGroupPicks(productsForPicking, selectedShopIds)
             : getCheapestGroupPicks(productsForPicking, selectedShopIds);
 

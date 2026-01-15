@@ -18,6 +18,11 @@ export const measurementByUnit: Record<string, Measurement | undefined> = {
 
 export const EQUIVALENCE_TOLERANCE = 0.5; // allow small rounding differences when grouping (e.g. 16 OZ vs 1 LB)
 
+// Special group conversions (hardcoded)
+export const DEODORANT_SPRAY_GROUP_ID = 497;
+export const DEODORANT_SPRAY_HUMAN_ID = "desodorante-en-spray";
+export const GR_TO_ML_RATIO_DEODORANT = 150 / 91; // ~1.648
+
 export const FLUID_OUNCE_IN_ML = 29.5735;
 export const OUNCES_IN_POUND = 16;
 export const CENTIMETERS_IN_METER = 100;
@@ -118,6 +123,35 @@ export function parseUnit(unitRaw: string): ParsedUnit | null {
 
   const display = `${formatAmount(amount)} ${normalizedUnit}`;
   return { measurement, base, display, amount, normalizedUnit };
+}
+
+/**
+ * Parse unit with special group-specific conversions.
+ * For deodorant spray group, converts GR to ML using density ratio.
+ */
+export function parseUnitWithGroupConversion(
+  unitRaw: string,
+  groupHumanId?: string | null
+): ParsedUnit | null {
+  const parsed = parseUnit(unitRaw);
+  if (!parsed) return null;
+
+  // For deodorant spray, convert GR to ML
+  if (
+    groupHumanId === DEODORANT_SPRAY_HUMAN_ID &&
+    parsed.normalizedUnit === "GR"
+  ) {
+    const mlAmount = parsed.amount * GR_TO_ML_RATIO_DEODORANT;
+    return {
+      measurement: "volume",
+      base: mlAmount, // ML as base
+      display: parsed.display, // Keep original display
+      amount: mlAmount,
+      normalizedUnit: "ML",
+    };
+  }
+
+  return parsed;
 }
 
 function roundToStep(value: number, step: number) {

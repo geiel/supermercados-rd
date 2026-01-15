@@ -267,6 +267,13 @@
       "when": 1768336186452,
       "tag": "0037_low_veda",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1768501220220,
+      "tag": "0038_cheerful_the_santerians",
+      "breakpoints": true
     }
   ]
 }
