@@ -10,7 +10,6 @@ import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductBrand } from "@/components/product-brand";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -411,13 +410,6 @@ function mergeProducts(
 function GroupExplorerCard({ product }: { product: GroupExplorerProduct }) {
   return (
     <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative">
-      {product.isCheaper ? (
-        <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1">
-          <Badge className="bg-emerald-600 text-white border-transparent">
-            Mas barato
-          </Badge>
-        </div>
-      ) : null}
       <div className="absolute top-2 right-2 z-10">
         <AddToListButton productId={product.id} variant="icon" />
       </div>

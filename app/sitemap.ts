@@ -4,6 +4,9 @@ import { toSlug } from "@/lib/utils";
 
 const BASE_URL = "https://supermercadosrd.com";
 
+// Cache the sitemap for 1 week
+export const revalidate = 604800;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all products with prices (only products that are available)
   const products = await db.query.products.findMany({
@@ -11,6 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       id: true,
       name: true,
     },
+    where: (products, { gt, isNotNull, or }) =>
+      or(gt(products.rank, "3"), isNotNull(products.relevance)),
     with: {
       shopCurrentPrices: {
         columns: { productId: true },
