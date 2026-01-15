@@ -19,10 +19,13 @@ type FrontPageDealCardProps = {
     priceToday: string;
     brandName: string;
     possibleBrandName: string | null;
+    amountOfShops: string;
   };
 };
 
 export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
+  const shopCount = Number(deal.amountOfShops);
+  
   return (
     <div className="relative flex flex-col gap-2">
       <div className="absolute top-0 left-0 z-10">
@@ -53,13 +56,19 @@ export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
             />
           ) : null}
         </div>
-        <div className="px-2">
+        <div className="px-2 flex flex-col gap-1">
           <Unit unit={deal.unit} />
           <div>
             <BrandName name={deal.brandName} possibleName={deal.possibleBrandName} />
-            {deal.name}
+            <span className="line-clamp-2">{deal.name}</span>
           </div>
           <div className="font-bold text-lg">RD${deal.priceToday}</div>
+          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+            <span className="inline-flex items-center justify-center size-5 rounded-full border text-xs font-medium">
+              {shopCount}
+            </span>
+            <span>{shopCount === 1 ? "tienda" : "tiendas"}</span>
+          </div>
         </div>
       </Link>
     </div>

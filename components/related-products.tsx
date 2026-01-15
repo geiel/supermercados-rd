@@ -3,8 +3,8 @@ import {
   productsSelect,
   productsShopsPrices,
 } from "@/db/schema";
-import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { RelatedProductCard } from "./related-product-card";
+import ScrollPeek from "./ui/scroll-peek";
 
 export function RelatedProducts({
   relatedProducts,
@@ -16,13 +16,12 @@ export function RelatedProducts({
   >;
 }) {
   return (
-    <ScrollArea>
-      <div className="flex w-38 space-x-4">
+    <ScrollPeek itemWidth="150px">
+      <div className="flex space-x-4 p-2">
         {relatedProducts.map((relatedProduct) => (
           <RelatedProductCard key={relatedProduct.id} product={relatedProduct} />
         ))}
       </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </ScrollPeek>
   );
 }

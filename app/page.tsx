@@ -11,6 +11,43 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/searchbar";
 import { SearchBarSkeleton } from "@/components/searchbar-skeleton";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Compara precios de supermercados en República Dominicana",
+  description:
+    "Busca, compara y ahorra en tus compras. Encuentra el supermercado más barato en RD comparando precios de Sirena, Nacional, Jumbo, Bravo, Plaza Lama y PriceSmart.",
+  alternates: {
+    canonical: "/",
+  },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "SupermercadosRD",
+  url: "https://supermercadosrd.com",
+  description:
+    "Comparador de precios de supermercados en República Dominicana",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: "https://supermercadosrd.com/explore/{search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "SupermercadosRD",
+  url: "https://supermercadosrd.com",
+  logo: "https://supermercadosrd.com/logo.svg",
+  description:
+    "Plataforma de comparación de precios de supermercados en República Dominicana",
+};
 
 const SUPERMARKET_DEALS = [
   { id: 6, name: "Bravo", logo: "bravo.png" },
@@ -23,7 +60,20 @@ const SUPERMARKET_DEALS = [
 
 export default function Home() {
   return (
-    <main className="container mx-auto p-2 space-y-6">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <main className="container mx-auto p-2 space-y-6">
       <section className="p-6 rounded-3xl flex flex-col items-center gap-6 md:py-10 lg:px-40 lg:py-20" style={{ background: 'radial-gradient(120% 120% at 50% 0%, #4A2169 0%, #3A1857 60%, #2E1248 100%)' }}>
         <div>
           <h1 className="scroll-m-20 text-center text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance text-white">
@@ -78,7 +128,8 @@ export default function Home() {
       {/* <Suspense fallback={<ExploreSectionSkeleton />}>
         <ExploreSection />
       </Suspense> */}
-    </main>
+      </main>
+    </>
   );
 }
 

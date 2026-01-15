@@ -17,24 +17,64 @@ import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { sirena } from "@/lib/scrappers/sirena";
 import { searchProducts } from "@/lib/search-query";
 import { getUser } from "@/lib/supabase";
-import { sanitizeForTsQuery } from "@/lib/utils";
+import { sanitizeForTsQuery, toSlug } from "@/lib/utils";
 import { MessageCircleWarning } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; url_name: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { id, url_name } = await params;
   const product = await db.query.products.findFirst({
-    columns: { name: true, unit: true },
+    columns: { name: true, unit: true, image: true },
     where: (products, { eq }) => eq(products.id, Number(id)),
+    with: {
+      shopCurrentPrices: {
+        columns: { currentPrice: true },
+        where: (scp, { isNull, eq, or, isNotNull }) =>
+          or(isNull(scp.hidden), eq(scp.hidden, false)),
+        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+        limit: 1,
+      },
+      brand: { columns: { name: true } },
+    },
   });
 
+  if (!product) {
+    return { title: "Producto no encontrado" };
+  }
+
+  const lowestPrice = product.shopCurrentPrices[0]?.currentPrice;
+  const brandName = product.brand?.name;
+  const title = `${product.name} ${product.unit}`;
+  const description = brandName
+    ? `Compara precios de ${product.name} ${product.unit} de ${brandName}${lowestPrice ? ` desde RD$${lowestPrice}` : ""} en supermercados de República Dominicana.`
+    : `Compara precios de ${product.name} ${product.unit}${lowestPrice ? ` desde RD$${lowestPrice}` : ""} en supermercados de República Dominicana.`;
+
   return {
-    title: `${product?.name}, ${product?.unit}`,
+    title,
+    description,
+    openGraph: {
+      title: `${title} | SupermercadosRD`,
+      description,
+      type: "website",
+      url: `/product/${url_name}/${id}`,
+      images: product.image
+        ? [{ url: product.image, alt: title }]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | SupermercadosRD`,
+      description,
+      images: product.image ? [product.image] : undefined,
+    },
+    alternates: {
+      canonical: `/product/${url_name}/${id}`,
+    },
   };
 }
 
@@ -81,8 +121,44 @@ export default async function Page({ params }: Props) {
 
   const groups = product.groupProduct.map((gp) => gp.group);
 
+  // Calculate price range for JSON-LD
+  const prices = product.shopCurrentPrices
+    .map((sp) => Number(sp.currentPrice))
+    .filter((p) => !isNaN(p) && p > 0);
+  const lowestPrice = prices.length > 0 ? Math.min(...prices) : null;
+  const highestPrice = prices.length > 0 ? Math.max(...prices) : null;
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: `${product.name} ${product.unit}`,
+    image: product.image || undefined,
+    brand: product.brand
+      ? { "@type": "Brand", name: product.brand.name }
+      : undefined,
+    offers:
+      prices.length > 0
+        ? {
+            "@type": "AggregateOffer",
+            priceCurrency: "DOP",
+            lowPrice: lowestPrice,
+            highPrice: highestPrice,
+            offerCount: product.shopCurrentPrices.length,
+            availability: "https://schema.org/InStock",
+          }
+        : undefined,
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
           {groups.length > 0 ? (
@@ -97,6 +173,7 @@ export default async function Page({ params }: Props) {
                     groupId={group.id}
                     groupName={group.name}
                     groupHumanNameId={group.humanNameId}
+                    showLabel
                   />
                 ))}
               </div>
@@ -197,7 +274,8 @@ export default async function Page({ params }: Props) {
 
         <ProductFeedbackSection productId={product.id} shops={shops} />
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -1,3 +1,4 @@
+import { AddGroupToListButton } from "@/components/add-group-to-list-button";
 import { GroupExplorerList } from "@/components/group-explorer-list";
 import { TypographyH3 } from "@/components/typography-h3";
 import { getGroupProducts } from "@/lib/group-products";
@@ -16,8 +17,12 @@ export async function GroupExplorer({ humanId }: { humanId: string }) {
 
     return (
         <div className="container mx-auto px-2 pb-2 space-y-4">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center justify-between">
                 <TypographyH3>{result.group.name}</TypographyH3>
+                <AddGroupToListButton
+                    groupId={result.group.id}
+                    groupName={result.group.name}
+                />
             </div>
             <GroupExplorerList
                 humanId={humanId}

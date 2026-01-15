@@ -34,12 +34,14 @@ type CategoryBadgeProps = {
   groupId: number;
   groupName: string;
   groupHumanNameId: string;
+  showLabel?: boolean;
 };
 
 export function CategoryBadge({
   groupId,
   groupName,
   groupHumanNameId,
+  showLabel = false,
 }: CategoryBadgeProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -68,12 +70,12 @@ export function CategoryBadge({
       e.stopPropagation();
       toggleGroup(groupId);
       if (isInAnyList) {
-        toast.success("El grupo ha sido eliminado de la lista");
+        toast.success(`${groupName} ha sido eliminado de la lista`);
       } else {
-        toast.success("El grupo ha sido agregado a la lista");
+        toast.success(`${groupName} ha sido agregado a la lista`);
       }
     },
-    [toggleGroup, groupId, isInAnyList]
+    [toggleGroup, groupId, groupName, isInAnyList]
   );
 
   // Handle click for logged-in users
@@ -95,10 +97,10 @@ export function CategoryBadge({
         const listName = lists[0].name;
         if (isGroupInList(groupId, listId)) {
           removeGroup(groupId, listId);
-          toast.success(`El grupo ha sido eliminado de ${listName}`);
+          toast.success(`${groupName} ha sido eliminado de ${listName}`);
         } else {
           addGroup(groupId, listId);
-          toast.success(`El grupo ha sido agregado a ${listName}`);
+          toast.success(`${groupName} ha sido agregado a ${listName}`);
         }
         return;
       }
@@ -106,7 +108,7 @@ export function CategoryBadge({
       // Multiple lists - open dropdown/drawer
       setIsOpen(true);
     },
-    [lists, groupId, isGroupInList, addGroup, removeGroup, createList]
+    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup, createList]
   );
 
   const handleClick = useCallback(
@@ -126,26 +128,36 @@ export function CategoryBadge({
       const listName = lists?.find((l) => l.id === listId)?.name ?? "la lista";
       if (isGroupInList(groupId, listId)) {
         removeGroup(groupId, listId);
-        toast.success(`El grupo ha sido eliminado de ${listName}`);
+        toast.success(`${groupName} ha sido eliminado de ${listName}`);
       } else {
         addGroup(groupId, listId);
-        toast.success(`El grupo ha sido agregado a ${listName}`);
+        toast.success(`${groupName} ha sido agregado a ${listName}`);
       }
     },
-    [lists, groupId, isGroupInList, addGroup, removeGroup]
+    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup]
   );
 
   const isMutating = isCreatingList;
 
   const addButtonStyle = isInAnyList
     ? { backgroundColor: CHECKED_COLOR, color: "white" }
-    : undefined;
+    : { backgroundColor: "black", color: "white" };
 
   const addButtonContent = isInAnyList ? (
-    <Check className="size-4" />
+    <>
+      <Check className="size-4" />
+      {showLabel && <span>Lista</span>}
+    </>
   ) : (
-    <Plus className="size-4" />
+    <>
+      <Plus className="size-4" />
+      {showLabel && <span>Lista</span>}
+    </>
   );
+
+  const addButtonClassName = showLabel
+    ? "flex items-center justify-center gap-1 px-3 py-1.5 rounded-full mr-2 transition-colors text-xs font-medium"
+    : "flex items-center justify-center p-2 rounded-full mr-2 transition-colors";
 
   // Guest users or users with 0-1 lists - simple badge with button
   if (isLocalMode || !lists || lists.length <= 1) {
@@ -159,7 +171,7 @@ export function CategoryBadge({
         </Link>
         <button
           type="button"
-          className="flex items-center justify-center p-2 rounded-full mr-2 transition-colors"
+          className={addButtonClassName}
           style={addButtonStyle}
           onClick={handleClick}
           disabled={isLoading || isLoadingLists || isMutating}
@@ -184,7 +196,7 @@ export function CategoryBadge({
           <DrawerTrigger asChild>
             <button
               type="button"
-              className="flex items-center justify-center p-2 rounded-full mr-2 transition-colors"
+              className={addButtonClassName}
               style={addButtonStyle}
               disabled={isLoading || isLoadingLists || isMutating}
             >
@@ -239,7 +251,7 @@ export function CategoryBadge({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center justify-center p-2 rounded-full mr-2 transition-colors"
+            className={addButtonClassName}
             style={addButtonStyle}
             disabled={isLoading || isLoadingLists || isMutating}
           >

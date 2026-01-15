@@ -145,7 +145,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }, [searchParams, router, pathname]);
 
-    const handleShopSelectionChange = useCallback((nextShops: number[]) => {
+    const handleShopSelectionChange = useCallback((nextShops: number[], nextCompareMode: CompareMode) => {
         setSelectedShops(nextShops);
         if (listItems.isLocalMode) {
             setLocalSelectedShops(nextShops);
@@ -153,8 +153,12 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
             // Save to database for logged-in users
             updateListSelectedShops(listId, nextShops);
         }
-        // Stats will auto-refetch due to selectedShops dependency
-    }, [listItems.isLocalMode, listId]);
+        
+        // Update compare mode if it changed
+        if (nextCompareMode !== compareMode) {
+            handleCompareModeChange(nextCompareMode);
+        }
+    }, [listItems.isLocalMode, listId, compareMode, handleCompareModeChange]);
 
     const handleDeleteProduct = useCallback(async (productId: number) => {
         setLoadingProductIds((prev) => new Set([...prev, productId]));
@@ -491,7 +495,7 @@ type ShopSelectorProps = {
     cheapestPairShopIds: number[];
     bestValueSingleShopIds: number[];
     bestValuePairShopIds: number[];
-    onSelectionChange: (shopIds: number[]) => void;
+    onSelectionChange: (shopIds: number[], compareMode: CompareMode) => void;
     isMobile: boolean;
     isRecalculating?: boolean;
 };
@@ -517,8 +521,8 @@ function ShopSelector({
             cheapestPairShopIds={cheapestPairShopIds}
             bestValueSingleShopIds={bestValueSingleShopIds}
             bestValuePairShopIds={bestValuePairShopIds}
-            onSelectionChange={(nextShops) => {
-                onSelectionChange(nextShops);
+            onSelectionChange={(nextShops, nextCompareMode) => {
+                onSelectionChange(nextShops, nextCompareMode);
                 setOpen(false);
             }}
         />
@@ -527,7 +531,7 @@ function ShopSelector({
     const triggerButton = (
         <Button className="relative" variant="outline" size="icon">
             {(isRecalculating || selectedShops.length > 0) && (
-                <div className="absolute top-[-5px] right-[-5px] z-50">
+                <div className="absolute top-[-5px] right-[-5px]">
                     {isRecalculating ? (
                         <Badge className="h-5 min-w-5 rounded-full px-1" variant="destructive">
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -581,7 +585,7 @@ type ShopSelectorListProps = {
     cheapestPairShopIds: number[];
     bestValueSingleShopIds: number[];
     bestValuePairShopIds: number[];
-    onSelectionChange: (shopIds: number[]) => void;
+    onSelectionChange: (shopIds: number[], compareMode: CompareMode) => void;
 };
 
 const areSameSelection = (left: number[], right: number[]) => {
@@ -730,7 +734,7 @@ function ShopSelectorList({
             <Button
                 className="col-span-2 min-w-[200px]"
                 aria-label={`Comparar ${shopAmount} Tiendas`}
-                onClick={() => onSelectionChange(selectedShops)}
+                onClick={() => onSelectionChange(selectedShops, pendingCompareMode)}
             >
                 Comparar {shopAmount} Tiendas
             </Button>
