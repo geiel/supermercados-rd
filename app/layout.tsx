@@ -10,6 +10,7 @@ import Link from "next/link";
 import { getUser } from "@/lib/supabase";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
+import { Footer } from "@/components/footer";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Suspense } from "react";
 import { Spinner } from "@/components/ui/spinner";
@@ -128,6 +129,7 @@ export default function RootLayout({
               </div>
             </header>
             {children}
+            <Footer />
             <Toaster richColors position="top-center" />
             <SpeedInsights />
             <Analytics />
