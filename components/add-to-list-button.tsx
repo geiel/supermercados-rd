@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,7 +39,13 @@ type AddToListButtonProps = {
 export function AddToListButton({ productId, variant = "default" }: AddToListButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [createListOpen, setCreateListOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
+
+  // Track when component has mounted to avoid hydration mismatch
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Unified hook for both guests and logged-in users
   const {
@@ -129,6 +135,8 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
 
   const isMutating = isCreatingList;
   const isIconVariant = variant === "icon";
+  // Only show loading state after mount to avoid hydration mismatch
+  const isDisabled = hasMounted && (isLoading || isLoadingLists || isMutating);
 
   const buttonContent = isIconVariant ? (
     isInAnyList ? <Check className="size-4" /> : <Plus className="size-4" />
@@ -156,7 +164,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
         className={buttonClassName}
         style={buttonStyle}
         onClick={handleClick}
-        disabled={isLoading || isLoadingLists || isMutating}
+        disabled={isDisabled}
       >
         {buttonContent}
       </Button>
@@ -174,7 +182,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
               size={isIconVariant ? "icon" : "sm"}
               className={buttonClassName}
               style={buttonStyle}
-              disabled={isLoading || isLoadingLists || isMutating}
+              disabled={isDisabled}
             >
               {buttonContent}
             </Button>
@@ -247,7 +255,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
             size={isIconVariant ? "icon" : "sm"}
             className={buttonClassName}
             style={buttonStyle}
-            disabled={isLoading || isLoadingLists || isMutating}
+            disabled={isDisabled}
           >
             {buttonContent}
           </Button>
