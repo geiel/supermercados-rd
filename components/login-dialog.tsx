@@ -73,7 +73,7 @@ export function LoginDialog({
       router.refresh();
     } catch (error) {
       console.log(error);
-      toast.error("An error occurred during login");
+      toast.error("Ocurrió un error al iniciar sesión");
     } finally {
       setEmailAction(null);
     }
@@ -83,7 +83,7 @@ export function LoginDialog({
     event.preventDefault();
 
     if (!name.trim() || !email || !password) {
-      toast.error("Enter your name, email, and password to create an account.");
+      toast.error("Ingresa tu nombre, email y contraseña para crear una cuenta.");
       return;
     }
 
@@ -106,10 +106,10 @@ export function LoginDialog({
 
       setPassword("");
       setName("");
-      toast.success("Check your email to confirm your account.");
+      toast.success("Revisa tu email para confirmar tu cuenta.");
     } catch (error) {
       console.log(error);
-      toast.error("An error occurred during registration");
+      toast.error("Ocurrió un error durante el registro");
     } finally {
       setEmailAction(null);
     }
@@ -123,10 +123,10 @@ export function LoginDialog({
         window.location.href = result.url;
         return;
       }
-      toast.error(result?.error ?? "Failed to start Google sign-in");
+      toast.error(result?.error ?? "No se pudo iniciar sesión con Google");
     } catch (error) {
       console.log(error);
-      toast.error("Failed to start Google sign-in");
+      toast.error("No se pudo iniciar sesión con Google");
     } finally {
       setIsGoogleLoading(false);
     }
@@ -146,12 +146,12 @@ export function LoginDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {!hideTrigger && (
         <DialogTrigger asChild>
-          <Button size="icon-lg" aria-label="Sign in">
+          <Button size="icon-lg" aria-label="Iniciar sesión">
             <LogIn />
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -160,11 +160,11 @@ export function LoginDialog({
           {view === "signin" ? (
             <form onSubmit={handleEmailLogin} className="grid gap-3">
               <div className="grid gap-2">
-                <Label htmlFor="login-email">Email</Label>
+                <Label htmlFor="login-email">Correo electrónico</Label>
                 <Input
                   id="login-email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder="nombre@ejemplo.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   disabled={isEmailLoading || isGoogleLoading}
@@ -172,11 +172,11 @@ export function LoginDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="login-password">Password</Label>
+                <Label htmlFor="login-password">Contraseña</Label>
                 <Input
                   id="login-password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder="Ingresa tu contraseña"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   disabled={isEmailLoading || isGoogleLoading}
@@ -187,7 +187,7 @@ export function LoginDialog({
                 {emailAction === "signin" && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Sign in
+                Iniciar sesión
               </Button>
               <Button
                 type="button"
@@ -196,17 +196,17 @@ export function LoginDialog({
                 onClick={() => setView("signup")}
                 disabled={isEmailLoading || isGoogleLoading}
               >
-                Create account
+                Crear cuenta
               </Button>
             </form>
           ) : (
             <form onSubmit={handleEmailRegister} className="grid gap-3">
               <div className="grid gap-2">
-                <Label htmlFor="signup-name">Name</Label>
+                <Label htmlFor="signup-name">Nombre</Label>
                 <Input
                   id="signup-name"
                   type="text"
-                  placeholder="Your name"
+                  placeholder="Tu nombre"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   disabled={isEmailLoading || isGoogleLoading}
@@ -214,11 +214,11 @@ export function LoginDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-email">Correo electrónico</Label>
                 <Input
                   id="signup-email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder="nombre@ejemplo.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   disabled={isEmailLoading || isGoogleLoading}
@@ -226,11 +226,11 @@ export function LoginDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="signup-password">Password</Label>
+                <Label htmlFor="signup-password">Contraseña</Label>
                 <Input
                   id="signup-password"
                   type="password"
-                  placeholder="Create a password"
+                  placeholder="Crea una contraseña"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   disabled={isEmailLoading || isGoogleLoading}
@@ -241,7 +241,7 @@ export function LoginDialog({
                 {emailAction === "signup" && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Create account
+                Crear cuenta
               </Button>
               <Button
                 type="button"
@@ -250,7 +250,7 @@ export function LoginDialog({
                 onClick={() => setView("signin")}
                 disabled={isEmailLoading || isGoogleLoading}
               >
-                Back to sign in
+                Volver a iniciar sesión
               </Button>
             </form>
           )}
@@ -260,7 +260,7 @@ export function LoginDialog({
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
+                O continúa con
               </span>
             </div>
           </div>
@@ -274,7 +274,7 @@ export function LoginDialog({
             ) : (
               <GoogleIcon className="mr-2 h-4 w-4" />
             )}
-            Continue with Google
+            Continuar con Google
           </Button>
         </div>
       </DialogContent>
