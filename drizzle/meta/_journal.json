@@ -281,6 +281,13 @@
       "when": 1768512384909,
       "tag": "0039_hard_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1768588975301,
+      "tag": "0040_lively_nightmare",
+      "breakpoints": true
     }
   ]
 }
