@@ -225,26 +225,9 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
     if (listItems.products.length === 0 && listItems.groups.length === 0 && !listItems.isLoading) {
         return (
             <div className="container mx-auto pb-4 px-2 max-w-4xl">
-                {/* Header */}
-                <div className="flex justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="font-bold text-2xl">{displayName}</div>
-                        {listId && userList && (
-                            <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => setEditDialogOpen(true)}
-                                aria-label="Editar lista"
-                            >
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
                 {/* Info banner for local storage (guest users) */}
                 {listItems.isLocalMode && (
-                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+                    <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
                         <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
                         <div className="flex-1 space-y-2">
                             <p className="text-sm text-amber-800 dark:text-amber-200">
@@ -261,6 +244,23 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                         </div>
                     </div>
                 )}
+
+                {/* Header */}
+                <div className="flex justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="font-bold text-2xl">{displayName}</div>
+                        {listId && userList && (
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => setEditDialogOpen(true)}
+                                aria-label="Editar lista"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
 
                 {/* Empty state */}
                 <Empty className="mt-8">
@@ -319,6 +319,26 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
 
     return (
         <div className="container mx-auto pb-4 px-2 max-w-4xl">
+            {/* Info banner for local storage (guest users) */}
+            {listItems.isLocalMode && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+                    <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
+                    <div className="flex-1 space-y-2">
+                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                            Esta lista se guarda solo en este dispositivo. Para acceder desde cualquier dispositivo, inicia sesión.
+                        </p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-amber-300 bg-white text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                            onClick={() => setLoginDialogOpen(true)}
+                        >
+                            Iniciar sesión
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-1 flex-col">
                 {/* Header */}
                 <div className="flex justify-between">
@@ -350,26 +370,6 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                         />
                     </div>
                 </div>
-
-                {/* Info banner for local storage (guest users) */}
-                {listItems.isLocalMode && (
-                    <div className="mt-2 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
-                        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
-                        <div className="flex-1 space-y-2">
-                            <p className="text-sm text-amber-800 dark:text-amber-200">
-                                Esta lista se guarda solo en este dispositivo. Para acceder desde cualquier dispositivo, inicia sesión.
-                            </p>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-amber-300 bg-white text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
-                                onClick={() => setLoginDialogOpen(true)}
-                            >
-                                Iniciar sesión
-                            </Button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Controls and Summary */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
