@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Info, Loader2, Pencil, ShoppingCart, Store } from "lucide-react";
+import { Info, Loader2, Pencil, ShoppingCart, Smartphone, Store } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { ProductItems } from "@/components/products-items";
 import { EditListDialog } from "@/components/edit-list-dialog";
+import { LoginDialog } from "@/components/login-dialog";
 import { useListItems } from "@/hooks/use-list-items";
 import { useListStats } from "@/hooks/use-list-stats";
 import { useShops } from "@/hooks/use-shops";
@@ -90,6 +91,9 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
 
     // Edit list dialog state
     const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+    // Login dialog state (for local mode)
+    const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
     // Get compare mode from URL
     const compareMode: CompareMode = searchParams.get("compare") === "value" ? "value" : "cheapest";
@@ -238,6 +242,26 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                     </div>
                 </div>
 
+                {/* Info banner for local storage (guest users) */}
+                {listItems.isLocalMode && (
+                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+                        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
+                        <div className="flex-1 space-y-2">
+                            <p className="text-sm text-amber-800 dark:text-amber-200">
+                                Esta lista se guarda solo en este dispositivo. Para acceder desde cualquier dispositivo, inicia sesión.
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-amber-300 bg-white text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                                onClick={() => setLoginDialogOpen(true)}
+                            >
+                                Iniciar sesión
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Empty state */}
                 <Empty className="mt-8">
                     <EmptyHeader>
@@ -250,6 +274,17 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                         </EmptyDescription>
                     </EmptyHeader>
                 </Empty>
+
+                {/* Login Dialog (for local mode) */}
+                {listItems.isLocalMode && (
+                    <LoginDialog
+                        open={loginDialogOpen}
+                        onOpenChange={setLoginDialogOpen}
+                        hideTrigger
+                        customTitle="Sincroniza tus listas"
+                        customDescription="Inicia sesión para acceder a tus listas desde cualquier dispositivo."
+                    />
+                )}
 
                 {/* Edit List Dialog */}
                 {listId && userList && (
@@ -315,6 +350,26 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                         />
                     </div>
                 </div>
+
+                {/* Info banner for local storage (guest users) */}
+                {listItems.isLocalMode && (
+                    <div className="mt-2 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+                        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
+                        <div className="flex-1 space-y-2">
+                            <p className="text-sm text-amber-800 dark:text-amber-200">
+                                Esta lista se guarda solo en este dispositivo. Para acceder desde cualquier dispositivo, inicia sesión.
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-amber-300 bg-white text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                                onClick={() => setLoginDialogOpen(true)}
+                            >
+                                Iniciar sesión
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Controls and Summary */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -440,6 +495,17 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                     open={editDialogOpen}
                     onOpenChange={setEditDialogOpen}
                     onDeleted={handleListDeleted}
+                />
+            )}
+
+            {/* Login Dialog (for local mode) */}
+            {listItems.isLocalMode && (
+                <LoginDialog
+                    open={loginDialogOpen}
+                    onOpenChange={setLoginDialogOpen}
+                    hideTrigger
+                    customTitle="Sincroniza tus listas"
+                    customDescription="Inicia sesión para acceder a tus listas desde cualquier dispositivo."
                 />
             )}
         </div>
