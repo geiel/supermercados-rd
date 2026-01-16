@@ -47,7 +47,7 @@ export function SearchBar({ open, onOpenChange, autoFocus }: SearchBarProps) {
   return (
     <AutoComplete
       suggestions={data ? data : []}
-      placeholder="Buscar..."
+      placeholder="¿Qué quieres comprar hoy?"
       emptyMessage="No encontrado."
       onInputChange={setValue}
       onSearch={explore}
