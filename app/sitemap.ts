@@ -2,10 +2,7 @@ import { MetadataRoute } from "next";
 import { db } from "@/db";
 import { toSlug } from "@/lib/utils";
 
-const BASE_URL = "https://supermercadosrd.com";
-
-// Cache the sitemap for 1 week
-export const revalidate = 604800;
+const BASE_URL = "https://www.supermercadosrd.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all products with prices (only products that are available)
