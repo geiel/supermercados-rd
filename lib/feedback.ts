@@ -1,9 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { feedback, productIssueReports, productIssueEnum } from "@/db/schema/feedback";
+import { feedback, productIssueReports, productIssueEnum, categorySuggestions, categorySuggestionTypeEnum } from "@/db/schema/feedback";
 
 export type ProductIssue = (typeof productIssueEnum.enumValues)[number];
+export type CategorySuggestionType = (typeof categorySuggestionTypeEnum.enumValues)[number];
 
 type SubmitFeedbackData = {
   feedback: string;
@@ -45,5 +46,32 @@ export async function submitIssueReport(data: SubmitIssueReportData) {
   } catch (error) {
     console.error("Error submitting issue report:", error);
     return { success: false, error: "Error al reportar el problema" };
+  }
+}
+
+type SubmitCategorySuggestionData = {
+  type: CategorySuggestionType;
+  suggestedName?: string;
+  existingGroupId?: number;
+  productId?: number;
+  email?: string;
+  notes?: string;
+};
+
+export async function submitCategorySuggestion(data: SubmitCategorySuggestionData) {
+  try {
+    await db.insert(categorySuggestions).values({
+      type: data.type,
+      suggestedName: data.suggestedName || null,
+      existingGroupId: data.existingGroupId || null,
+      productId: data.productId || null,
+      userEmail: data.email || null,
+      notes: data.notes || null,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error submitting category suggestion:", error);
+    return { success: false, error: "Error al enviar la sugerencia" };
   }
 }

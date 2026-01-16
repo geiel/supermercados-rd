@@ -1,6 +1,7 @@
 import { integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { products, shops } from "./products";
+import { groups } from "./groups";
 
 
 export const productIssueEnum = pgEnum('product_issue', ['incorrect_brand', 'incorrect_price', 'incorrect_image', 'incorrect_category', 
@@ -19,5 +20,19 @@ export const productIssueReports = pgTable("product_issue_reports", {
     productId: integer().notNull().references(() => products.id),
     shopId: integer().references(() => shops.id),
     userId: text(),
+    createdAt: timestamp().notNull().default(sql`now()`),
+});
+
+export const categorySuggestionTypeEnum = pgEnum('category_suggestion_type', 
+    ['new_category', 'add_product_to_category']);
+
+export const categorySuggestions = pgTable("category_suggestions", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    type: categorySuggestionTypeEnum().notNull(),
+    suggestedName: text(),
+    existingGroupId: integer().references(() => groups.id),
+    productId: integer().references(() => products.id),
+    userEmail: text(),
+    notes: text(),
     createdAt: timestamp().notNull().default(sql`now()`),
 });

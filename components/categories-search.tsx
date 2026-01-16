@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CategoryBadge } from "./category-badge";
 import { TypographyH3 } from "./typography-h3";
 import { Button } from "./ui/button";
+import { SuggestCategoryDrawer } from "./suggest-category-drawer";
 
 type GroupResult = { name: string; humanId: string; groupId: number };
 
@@ -20,7 +21,7 @@ export function CategorySearch({ groupResults }: { groupResults: Array<GroupResu
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-3 py-3 max-md:hidden">
+        <div className="flex flex-wrap gap-3 py-3 max-md:hidden items-center">
           {groupResults.map((group) => (
             <CategoryBadge
               key={group.humanId}
@@ -29,6 +30,11 @@ export function CategorySearch({ groupResults }: { groupResults: Array<GroupResu
               groupHumanNameId={group.humanId}
             />
           ))}
+          <SuggestCategoryDrawer>
+            <button className="text-sm text-muted-foreground hover:text-primary underline underline-offset-4 cursor-pointer transition-colors">
+              ¿Falta alguna categoría?
+            </button>
+          </SuggestCategoryDrawer>
         </div>
         <div className="space-y-2 py-3 md:hidden flex flex-col">
           {mobileGroups.map((group) => (
@@ -48,7 +54,13 @@ export function CategorySearch({ groupResults }: { groupResults: Array<GroupResu
             >
               Mostrar más ({groupResults.length - 4})
             </Button>
-          ) : null}
+          ) : (
+            <SuggestCategoryDrawer>
+              <button className="text-sm text-muted-foreground hover:text-primary underline underline-offset-4 cursor-pointer transition-colors text-left">
+                ¿Falta alguna categoría?
+              </button>
+            </SuggestCategoryDrawer>
+          )}
         </div>
       </div>
     )

@@ -2,6 +2,7 @@
 
 import { FeedbackDrawer } from "@/components/feedback-drawer";
 import { ReportIssueDrawer } from "@/components/report-issue-drawer";
+import { SuggestCategoryDrawer } from "@/components/suggest-category-drawer";
 
 type Shop = {
   id: number;
@@ -33,7 +34,7 @@ export function ProductFeedbackSection({
         mejora?
       </p>
 
-      <div className="flex items-center gap-3 text-sm">
+      <div className="flex items-center gap-3 text-sm flex-wrap">
         <FeedbackDrawer productId={productId}>
           <button className="text-primary underline underline-offset-4 cursor-pointer">
             Enviar comentario
@@ -45,6 +46,12 @@ export function ProductFeedbackSection({
             Reportar problema
           </button>
         </ReportIssueDrawer>
+        <span className="text-muted-foreground">|</span>
+        <SuggestCategoryDrawer productId={productId}>
+          <button className="text-primary underline underline-offset-4 cursor-pointer">
+            Sugerir categoría
+          </button>
+        </SuggestCategoryDrawer>
       </div>
     </section>
   );
