@@ -45,8 +45,7 @@ async function main() {
       case 6:
         await bravo.processByProductShopPrice(shopPrice);
     }
-    // Random delay between 1.5-4 seconds to mimic human behavior
-    await randomDelay(1500, 4000);
+    await randomDelay(1000, 2000);
   }
 
   process.exit(0);
