@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { listItems } from "@/db/schema";
+import { list, listItems } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
 import { and, eq } from "drizzle-orm";
 
@@ -72,6 +72,12 @@ export async function POST(request: Request) {
         .onConflictDoNothing()
         .returning();
 
+    // Update list's updatedAt timestamp
+    await db
+        .update(list)
+        .set({ updatedAt: new Date() })
+        .where(eq(list.id, listId));
+
     return Response.json(newItem ?? { listId, productId });
 }
 
@@ -111,6 +117,12 @@ export async function DELETE(request: Request) {
         }
 
         await db.delete(listItems).where(eq(listItems.id, itemId));
+
+        // Update list's updatedAt timestamp
+        await db
+            .update(list)
+            .set({ updatedAt: new Date() })
+            .where(eq(list.id, item.listId));
     } else if (listId && productId) {
         // Delete by listId + productId
         const userList = await db.query.list.findFirst({
@@ -125,6 +137,12 @@ export async function DELETE(request: Request) {
         await db
             .delete(listItems)
             .where(and(eq(listItems.listId, listId), eq(listItems.productId, productId)));
+
+        // Update list's updatedAt timestamp
+        await db
+            .update(list)
+            .set({ updatedAt: new Date() })
+            .where(eq(list.id, listId));
     } else {
         return Response.json(
             { error: "itemId or (listId and productId) are required" },

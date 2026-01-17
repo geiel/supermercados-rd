@@ -4,3 +4,4 @@ export * from "./compare";
 export * from "./stats";
 export * from "./groups";
 export * from "./feedback";
+export * from "./users";

@@ -1,4 +1,4 @@
-import { integer, pgTable, text, unique } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { products } from "./products";
 import { relations, sql } from "drizzle-orm";
 import { groups } from "./groups";
@@ -7,7 +7,10 @@ export const list = pgTable("list", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     userId: text().notNull(),
     selectedShops: text().array().notNull().default(sql`ARRAY[]::text[]`),
-    name: text().notNull()
+    name: text().notNull(),
+    isShared: boolean().notNull().default(false),
+    hideProfile: boolean().notNull().default(false),
+    updatedAt: timestamp().defaultNow().notNull(),
 });
 
 export const listRelations = relations(list, ({ many }) => ({

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { listGroupItems } from "@/db/schema";
+import { list, listGroupItems } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
 import { and, eq } from "drizzle-orm";
 
@@ -72,6 +72,12 @@ export async function POST(request: Request) {
         .onConflictDoNothing()
         .returning();
 
+    // Update list's updatedAt timestamp
+    await db
+        .update(list)
+        .set({ updatedAt: new Date() })
+        .where(eq(list.id, listId));
+
     return Response.json(newItem ?? { listId, groupId });
 }
 
@@ -121,6 +127,12 @@ export async function PATCH(request: Request) {
         .set({ ignoredProducts: ignoredProducts.map((id) => String(id)) })
         .where(eq(listGroupItems.id, itemId));
 
+    // Update list's updatedAt timestamp
+    await db
+        .update(list)
+        .set({ updatedAt: new Date() })
+        .where(eq(list.id, item.listId));
+
     return Response.json({ success: true });
 }
 
@@ -159,6 +171,12 @@ export async function DELETE(request: Request) {
         }
 
         await db.delete(listGroupItems).where(eq(listGroupItems.id, itemId));
+
+        // Update list's updatedAt timestamp
+        await db
+            .update(list)
+            .set({ updatedAt: new Date() })
+            .where(eq(list.id, item.listId));
     } else if (listId && groupId) {
         // Delete by listId + groupId
         const userList = await db.query.list.findFirst({
@@ -173,6 +191,12 @@ export async function DELETE(request: Request) {
         await db
             .delete(listGroupItems)
             .where(and(eq(listGroupItems.listId, listId), eq(listGroupItems.groupId, groupId)));
+
+        // Update list's updatedAt timestamp
+        await db
+            .update(list)
+            .set({ updatedAt: new Date() })
+            .where(eq(list.id, listId));
     } else {
         return Response.json(
             { error: "itemId or (listId and groupId) are required" },

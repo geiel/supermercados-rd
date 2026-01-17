@@ -288,6 +288,20 @@
       "when": 1768588975301,
       "tag": "0040_lively_nightmare",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1768654644880,
+      "tag": "0041_powerful_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1768658712019,
+      "tag": "0042_steep_black_bird",
+      "breakpoints": true
     }
   ]
 }
