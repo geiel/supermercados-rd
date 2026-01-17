@@ -270,9 +270,7 @@ export default async function Image({ params }: Props) {
     const totalProducts = productIds.length + groupIds.length;
 
     // Get the base URL for loading assets
-    const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
     return new ImageResponse(
         (
