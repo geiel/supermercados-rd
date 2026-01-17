@@ -24,6 +24,12 @@ function parseListIdFromSlug(slug: string): number | null {
     return Number.isFinite(id) && id > 0 ? id : null;
 }
 
+// Use wsrv.nl proxy to get smaller, optimized images
+function getOptimizedImageUrl(imageUrl: string): string {
+    // wsrv.nl: w=width, h=height, q=quality, fit=contain
+    return `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}&w=180&h=180&fit=contain&q=50`;
+}
+
 export default async function Image({ params }: Props) {
     const { slug } = await params;
     const listId = parseListIdFromSlug(slug);
@@ -136,8 +142,8 @@ export default async function Image({ params }: Props) {
         }
     }
 
-    // Create 3x2 grid layout
-    const gridImages = productImages.slice(0, 6);
+    // Create 3x2 grid layout with optimized smaller images
+    const gridImages = productImages.slice(0, 6).map(getOptimizedImageUrl);
 
     // Simple 3-column layout with flexbox
     const cellHeight = 350;
