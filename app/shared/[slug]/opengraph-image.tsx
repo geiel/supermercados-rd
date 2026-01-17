@@ -123,9 +123,12 @@ export default async function Image({ params }: Props) {
     const { slug } = await params;
     const listId = parseListIdFromSlug(slug);
 
+    // Get the base URL for loading assets
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+
     // Error card for invalid list
     if (!listId) {
-        return renderErrorCard("Lista no encontrada");
+        return renderErrorCard("Lista no encontrada", baseUrl);
     }
 
     // Fetch the list
@@ -135,7 +138,7 @@ export default async function Image({ params }: Props) {
     });
 
     if (!sharedList) {
-        return renderErrorCard("Lista no encontrada");
+        return renderErrorCard("Lista no encontrada", baseUrl);
     }
 
     // Fetch list items
@@ -269,9 +272,6 @@ export default async function Image({ params }: Props) {
     const grandTotal = shopSummaries.reduce((acc, s) => acc + s.total, 0);
     const totalProducts = productIds.length + groupIds.length;
 
-    // Get the base URL for loading assets
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-
     return new ImageResponse(
         (
             <div
@@ -279,25 +279,63 @@ export default async function Image({ params }: Props) {
                     display: "flex",
                     width: "100%",
                     height: "100%",
-                    backgroundColor: "#f8fafc",
-                    padding: 40,
+                    background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)",
+                    padding: 0,
+                    position: "relative",
+                    overflow: "hidden",
                 }}
             >
-                {/* Main Card */}
+                {/* Decorative circles */}
+                <div
+                    style={{
+                        position: "absolute",
+                        top: -100,
+                        right: -100,
+                        width: 400,
+                        height: 400,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, rgba(139, 92, 246, 0.4) 0%, rgba(139, 92, 246, 0.05) 100%)",
+                        display: "flex",
+                    }}
+                />
+                <div
+                    style={{
+                        position: "absolute",
+                        bottom: -150,
+                        left: -150,
+                        width: 500,
+                        height: 500,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, rgba(167, 139, 250, 0.25) 0%, rgba(167, 139, 250, 0.02) 100%)",
+                        display: "flex",
+                    }}
+                />
+                <div
+                    style={{
+                        position: "absolute",
+                        top: 200,
+                        right: 300,
+                        width: 200,
+                        height: 200,
+                        borderRadius: "50%",
+                        background: "rgba(255, 255, 255, 0.05)",
+                        display: "flex",
+                    }}
+                />
+
+                {/* Main Content */}
                 <div
                     style={{
                         display: "flex",
                         flexDirection: "column",
                         width: "100%",
                         height: "100%",
-                        backgroundColor: "#ffffff",
-                        borderRadius: 24,
-                        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
-                        padding: 48,
-                        gap: 32,
+                        padding: 56,
+                        gap: 40,
+                        position: "relative",
                     }}
                 >
-                    {/* Header with Logo and Title */}
+                    {/* Header Row */}
                     <div
                         style={{
                             display: "flex",
@@ -305,19 +343,21 @@ export default async function Image({ params }: Props) {
                             alignItems: "flex-start",
                         }}
                     >
+                        {/* Left: Logo and Title */}
                         <div
                             style={{
                                 display: "flex",
                                 flexDirection: "column",
-                                gap: 8,
+                                gap: 20,
+                                flex: 1,
                             }}
                         >
                             {/* Logo */}
                             <img
-                                src={`${baseUrl}/logo.svg`}
+                                src={`${baseUrl}/logo-white.svg`}
                                 alt="SupermercadosRD"
-                                width={280}
-                                height={56}
+                                width={320}
+                                height={64}
                                 style={{
                                     objectFit: "contain",
                                 }}
@@ -325,58 +365,70 @@ export default async function Image({ params }: Props) {
                             {/* List Name */}
                             <h1
                                 style={{
-                                    fontSize: 42,
-                                    fontWeight: 700,
-                                    color: "#1e293b",
-                                    marginTop: 16,
-                                    lineHeight: 1.2,
+                                    fontSize: 48,
+                                    fontWeight: 800,
+                                    color: "#ffffff",
+                                    lineHeight: 1.1,
+                                    maxWidth: 600,
                                 }}
                             >
                                 {sharedList.name}
                             </h1>
                         </div>
 
-                        {/* Total Summary Card */}
+                        {/* Right: Total */}
                         <div
                             style={{
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "flex-end",
-                                backgroundColor: "#f0fdf4",
-                                padding: "24px 32px",
-                                borderRadius: 16,
-                                border: "2px solid #bbf7d0",
+                                gap: 8,
                             }}
                         >
                             <span
                                 style={{
-                                    fontSize: 16,
-                                    color: "#64748b",
-                                    fontWeight: 500,
-                                }}
-                            >
-                                Total estimado
-                            </span>
-                            <span
-                                style={{
-                                    fontSize: 48,
+                                    fontSize: 56,
                                     fontWeight: 800,
-                                    color: "#10b981",
+                                    color: "#ffffff",
                                     lineHeight: 1,
-                                    marginTop: 4,
                                 }}
                             >
                                 RD${formatPrice(grandTotal)}
                             </span>
-                            <span
+                            <div
                                 style={{
-                                    fontSize: 18,
-                                    color: "#64748b",
-                                    marginTop: 8,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    backgroundColor: "rgba(255, 255, 255, 0.15)",
+                                    padding: "8px 16px",
+                                    borderRadius: 20,
                                 }}
                             >
-                                {totalProducts} {totalProducts === 1 ? "producto" : "productos"}
-                            </span>
+                                <svg
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="white"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                                    <line x1="3" y1="6" x2="21" y2="6" />
+                                    <path d="M16 10a4 4 0 0 1-8 0" />
+                                </svg>
+                                <span
+                                    style={{
+                                        fontSize: 16,
+                                        fontWeight: 600,
+                                        color: "#ffffff",
+                                    }}
+                                >
+                                    {totalProducts} {totalProducts === 1 ? "producto" : "productos"}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -385,49 +437,68 @@ export default async function Image({ params }: Props) {
                         <div
                             style={{
                                 display: "flex",
-                                flexDirection: "column",
-                                gap: 16,
+                                gap: 20,
                                 marginTop: "auto",
                             }}
                         >
-                            <span
-                                style={{
-                                    fontSize: 18,
-                                    fontWeight: 600,
-                                    color: "#64748b",
-                                }}
-                            >
-                                Desglose por supermercado
-                            </span>
-                            <div
-                                style={{
-                                    display: "flex",
-                                    gap: 16,
-                                }}
-                            >
-                                {displayShops.map((shop) => (
+                                {displayShops.map((shop, index) => (
                                     <div
                                         key={shop.shopId}
                                         style={{
                                             display: "flex",
                                             flexDirection: "column",
                                             alignItems: "center",
-                                            backgroundColor: "#f8fafc",
-                                            borderRadius: 16,
-                                            padding: "20px 24px",
-                                            border: "1px solid #e2e8f0",
+                                            justifyContent: "center",
+                                            background: "rgba(255, 255, 255, 0.08)",
+                                            backdropFilter: "blur(10px)",
+                                            borderRadius: 20,
+                                            padding: "24px 32px",
+                                            border: "1px solid rgba(255, 255, 255, 0.1)",
                                             flex: 1,
-                                            gap: 12,
+                                            gap: 16,
+                                            position: "relative",
+                                            overflow: "hidden",
                                         }}
                                     >
+                                        {/* Rank indicator */}
+                                        {index === 0 && (
+                                            <div
+                                                style={{
+                                                    position: "absolute",
+                                                    top: 12,
+                                                    right: 12,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    width: 28,
+                                                    height: 28,
+                                                    backgroundColor: "#fbbf24",
+                                                    borderRadius: "50%",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>1</span>
+                                            </div>
+                                        )}
                                         {/* Shop Logo */}
-                                        {renderShopLogo(shop.shopName, shop.shopLogo, baseUrl)}
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                backgroundColor: "#ffffff",
+                                                borderRadius: 12,
+                                                padding: "12px 20px",
+                                                minHeight: 56,
+                                            }}
+                                        >
+                                            {renderShopLogo(shop.shopName, shop.shopLogo, baseUrl)}
+                                        </div>
                                         {/* Shop Price */}
                                         <span
                                             style={{
-                                                fontSize: 24,
-                                                fontWeight: 700,
-                                                color: "#1e293b",
+                                                fontSize: 28,
+                                                fontWeight: 800,
+                                                color: "#ffffff",
                                             }}
                                         >
                                             RD${formatPrice(shop.total)}
@@ -436,14 +507,14 @@ export default async function Image({ params }: Props) {
                                         <span
                                             style={{
                                                 fontSize: 14,
-                                                color: "#64748b",
+                                                fontWeight: 500,
+                                                color: "rgba(255, 255, 255, 0.6)",
                                             }}
                                         >
                                             {shop.productCount} {shop.productCount === 1 ? "producto" : "productos"}
                                         </span>
                                     </div>
                                 ))}
-                            </div>
                         </div>
                     )}
 
@@ -459,8 +530,8 @@ export default async function Image({ params }: Props) {
                         >
                             <span
                                 style={{
-                                    fontSize: 20,
-                                    color: "#94a3b8",
+                                    fontSize: 24,
+                                    color: "rgba(255, 255, 255, 0.5)",
                                 }}
                             >
                                 No hay productos en esta lista
@@ -474,7 +545,7 @@ export default async function Image({ params }: Props) {
     );
 }
 
-function renderErrorCard(message: string) {
+function renderErrorCard(message: string, baseUrl?: string) {
     return new ImageResponse(
         (
             <div
@@ -482,10 +553,37 @@ function renderErrorCard(message: string) {
                     display: "flex",
                     width: "100%",
                     height: "100%",
-                    backgroundColor: "#f8fafc",
-                    padding: 40,
+                    background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)",
+                    position: "relative",
+                    overflow: "hidden",
                 }}
             >
+                {/* Decorative circles */}
+                <div
+                    style={{
+                        position: "absolute",
+                        top: -100,
+                        right: -100,
+                        width: 400,
+                        height: 400,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.05) 100%)",
+                        display: "flex",
+                    }}
+                />
+                <div
+                    style={{
+                        position: "absolute",
+                        bottom: -150,
+                        left: -150,
+                        width: 500,
+                        height: 500,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, rgba(167, 139, 250, 0.2) 0%, rgba(167, 139, 250, 0.02) 100%)",
+                        display: "flex",
+                    }}
+                />
+
                 <div
                     style={{
                         display: "flex",
@@ -494,30 +592,40 @@ function renderErrorCard(message: string) {
                         justifyContent: "center",
                         width: "100%",
                         height: "100%",
-                        backgroundColor: "#ffffff",
-                        borderRadius: 24,
-                        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
-                        gap: 16,
+                        gap: 24,
                     }}
                 >
+                    {baseUrl && (
+                        <img
+                            src={`${baseUrl}/logo-white.svg`}
+                            alt="SupermercadosRD"
+                            width={280}
+                            height={56}
+                            style={{
+                                objectFit: "contain",
+                                marginBottom: 20,
+                            }}
+                        />
+                    )}
                     <div
                         style={{
                             display: "flex",
-                            width: 64,
-                            height: 64,
-                            backgroundColor: "#fee2e2",
-                            borderRadius: 16,
+                            width: 80,
+                            height: 80,
+                            background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                            borderRadius: 20,
                             alignItems: "center",
                             justifyContent: "center",
+                            boxShadow: "0 20px 40px rgba(239, 68, 68, 0.3)",
                         }}
                     >
                         <svg
-                            width="32"
-                            height="32"
+                            width="40"
+                            height="40"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="#ef4444"
-                            strokeWidth="2"
+                            stroke="white"
+                            strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         >
@@ -528,9 +636,9 @@ function renderErrorCard(message: string) {
                     </div>
                     <span
                         style={{
-                            fontSize: 36,
-                            fontWeight: 600,
-                            color: "#64748b",
+                            fontSize: 40,
+                            fontWeight: 700,
+                            color: "#ffffff",
                         }}
                     >
                         {message}
