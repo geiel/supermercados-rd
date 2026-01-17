@@ -179,10 +179,10 @@ export function getRandomUserAgent() {
 
 /**
  * Random delay between requests to mimic human behavior
- * @param min Minimum delay in ms (default 1500)
- * @param max Maximum delay in ms (default 4000)
+ * @param min Minimum delay in ms (default 1000)
+ * @param max Maximum delay in ms (default 2000)
  */
-export function randomDelay(min = 1500, max = 4000): Promise<void> {
+export function randomDelay(min = 1000, max = 2000): Promise<void> {
   const delay = Math.floor(Math.random() * (max - min + 1)) + min;
   return new Promise((resolve) => setTimeout(resolve, delay));
 }
