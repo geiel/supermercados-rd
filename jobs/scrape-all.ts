@@ -11,22 +11,27 @@ import { sql } from "drizzle-orm";
 
 async function main() {
   const allShopPrices = await db.query.productsShopsPrices.findMany({
-    where: (scp, { isNull, eq, or, and }) =>
-      or(
-        and(
-          or(
-            isNull(scp.updateAt),
-            sql`${scp.updateAt} < now() - INTERVAL '12 HOURS'`
+    where: (scp, { isNull, eq, or, and, ne }) =>
+      and(
+        ne(scp.shopId, 3),
+        or(
+          and(
+            or(
+              isNull(scp.updateAt),
+              sql`${scp.updateAt} < now() - INTERVAL '12 HOURS'`
+            ),
+            or(isNull(scp.hidden), eq(scp.hidden, false))
           ),
-          or(isNull(scp.hidden), eq(scp.hidden, false))
-        ),
-        and(
-          eq(scp.hidden, true),
-          sql`${scp.updateAt} < now() - INTERVAL '3 DAYS'`
+          and(
+            eq(scp.hidden, true),
+            sql`${scp.updateAt} < now() - INTERVAL '3 DAYS'`
+          )
         )
       ),
     limit: 1000,
   });
+
+  console.log(`[INFO] Found ${allShopPrices.length} shop prices to update`);
 
   for (const shopPrice of allShopPrices) {
     switch (shopPrice.shopId) {
