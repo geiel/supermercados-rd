@@ -92,9 +92,11 @@ type ProductItemsProps = {
     loadingProductIds?: Set<number>
     /** Group IDs currently being processed (show loading overlay) */
     loadingGroupIds?: Set<number>
+    /** When true, items are displayed without edit/delete actions (for shared lists) */
+    readOnly?: boolean
 }
 
-export function ProductItems({ items, openRowKey, onOpenChange, onLocalDeleteProduct, onLocalDeleteGroup, onLocalIgnoreProduct, onLocalRestoreProduct, loadingProductIds, loadingGroupIds }: ProductItemsProps ) {
+export function ProductItems({ items, openRowKey, onOpenChange, onLocalDeleteProduct, onLocalDeleteGroup, onLocalIgnoreProduct, onLocalRestoreProduct, loadingProductIds, loadingGroupIds, readOnly }: ProductItemsProps ) {
     const isMobile = useIsMobile()
     const [localItems, setLocalItems] = React.useState(items);
 
@@ -123,6 +125,28 @@ export function ProductItems({ items, openRowKey, onOpenChange, onLocalDeletePro
 
     // Only pass controlled props if parent provided them
     const isControlledMode = onOpenChange !== undefined;
+
+    // Read-only mode: display items as links to product pages
+    if (readOnly) {
+        return (
+            <ItemGroup className="gap-2">
+                {localItems.map((entry) => {
+                    const amount = entry.amount ?? entry.listItem?.amount;
+                    const productUrl = `/product/${toSlug(entry.product.name)}/${entry.product.id}`;
+                    return (
+                        <Item key={entry.rowKey} asChild role="listItem" variant="outline">
+                            <ProductItemATag 
+                                product={entry.product} 
+                                amount={amount} 
+                                comparisonLabel={entry.comparisonLabel}
+                                href={productUrl}
+                            />
+                        </Item>
+                    );
+                })}
+            </ItemGroup>
+        );
+    }
 
     if (isMobile) {
         return (

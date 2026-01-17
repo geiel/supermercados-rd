@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Info, Loader2, Pencil, Share2, ShoppingCart, Smartphone, Store } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Info, Loader2, Eye, Store, FileX } from "lucide-react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,126 +19,165 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { ProductItems } from "@/components/products-items";
-import { EditListDialog } from "@/components/edit-list-dialog";
-import { ShareListDialog } from "@/components/share-list-dialog";
-import { LoginDialog } from "@/components/login-dialog";
-import { useListItems } from "@/hooks/use-list-items";
 import { useListStats } from "@/hooks/use-list-stats";
 import { useShops } from "@/hooks/use-shops";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useUserList } from "@/hooks/use-user-list";
-import { updateListSelectedShops } from "@/lib/compare";
 import type { CompareMode } from "@/lib/list-calculations";
-import type { shopsSelect } from "@/db/schema";
-
-// ============================================================================
-// Local Storage Keys
-// ============================================================================
-
-const LOCAL_SHOPS_KEY = "shopping-list-shops";
-
-function getLocalSelectedShops(): number[] {
-    if (typeof window === "undefined") return [];
-    try {
-        const stored = localStorage.getItem(LOCAL_SHOPS_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch {
-        return [];
-    }
-}
-
-function setLocalSelectedShops(shopIds: number[]) {
-    localStorage.setItem(LOCAL_SHOPS_KEY, JSON.stringify(shopIds));
-}
+import type { shopsSelect, listItemsSelect, listGroupItemsSelect } from "@/db/schema";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ListPageProps = {
-    /** For logged users - the list ID */
-    listId?: number;
-    /** List name to display */
-    listName?: string;
+type SharedListData = {
+    id: number;
+    name: string;
+    selectedShops: string[];
+    updatedAt: string;
+    items: listItemsSelect[];
+    groupItems: listGroupItemsSelect[];
+    owner?: {
+        id: string;
+        name?: string;
+    };
+};
+
+type SharedListPageProps = {
+    listId: number;
 };
 
 // ============================================================================
-// Main List Page Component
+// Helper Functions
 // ============================================================================
 
-export function ListPage({ listId, listName = "Lista de compras" }: ListPageProps) {
+function formatRelativeTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+        return "hace unos segundos";
+    }
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+        return `hace ${diffInMinutes} ${diffInMinutes === 1 ? "minuto" : "minutos"}`;
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+        return `hace ${diffInHours} ${diffInHours === 1 ? "hora" : "horas"}`;
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+        return `hace ${diffInDays} ${diffInDays === 1 ? "día" : "días"}`;
+    }
+
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    if (diffInWeeks < 4) {
+        return `hace ${diffInWeeks} ${diffInWeeks === 1 ? "semana" : "semanas"}`;
+    }
+
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) {
+        return `hace ${diffInMonths} ${diffInMonths === 1 ? "mes" : "meses"}`;
+    }
+
+    const diffInYears = Math.floor(diffInDays / 365);
+    return `hace ${diffInYears} ${diffInYears === 1 ? "año" : "años"}`;
+}
+
+function formatAbsoluteDate(dateString: string): string {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const months = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    ];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} de ${month} de ${year}`;
+}
+
+function getInitials(name: string): string {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) {
+        return parts[0].substring(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// ============================================================================
+// Main Shared List Page Component
+// ============================================================================
+
+export function SharedListPage({ listId }: SharedListPageProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
     const isMobile = useIsMobile();
 
-    // 1. Get shops (cached)
+    // Fetch shared list data
+    const { data: sharedList, isLoading: isLoadingList, error } = useQuery<SharedListData>({
+        queryKey: ["shared-list", listId],
+        queryFn: async () => {
+            const response = await fetch(`/api/shared/${listId}`);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error("Lista no encontrada");
+                }
+                throw new Error("Error al cargar la lista");
+            }
+            return response.json();
+        },
+        retry: false, // Don't retry on 404 errors
+    });
+
+    // Get shops (cached)
     const { data: shops, isLoading: isLoadingShops } = useShops();
-
-    // 2. Get items from unified hook
-    const listItems = useListItems({ listId });
-
-    // 3. Get user list data (for logged-in users to get saved selectedShops)
-    const { data: userList, isLoading: isLoadingUserList } = useUserList(listId);
 
     // State for selected shops
     const [selectedShops, setSelectedShops] = useState<number[]>([]);
     const [hasInitializedShops, setHasInitializedShops] = useState(false);
 
-    // Track which drawer/dialog is open (by rowKey)
-    const [openRowKey, setOpenRowKey] = useState<string | null>(null);
-
-    // Track loading states for individual items
-    const [loadingProductIds, setLoadingProductIds] = useState<Set<number>>(new Set());
-    const [loadingGroupIds, setLoadingGroupIds] = useState<Set<number>>(new Set());
-
-    // Edit list dialog state
-    const [editDialogOpen, setEditDialogOpen] = useState(false);
-
-    // Share list dialog state
-    const [shareDialogOpen, setShareDialogOpen] = useState(false);
-
-    // Login dialog state (for local mode)
-    const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-
     // Get compare mode from URL
     const compareMode: CompareMode = searchParams.get("compare") === "value" ? "value" : "cheapest";
 
-    // 4. Get stats (depends on items)
-    const stats = useListStats({
-        products: listItems.products,
-        groups: listItems.groups,
-        ignoredByGroup: listItems.ignoredByGroup,
-        selectedShops: selectedShops.length > 0 ? selectedShops : undefined,
-        compareMode,
-        enabled: hasInitializedShops && !listItems.isLoading,
+    // Extract product and group IDs from shared list data
+    const productIds = sharedList?.items.map((item) => item.productId) ?? [];
+    const groupIds = sharedList?.groupItems.map((item) => item.groupId) ?? [];
+    const ignoredByGroup: Record<number, number[]> = {};
+    sharedList?.groupItems.forEach((item) => {
+        if (item.ignoredProducts && item.ignoredProducts.length > 0) {
+            ignoredByGroup[item.groupId] = item.ignoredProducts.map(Number);
+        }
     });
 
-    // Initialize selected shops from database (logged-in) or localStorage (guest)
-    useEffect(() => {
-        if (hasInitializedShops) return;
+    // Get stats (depends on items)
+    const stats = useListStats({
+        products: productIds,
+        groups: groupIds,
+        ignoredByGroup,
+        selectedShops: selectedShops.length > 0 ? selectedShops : undefined,
+        compareMode,
+        enabled: hasInitializedShops && !isLoadingList && !!sharedList,
+    });
 
-        if (listItems.isLocalMode) {
-            // Guest user: load from localStorage
-            const stored = getLocalSelectedShops();
-            if (stored.length > 0) {
-                setSelectedShops(stored);
+    // Initialize selected shops from shared list data
+    useEffect(() => {
+        if (hasInitializedShops || !sharedList) return;
+
+        if (sharedList.selectedShops && sharedList.selectedShops.length > 0) {
+            const shopIds = sharedList.selectedShops
+                .map((id) => Number(id))
+                .filter(Number.isFinite);
+            if (shopIds.length > 0) {
+                setSelectedShops(shopIds);
             }
-            setHasInitializedShops(true);
-        } else if (!isLoadingUserList) {
-            // Logged-in user: load from database
-            if (userList?.selectedShops && userList.selectedShops.length > 0) {
-                // Convert string[] from DB to number[]
-                const shopIds = userList.selectedShops
-                    .map((id) => Number(id))
-                    .filter(Number.isFinite);
-                if (shopIds.length > 0) {
-                    setSelectedShops(shopIds);
-                }
-            }
-            setHasInitializedShops(true);
         }
-    }, [listItems.isLocalMode, isLoadingUserList, userList, hasInitializedShops]);
+        setHasInitializedShops(true);
+    }, [sharedList, hasInitializedShops]);
 
     // Handlers
     const handleCompareModeChange = useCallback((nextValue: string) => {
@@ -155,180 +196,35 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
 
     const handleShopSelectionChange = useCallback((nextShops: number[], nextCompareMode: CompareMode) => {
         setSelectedShops(nextShops);
-        if (listItems.isLocalMode) {
-            setLocalSelectedShops(nextShops);
-        } else if (listId) {
-            // Save to database for logged-in users
-            updateListSelectedShops(listId, nextShops);
-        }
         
         // Update compare mode if it changed
         if (nextCompareMode !== compareMode) {
             handleCompareModeChange(nextCompareMode);
         }
-    }, [listItems.isLocalMode, listId, compareMode, handleCompareModeChange]);
+    }, [compareMode, handleCompareModeChange]);
 
-    const handleDeleteProduct = useCallback(async (productId: number) => {
-        setLoadingProductIds((prev) => new Set([...prev, productId]));
-        listItems.removeProduct(productId);
-        // Wait for stats to update, then close drawer and clear loading
-        await stats.refetch();
-        setOpenRowKey(null);
-        setLoadingProductIds((prev) => {
-            const next = new Set(prev);
-            next.delete(productId);
-            return next;
-        });
-    }, [listItems, stats]);
-
-    const handleDeleteGroup = useCallback(async (groupId: number) => {
-        setLoadingGroupIds((prev) => new Set([...prev, groupId]));
-        listItems.removeGroup(groupId);
-        // Wait for stats to update, then close drawer and clear loading
-        await stats.refetch();
-        setOpenRowKey(null);
-        setLoadingGroupIds((prev) => {
-            const next = new Set(prev);
-            next.delete(groupId);
-            return next;
-        });
-    }, [listItems, stats]);
-
-    const handleIgnoreProduct = useCallback(async (groupId: number, productId: number) => {
-        setLoadingProductIds((prev) => new Set([...prev, productId]));
-        listItems.ignoreProduct(groupId, productId);
-        // Wait for stats to update, then clear loading
-        await stats.refetch();
-        setLoadingProductIds((prev) => {
-            const next = new Set(prev);
-            next.delete(productId);
-            return next;
-        });
-    }, [listItems, stats]);
-
-    const handleRestoreProduct = useCallback(async (groupId: number, productId: number) => {
-        setLoadingProductIds((prev) => new Set([...prev, productId]));
-        listItems.restoreProduct(groupId, productId);
-        // Wait for stats to update, then clear loading
-        await stats.refetch();
-        setLoadingProductIds((prev) => {
-            const next = new Set(prev);
-            next.delete(productId);
-            return next;
-        });
-    }, [listItems, stats]);
-
-    // Handle list deletion - navigate back to lists page
-    const handleListDeleted = useCallback(() => {
-        router.push("/lists");
-    }, [router]);
-
-    const displayName = userList?.name ?? listName;
-
-    // Empty list state
-    if (listItems.products.length === 0 && listItems.groups.length === 0 && !listItems.isLoading) {
+    // Error state
+    if (error) {
         return (
             <div className="container mx-auto pb-4 px-2 max-w-4xl">
-                {/* Info banner for local storage (guest users) */}
-                {listItems.isLocalMode && (
-                    <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
-                        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
-                        <div className="flex-1 space-y-2">
-                            <p className="text-sm text-amber-800 dark:text-amber-200">
-                                Esta lista se guarda solo en este dispositivo. Para acceder desde cualquier dispositivo, inicia sesión.
-                            </p>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-amber-300 bg-white text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
-                                onClick={() => setLoginDialogOpen(true)}
-                            >
-                                Iniciar sesión
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Header */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    {/* Left side: Title */}
-                    <div className="flex flex-col">
-                        <h1 className="font-bold text-2xl">{displayName}</h1>
-                        <div className="text-sm text-muted-foreground">0 productos</div>
-                    </div>
-
-                    {/* Right side: Action buttons */}
-                    {listId && userList && (
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setEditDialogOpen(true)}
-                                aria-label="Editar lista"
-                            >
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setShareDialogOpen(true)}
-                                aria-label="Compartir lista"
-                            >
-                                <Share2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Empty state */}
                 <Empty className="mt-8">
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
-                            <ShoppingCart />
+                            <FileX />
                         </EmptyMedia>
-                        <EmptyTitle>Tu lista está vacía</EmptyTitle>
+                        <EmptyTitle>Lista no encontrada</EmptyTitle>
                         <EmptyDescription>
-                            Agrega productos desde las ofertas o el explorador.
+                            Esta lista no existe o no está disponible para compartir.
                         </EmptyDescription>
                     </EmptyHeader>
                 </Empty>
-
-                {/* Login Dialog (for local mode) */}
-                {listItems.isLocalMode && (
-                    <LoginDialog
-                        open={loginDialogOpen}
-                        onOpenChange={setLoginDialogOpen}
-                        hideTrigger
-                        customTitle="Sincroniza tus listas"
-                        customDescription="Inicia sesión para acceder a tus listas desde cualquier dispositivo."
-                    />
-                )}
-
-                {/* Edit List Dialog */}
-                {listId && userList && (
-                    <EditListDialog
-                        list={userList}
-                        open={editDialogOpen}
-                        onOpenChange={setEditDialogOpen}
-                        onDeleted={handleListDeleted}
-                    />
-                )}
-
-                {/* Share List Dialog */}
-                {listId && userList && (
-                    <ShareListDialog
-                        list={userList}
-                        open={shareDialogOpen}
-                        onOpenChange={setShareDialogOpen}
-                    />
-                )}
             </div>
         );
     }
 
-    // First load skeleton
-    if (listItems.isLoading || isLoadingShops || isLoadingUserList || (stats.isLoading && !stats.entriesWithShop.length)) {
-        return <ListSkeleton />;
+    // Loading state
+    if (isLoadingList || isLoadingShops || !sharedList || (stats.isLoading && !stats.entriesWithShop.length)) {
+        return <SharedListSkeleton />;
     }
 
     // No shops available
@@ -341,76 +237,69 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
             </div>
         );
     }
+
     const shopsGroupedKeys = Object.keys(stats.shopsGrouped);
     const isRecalculating = stats.isFetching;
 
     return (
         <div className="container mx-auto pb-4 px-2 max-w-4xl">
-            {/* Info banner for local storage (guest users) */}
-            {listItems.isLocalMode && (
-                <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
-                    <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
-                    <div className="flex-1 space-y-2">
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
-                            Esta lista se guarda solo en este dispositivo. Para acceder desde cualquier dispositivo, inicia sesión.
+            {/* Owner profile card */}
+            {sharedList.owner && (
+                <div className="mb-4 flex items-center gap-3 rounded-lg border bg-card p-4">
+                    <Avatar className="h-12 w-12">
+                        <AvatarFallback className="text-lg">
+                            {sharedList.owner.name ? getInitials(sharedList.owner.name) : "?"}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                        <span className="font-medium">
+                            {sharedList.owner.name || "Usuario"}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                            Actualizado el {formatAbsoluteDate(sharedList.updatedAt)}
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {/* Read-only banner (only if no owner or owner hidden) */}
+            {!sharedList.owner && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/50 dark:bg-blue-950/30">
+                    <Eye className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-500" />
+                    <div className="flex-1">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                            Estás viendo una lista compartida en modo lectura.
                         </p>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-amber-300 bg-white text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
-                            onClick={() => setLoginDialogOpen(true)}
-                        >
-                            Iniciar sesión
-                        </Button>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            Última actualización: {formatRelativeTime(sharedList.updatedAt)}
+                        </p>
                     </div>
                 </div>
             )}
 
             <div className="flex flex-1 flex-col gap-3">
                 {/* Header */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start justify-between gap-3">
                     {/* Left side: Title and stats */}
                     <div className="flex flex-col gap-1">
-                        <h1 className="font-bold text-2xl">{displayName}</h1>
+                        <h1 className="font-bold text-2xl">{sharedList.name}</h1>
                         <div className="text-muted-foreground">
                             {stats.totalProducts} productos · <span className="font-bold text-foreground">RD${stats.totalPrice.toFixed(2)}</span>
                         </div>
                     </div>
 
-                    {/* Right side: Action buttons */}
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
-                        {listId && userList && (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setEditDialogOpen(true)}
-                                    aria-label="Editar lista"
-                                >
-                                    <Pencil className="h-4 w-4" />
-                                    <span>Editar</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShareDialogOpen(true)}
-                                    aria-label="Compartir lista"
-                                >
-                                    <Share2 className="h-4 w-4" />
-                                    <span>Compartir</span>
-                                </Button>
-                            </>
-                        )}
-                        <ShopSelector
-                            shops={shops}
-                            selectedShops={selectedShops}
-                            cheapestSingleShopIds={stats.cheapestSingleShopIds}
-                            cheapestPairShopIds={stats.cheapestPairShopIds}
-                            bestValueSingleShopIds={stats.bestValueSingleShopIds}
-                            bestValuePairShopIds={stats.bestValuePairShopIds}
-                            onSelectionChange={handleShopSelectionChange}
-                            isMobile={isMobile}
-                            isRecalculating={isRecalculating}
-                        />
-                    </div>
+                    {/* Right side: Shop selector button */}
+                    <ShopSelector
+                        shops={shops}
+                        selectedShops={selectedShops}
+                        cheapestSingleShopIds={stats.cheapestSingleShopIds}
+                        cheapestPairShopIds={stats.cheapestPairShopIds}
+                        bestValueSingleShopIds={stats.bestValueSingleShopIds}
+                        bestValuePairShopIds={stats.bestValuePairShopIds}
+                        onSelectionChange={handleShopSelectionChange}
+                        isMobile={isMobile}
+                        isRecalculating={isRecalculating}
+                    />
                 </div>
 
                 {/* Tabs and value score */}
@@ -487,14 +376,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                             </div>
                             <ProductItems
                                 items={items as never}
-                                openRowKey={openRowKey}
-                                onOpenChange={setOpenRowKey}
-                                onLocalDeleteProduct={handleDeleteProduct}
-                                onLocalDeleteGroup={handleDeleteGroup}
-                                onLocalIgnoreProduct={handleIgnoreProduct}
-                                onLocalRestoreProduct={handleRestoreProduct}
-                                loadingProductIds={loadingProductIds}
-                                loadingGroupIds={loadingGroupIds}
+                                readOnly
                             />
                         </section>
                     );
@@ -506,48 +388,11 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                         <div className="py-4">No disponible en las tiendas seleccionadas</div>
                         <ProductItems
                             items={stats.entriesWithoutShop as never}
-                            openRowKey={openRowKey}
-                            onOpenChange={setOpenRowKey}
-                            onLocalDeleteProduct={handleDeleteProduct}
-                            onLocalDeleteGroup={handleDeleteGroup}
-                            onLocalIgnoreProduct={handleIgnoreProduct}
-                            onLocalRestoreProduct={handleRestoreProduct}
-                            loadingProductIds={loadingProductIds}
-                            loadingGroupIds={loadingGroupIds}
+                            readOnly
                         />
                     </section>
                 ) : null}
             </div>
-
-            {/* Edit List Dialog */}
-            {listId && userList && (
-                <EditListDialog
-                    list={userList}
-                    open={editDialogOpen}
-                    onOpenChange={setEditDialogOpen}
-                    onDeleted={handleListDeleted}
-                />
-            )}
-
-            {/* Share List Dialog */}
-            {listId && userList && (
-                <ShareListDialog
-                    list={userList}
-                    open={shareDialogOpen}
-                    onOpenChange={setShareDialogOpen}
-                />
-            )}
-
-            {/* Login Dialog (for local mode) */}
-            {listItems.isLocalMode && (
-                <LoginDialog
-                    open={loginDialogOpen}
-                    onOpenChange={setLoginDialogOpen}
-                    hideTrigger
-                    customTitle="Sincroniza tus listas"
-                    customDescription="Inicia sesión para acceder a tus listas desde cualquier dispositivo."
-                />
-            )}
         </div>
     );
 }
@@ -556,21 +401,20 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
 // Skeleton Component
 // ============================================================================
 
-function ListSkeleton() {
+function SharedListSkeleton() {
     return (
         <div className="container mx-auto pb-4 px-2 max-w-4xl">
             <div className="flex flex-1 flex-col gap-3">
+                {/* Banner skeleton */}
+                <Skeleton className="h-16 w-full rounded-lg" />
+
                 {/* Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col gap-1">
                         <Skeleton className="h-8 w-48" />
                         <Skeleton className="h-4 w-64" />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Skeleton className="h-10 w-10 rounded-md" />
-                        <Skeleton className="h-10 w-10 rounded-md" />
-                        <Skeleton className="h-10 w-10 rounded-md" />
-                    </div>
+                    <Skeleton className="h-10 w-36 rounded-md" />
                 </div>
 
                 {/* Tabs */}
