@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Sobre Nosotros",
+  title: "Sobre Nosotros | SupermercadosRD",
   description:
     "Conoce más sobre SupermercadosRD, tu comparador de precios de supermercados en República Dominicana.",
 };

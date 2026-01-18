@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Términos y Condiciones",
+  title: "Términos y Condiciones | SupermercadosRD",
   description:
     "Lee los términos y condiciones de uso de SupermercadosRD, tu comparador de precios de supermercados en República Dominicana.",
 };

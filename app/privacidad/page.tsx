@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidad",
+  title: "Política de Privacidad | SupermercadosRD",
   description:
     "Conoce cómo SupermercadosRD protege tu privacidad y maneja tus datos personales.",
 };
