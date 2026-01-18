@@ -30,7 +30,6 @@ type ExploreProductsListProps = {
     shop_ids?: string;
     only_shop_products?: string;
     unit_filter?: string;
-    sort?: string;
   };
 };
 
@@ -58,15 +57,8 @@ export function ExploreProductsList({
         query.shop_ids ?? "",
         query.only_shop_products ?? "",
         query.unit_filter ?? "",
-        query.sort ?? "",
       ] as const,
-    [
-      query.only_shop_products,
-      query.shop_ids,
-      query.sort,
-      query.unit_filter,
-      query.value,
-    ]
+    [query.only_shop_products, query.shop_ids, query.unit_filter, query.value]
   );
 
   const initialPage = useMemo(() => {
@@ -106,7 +98,6 @@ export function ExploreProductsList({
           shop_ids: query.shop_ids,
           only_shop_products: query.only_shop_products,
           unit_filter: query.unit_filter,
-          sort: query.sort,
         }),
       });
 

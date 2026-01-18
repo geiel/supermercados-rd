@@ -9,7 +9,6 @@ import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
 import { sanitizeForTsQuery } from "@/lib/utils";
-import type { SQL } from "drizzle-orm";
 import {
   EXPLORE_PREFETCH_COUNT,
   EXPLORE_SYNC_COUNT,
@@ -38,7 +37,6 @@ type ExploreProductsQuery = {
   includeHiddenProducts?: boolean;
   onlyShopProducts?: boolean;
   unitFilters?: string[];
-  sort?: string;
 };
 
 async function updateShopPrices(shopPrices: productsShopsPrices[]) {
@@ -78,7 +76,7 @@ async function fetchLowestPrices(
           currentPrice: true,
         },
         where: (priceTable, { isNotNull, eq, and, or, isNull, inArray }) => {
-          const conditions: SQL<unknown>[] = [
+          const conditions = [
             isNotNull(priceTable.currentPrice),
             eq(priceTable.productId, productId),
           ];
@@ -88,7 +86,14 @@ async function fetchLowestPrices(
           }
 
           if (!includeHiddenProducts) {
-            conditions.push(or(isNull(priceTable.hidden), eq(priceTable.hidden, false)) as SQL<unknown>);
+            const hiddenCondition = or(
+              isNull(priceTable.hidden),
+              eq(priceTable.hidden, false)
+            );
+
+            if (hiddenCondition) {
+              conditions.push(hiddenCondition);
+            }
           }
 
           return and(...conditions);
@@ -154,7 +159,6 @@ export async function getExploreProducts({
   includeHiddenProducts = false,
   onlyShopProducts = false,
   unitFilters = [],
-  sort,
 }: ExploreProductsQuery): Promise<ExploreProductsResponse> {
   const rawSearchValue = value.trim();
   const sanitizedSearchValue = sanitizeForTsQuery(rawSearchValue);
@@ -172,8 +176,7 @@ export async function getExploreProducts({
     shopIds,
     includeHiddenProducts,
     onlyShopProducts,
-    unitFilters,
-    sort === "relevance" || sort === "lowest_price" ? sort : undefined
+    unitFilters
   );
 
   let total = productsAndTotal.total;

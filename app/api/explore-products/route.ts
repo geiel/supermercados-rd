@@ -17,7 +17,6 @@ type ExploreProductsRequest = {
   shop_ids?: string;
   only_shop_products?: boolean | string;
   unit_filter?: string;
-  sort?: string;
 };
 
 export async function POST(request: Request) {
@@ -61,7 +60,6 @@ export async function POST(request: Request) {
       typeof body.unit_filter === "string" ? body.unit_filter : undefined
     )
   );
-  const sort = typeof body.sort === "string" ? body.sort : undefined;
 
   try {
     const user = await getUser();
@@ -76,7 +74,6 @@ export async function POST(request: Request) {
       includeHiddenProducts: canSeeHiddenProducts,
       onlyShopProducts,
       unitFilters,
-      sort,
     });
 
     return NextResponse.json(result);

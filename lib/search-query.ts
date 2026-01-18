@@ -26,8 +26,7 @@ export async function searchProducts(
   shopIds?: number[],
   includeHiddenProducts = false,
   onlySupermarketProducts = false,
-  unitsFilter: string[] = [],
-  sort?: "relevance" | "lowest_price"
+  unitsFilter: string[] = []
 ) {
   
   const tsQueryV2 = buildTsQueryV2(removeAccents(value));
@@ -54,8 +53,6 @@ export async function searchProducts(
     : null;
 
   console.log(tsQueryV2);
-
-  const shouldSortByPrice = sort === "lowest_price";
 
   const query = sql`
           WITH
@@ -94,34 +91,6 @@ export async function searchProducts(
             )
     `;
 
-  if (shouldSortByPrice) {
-    query.append(sql`
-            , lowest_prices AS (
-              SELECT
-                ${productsShopsPrices.productId} AS product_id,
-                MIN(${productsShopsPrices.currentPrice}) AS min_price
-              FROM ${productsShopsPrices}
-              WHERE ${productsShopsPrices.currentPrice} IS NOT NULL
-    `);
-
-    if (shopIds && shopIds.length > 0) {
-      query.append(sql`
-              AND ${productsShopsPrices.shopId} IN (${sql.join(shopIds, sql`,`)})
-      `);
-    }
-
-    if (!includeHiddenProducts) {
-      query.append(sql`
-              AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
-      `);
-    }
-
-    query.append(sql`
-              GROUP BY ${productsShopsPrices.productId}
-            )
-    `);
-  }
-
   query.append(sql`
         SELECT
             COALESCE(fts.id, fuzzy.id)                AS id,
@@ -135,12 +104,6 @@ export async function searchProducts(
         FROM fts
         FULL JOIN fuzzy USING (id, name)
   `);
-
-  if (shouldSortByPrice) {
-    query.append(sql`
-        LEFT JOIN lowest_prices ON lowest_prices.product_id = COALESCE(fts.id, fuzzy.id)
-    `);
-  }
 
   query.append(sql`
         WHERE 
@@ -193,10 +156,6 @@ export async function searchProducts(
   }
 
   query.append(sql` is_prefix DESC, `);
-
-  if (shouldSortByPrice) {
-    query.append(sql` lowest_prices.min_price ASC NULLS LAST, `);
-  }
   
   if (orderByRanking) {
     query.append(sql` 

@@ -28,7 +28,6 @@ type Props = {
     shop_ids: string | undefined;
     only_shop_products: string | undefined;
     unit_filter: string | undefined;
-    sort: string | undefined;
   }>;
 };
 
@@ -41,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params, searchParams }: Props) {
   const { value } = await params;
-  const { shop_ids, only_shop_products, unit_filter, sort } = await searchParams;
+  const { shop_ids, only_shop_products, unit_filter } = await searchParams;
 
   const shopsIds = getShopsIds(shop_ids);
 
@@ -65,7 +64,6 @@ export default async function Page({ params, searchParams }: Props) {
         includeHiddenProducts: canSeeHiddenProducts,
         onlyShopProducts: only_shop_products === "true",
         unitFilters,
-        sort,
       }),
       searchGroups(rawSearchValue),
     ]);
@@ -105,7 +103,6 @@ export default async function Page({ params, searchParams }: Props) {
           shop_ids,
           only_shop_products,
           unit_filter,
-          sort,
         }}
       />
     </>
