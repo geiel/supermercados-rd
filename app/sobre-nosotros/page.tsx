@@ -60,8 +60,11 @@ export default function SobreNosotrosPage() {
           <h2 className="text-xl font-semibold mb-3">Contacto</h2>
           <p className="text-muted-foreground leading-relaxed">
             ¿Tienes preguntas, sugerencias o comentarios? Nos encantaría
-            escucharte. Puedes contactarnos a través de nuestras redes sociales
-            o enviarnos un mensaje directamente desde la plataforma.
+            escucharte. Visita nuestra página de{" "}
+            <Link href="/contacto" className="text-primary hover:underline">
+              contacto
+            </Link>{" "}
+            para ver los canales disponibles.
           </p>
         </section>
       </div>
