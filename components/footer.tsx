@@ -53,6 +53,12 @@ export function Footer() {
               Sobre Nosotros
             </Link>
             <Link
+              href="/contacto"
+              className="text-base text-white/80 hover:text-white transition-colors"
+            >
+              Contacto
+            </Link>
+            <Link
               href="/terminos"
               className="text-base text-white/80 hover:text-white transition-colors"
             >
