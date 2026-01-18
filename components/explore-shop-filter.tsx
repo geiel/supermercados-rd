@@ -8,6 +8,7 @@ import { ExploreSupermarketToggle } from "./explore-supermarket-toggle";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { ExploreUnitFilter } from "./explore-unit-filter";
 import { SelectedUnitBadge } from "./selected-unit-badge";
+import { ExploreSortSelect } from "./explore-sort-select";
 
 type ExploreShopFilterProps = {
   selectedShopIds?: number[];
@@ -49,6 +50,8 @@ export function ExploreFilters({ selectedShopIds }: ExploreShopFilterProps) {
           <ExploreShopFilterClient shops={shops} selectedShopIds={selectedShopIds} />
 
           <ExploreUnitFilter />
+
+          <ExploreSortSelect />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>

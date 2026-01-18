@@ -26,7 +26,8 @@ export async function searchProducts(
   shopIds?: number[],
   includeHiddenProducts = false,
   onlySupermarketProducts = false,
-  unitsFilter: string[] = []
+  unitsFilter: string[] = [],
+  sort?: "relevance" | "lowest_price"
 ) {
   
   const tsQueryV2 = buildTsQueryV2(removeAccents(value));
@@ -53,6 +54,8 @@ export async function searchProducts(
     : null;
 
   console.log(tsQueryV2);
+
+  const shouldSortByPrice = sort === "lowest_price";
 
   const query = sql`
           WITH
@@ -89,6 +92,37 @@ export async function searchProducts(
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
                 ${hasUnitFilter && unitsArray ? sql`AND unit = ANY(${unitsArray})` : sql``}
             )
+    `;
+
+  if (shouldSortByPrice) {
+    query.append(sql`
+            , lowest_prices AS (
+              SELECT
+                ${productsShopsPrices.productId} AS product_id,
+                MIN(${productsShopsPrices.currentPrice}) AS min_price
+              FROM ${productsShopsPrices}
+              WHERE ${productsShopsPrices.currentPrice} IS NOT NULL
+    `);
+
+    if (shopIds && shopIds.length > 0) {
+      query.append(sql`
+              AND ${productsShopsPrices.shopId} IN (${sql.join(shopIds, sql`,`)})
+      `);
+    }
+
+    if (!includeHiddenProducts) {
+      query.append(sql`
+              AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
+      `);
+    }
+
+    query.append(sql`
+              GROUP BY ${productsShopsPrices.productId}
+            )
+    `);
+  }
+
+  query.append(sql`
         SELECT
             COALESCE(fts.id, fuzzy.id)                AS id,
             COALESCE(ts_rank, 0)                      AS fts_rank,
@@ -100,12 +134,21 @@ export async function searchProducts(
             COUNT(*) OVER() AS total_count
         FROM fts
         FULL JOIN fuzzy USING (id, name)
+  `);
+
+  if (shouldSortByPrice) {
+    query.append(sql`
+        LEFT JOIN lowest_prices ON lowest_prices.product_id = COALESCE(fts.id, fuzzy.id)
+    `);
+  }
+
+  query.append(sql`
         WHERE 
           EXISTS (
             SELECT 1
             FROM ${productsShopsPrices}
             WHERE ${productsShopsPrices.productId} = COALESCE(fts.id, fuzzy.id)
-    `;
+    `);
   
   if (shopIds && shopIds.length > 0) {
     query.append(sql`
@@ -150,6 +193,10 @@ export async function searchProducts(
   }
 
   query.append(sql` is_prefix DESC, `);
+
+  if (shouldSortByPrice) {
+    query.append(sql` lowest_prices.min_price ASC NULLS LAST, `);
+  }
   
   if (orderByRanking) {
     query.append(sql` 

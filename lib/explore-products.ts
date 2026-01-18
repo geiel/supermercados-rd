@@ -37,6 +37,7 @@ type ExploreProductsQuery = {
   includeHiddenProducts?: boolean;
   onlyShopProducts?: boolean;
   unitFilters?: string[];
+  sort?: string;
 };
 
 async function updateShopPrices(shopPrices: productsShopsPrices[]) {
@@ -62,7 +63,8 @@ async function updateShopPrices(shopPrices: productsShopsPrices[]) {
 
 async function fetchLowestPrices(
   productIds: number[],
-  includeHiddenProducts: boolean
+  includeHiddenProducts: boolean,
+  shopIds: number[]
 ) {
   if (productIds.length === 0) {
     return new Map<number, string | null>();
@@ -74,17 +76,22 @@ async function fetchLowestPrices(
         columns: {
           currentPrice: true,
         },
-        where: (priceTable, { isNotNull, eq, and, or, isNull }) =>
-          includeHiddenProducts
-            ? and(
-                isNotNull(priceTable.currentPrice),
-                eq(priceTable.productId, productId)
-              )
-            : and(
-                isNotNull(priceTable.currentPrice),
-                eq(priceTable.productId, productId),
-                or(isNull(priceTable.hidden), eq(priceTable.hidden, false))
-              ),
+        where: (priceTable, { isNotNull, eq, and, or, isNull, inArray }) => {
+          const conditions = [
+            isNotNull(priceTable.currentPrice),
+            eq(priceTable.productId, productId),
+          ];
+
+          if (shopIds.length > 0) {
+            conditions.push(inArray(priceTable.shopId, shopIds));
+          }
+
+          if (!includeHiddenProducts) {
+            conditions.push(or(isNull(priceTable.hidden), eq(priceTable.hidden, false)));
+          }
+
+          return and(...conditions);
+        },
         orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
       });
 
@@ -146,6 +153,7 @@ export async function getExploreProducts({
   includeHiddenProducts = false,
   onlyShopProducts = false,
   unitFilters = [],
+  sort,
 }: ExploreProductsQuery): Promise<ExploreProductsResponse> {
   const rawSearchValue = value.trim();
   const sanitizedSearchValue = sanitizeForTsQuery(rawSearchValue);
@@ -163,7 +171,8 @@ export async function getExploreProducts({
     shopIds,
     includeHiddenProducts,
     onlyShopProducts,
-    unitFilters
+    unitFilters,
+    sort
   );
 
   let total = productsAndTotal.total;
@@ -201,7 +210,11 @@ export async function getExploreProducts({
   }
 
   const productIds = displayProducts.map((product) => product.id);
-  const lowestPrices = await fetchLowestPrices(productIds, includeHiddenProducts);
+  const lowestPrices = await fetchLowestPrices(
+    productIds,
+    includeHiddenProducts,
+    shopIds
+  );
 
   const shops = await db.query.shops.findMany({
     columns: {
