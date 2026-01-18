@@ -89,9 +89,6 @@ export async function searchProducts(
                 WHERE unaccent(lower(name)) % unaccent(lower(${value}))
                 ${hasUnitFilter && unitsArray ? sql`AND unit = ANY(${unitsArray})` : sql``}
             )
-    `;
-
-  query.append(sql`
         SELECT
             COALESCE(fts.id, fuzzy.id)                AS id,
             COALESCE(ts_rank, 0)                      AS fts_rank,
@@ -103,15 +100,12 @@ export async function searchProducts(
             COUNT(*) OVER() AS total_count
         FROM fts
         FULL JOIN fuzzy USING (id, name)
-  `);
-
-  query.append(sql`
         WHERE 
           EXISTS (
             SELECT 1
             FROM ${productsShopsPrices}
             WHERE ${productsShopsPrices.productId} = COALESCE(fts.id, fuzzy.id)
-    `);
+    `;
   
   if (shopIds && shopIds.length > 0) {
     query.append(sql`

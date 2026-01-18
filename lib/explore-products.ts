@@ -62,8 +62,7 @@ async function updateShopPrices(shopPrices: productsShopsPrices[]) {
 
 async function fetchLowestPrices(
   productIds: number[],
-  includeHiddenProducts: boolean,
-  shopIds: number[]
+  includeHiddenProducts: boolean
 ) {
   if (productIds.length === 0) {
     return new Map<number, string | null>();
@@ -75,29 +74,17 @@ async function fetchLowestPrices(
         columns: {
           currentPrice: true,
         },
-        where: (priceTable, { isNotNull, eq, and, or, isNull, inArray }) => {
-          const conditions = [
-            isNotNull(priceTable.currentPrice),
-            eq(priceTable.productId, productId),
-          ];
-
-          if (shopIds.length > 0) {
-            conditions.push(inArray(priceTable.shopId, shopIds));
-          }
-
-          if (!includeHiddenProducts) {
-            const hiddenCondition = or(
-              isNull(priceTable.hidden),
-              eq(priceTable.hidden, false)
-            );
-
-            if (hiddenCondition) {
-              conditions.push(hiddenCondition);
-            }
-          }
-
-          return and(...conditions);
-        },
+        where: (priceTable, { isNotNull, eq, and, or, isNull }) =>
+          includeHiddenProducts
+            ? and(
+                isNotNull(priceTable.currentPrice),
+                eq(priceTable.productId, productId)
+              )
+            : and(
+                isNotNull(priceTable.currentPrice),
+                eq(priceTable.productId, productId),
+                or(isNull(priceTable.hidden), eq(priceTable.hidden, false))
+              ),
         orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
       });
 
@@ -214,11 +201,7 @@ export async function getExploreProducts({
   }
 
   const productIds = displayProducts.map((product) => product.id);
-  const lowestPrices = await fetchLowestPrices(
-    productIds,
-    includeHiddenProducts,
-    shopIds
-  );
+  const lowestPrices = await fetchLowestPrices(productIds, includeHiddenProducts);
 
   const shops = await db.query.shops.findMany({
     columns: {
