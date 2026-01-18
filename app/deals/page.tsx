@@ -23,21 +23,21 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 
   if (typeof shopIdValue !== "number") {
-    const title = "Ofertas de hoy";
+    const title = "Ofertas de supermercados en RD - Actualizadas diariamente";
     const description =
       "Las mejores ofertas y descuentos de hoy en supermercados de República Dominicana. Compara precios en Sirena, Nacional, Jumbo, Bravo y más.";
     return {
       title,
       description,
       openGraph: {
-        title: `${title} | SupermercadosRD`,
+        title,
         description,
         type: "website",
         url: "/deals",
       },
       twitter: {
         card: "summary_large_image",
-        title: `${title} | SupermercadosRD`,
+        title,
         description,
       },
       alternates: {
@@ -55,21 +55,21 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     };
   }
 
-  const title = `Ofertas en ${shop.name}`;
+  const title = `Ofertas en ${shop.name} hoy - Precios más baratos en RD`;
   const description = `Descubre las mejores ofertas y descuentos en ${shop.name}. Compara precios y ahorra en tus compras.`;
 
   return {
     title,
     description,
     openGraph: {
-      title: `${title} | SupermercadosRD`,
+      title,
       description,
       type: "website",
       url: `/deals?shop_id=${shopIdValue}`,
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | SupermercadosRD`,
+      title,
       description,
     },
     alternates: {

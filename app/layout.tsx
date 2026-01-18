@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://supermercadosrd.com"),
   title: {
     default: "SupermercadosRD - Compara precios de supermercados en RD",
-    template: "%s | SupermercadosRD",
+    template: "%s",
   },
   description:
     "Compara precios de productos en supermercados de República Dominicana. Encuentra las mejores ofertas en Sirena, Nacional, Jumbo, Bravo y más.",

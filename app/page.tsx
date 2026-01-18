@@ -15,7 +15,7 @@ import { SearchBarSkeleton } from "@/components/searchbar-skeleton";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Compara precios de supermercados en República Dominicana",
+  title: "SupermercadosRD – Comparador de precios de supermercados en RD",
   description:
     "Busca, compara y ahorra en tus compras. Encuentra el supermercado más barato en RD comparando precios de Sirena, Nacional, Jumbo, Bravo, Plaza Lama y PriceSmart.",
   alternates: {

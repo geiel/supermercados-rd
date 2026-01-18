@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const lowestPrice = product.shopCurrentPrices[0]?.currentPrice;
   const brandName = product.brand?.name;
-  const title = `${product.name} ${product.unit}`;
+  const title = `${product.name} ${product.unit} - Precio en RD | SupermercadosRD`;
   const description = brandName
     ? `Compara precios de ${product.name} ${product.unit} de ${brandName}${lowestPrice ? ` desde RD$${lowestPrice}` : ""} en supermercados de República Dominicana.`
     : `Compara precios de ${product.name} ${product.unit}${lowestPrice ? ` desde RD$${lowestPrice}` : ""} en supermercados de República Dominicana.`;
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     openGraph: {
-      title: `${title} | SupermercadosRD`,
+      title,
       description,
       type: "website",
       url: `/product/${url_name}/${id}`,
@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | SupermercadosRD`,
+      title,
       description,
       images: product.image ? [product.image] : undefined,
     },

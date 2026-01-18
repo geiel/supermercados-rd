@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     // Build title based on hideProfile setting
-    let title = sharedList.name;
+    let title = sharedList.name + " | SupermercadosRD";
 
     if (!sharedList.hideProfile) {
         // Fetch owner name
@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             .limit(1);
 
         if (profile?.name) {
-            title = `${sharedList.name} por ${profile.name}`;
+            title = `${sharedList.name} por ${profile.name} | SupermercadosRD`;
         }
     }
 
