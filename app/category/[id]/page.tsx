@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Categoría no encontrada" };
   }
 
-  const title = category.name;
+  const title = category.name + " | SupermercadosRD";
   const description =
     category.description ??
     `Explora los mejores productos en ${category.name}. Compara precios en supermercados de República Dominicana.`;
@@ -36,14 +36,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     openGraph: {
-      title: `${title} | SupermercadosRD`,
+      title,
       description,
       type: "website",
       url: `/category/${categoryId}`,
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | SupermercadosRD`,
+      title,
       description,
     },
     alternates: {

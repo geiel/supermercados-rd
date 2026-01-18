@@ -26,17 +26,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `Compara precios de ${group.name} en supermercados de República Dominicana. Encuentra las mejores ofertas y el precio más bajo.`;
 
   return {
-    title,
+    title: `${title} más barata en RD - Comparador de precios`,
     description,
     openGraph: {
-      title: `${title} | SupermercadosRD`,
+      title: `${title} - Mejores ofertas en SupermercadosRD`,
       description,
       type: "website",
       url: `/groups/${group.humanNameId}`,
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | SupermercadosRD`,
+      title: `${title} - Mejores ofertas en SupermercadosRD`,
       description,
     },
     alternates: {

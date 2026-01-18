@@ -34,7 +34,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { value } = await params;
   return {
-    title: decodeURIComponent(value),
+    title: decodeURIComponent(value) + " | SupermercadosRD",
   };
 }
 
