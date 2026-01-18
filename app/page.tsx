@@ -15,7 +15,7 @@ import { SearchBarSkeleton } from "@/components/searchbar-skeleton";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "SupermercadosRD – Comparador de precios de supermercados en RD",
+  title: "SupermercadosRD - Comparador de precios de supermercados en RD",
   description:
     "Busca, compara y ahorra en tus compras. Encuentra el supermercado más barato en RD comparando precios de Sirena, Nacional, Jumbo, Bravo, Plaza Lama y PriceSmart.",
   alternates: {
@@ -27,14 +27,14 @@ const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "SupermercadosRD",
-  url: "https://supermercadosrd.com",
+  url: "https://www.supermercadosrd.com",
   description:
     "Comparador de precios de supermercados en República Dominicana",
   potentialAction: {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: "https://supermercadosrd.com/explore/{search_term_string}",
+      urlTemplate: "https://www.supermercadosrd.com/explore/{search_term_string}",
     },
     "query-input": "required name=search_term_string",
   },
@@ -44,8 +44,8 @@ const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "SupermercadosRD",
-  url: "https://supermercadosrd.com",
-  logo: "https://supermercadosrd.com/logo.svg",
+  url: "https://www.supermercadosrd.com",
+  logo: "https://www.supermercadosrd.com/logo.svg",
   description:
     "Plataforma de comparación de precios de supermercados en República Dominicana",
 };
