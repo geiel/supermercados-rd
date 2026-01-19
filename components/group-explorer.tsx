@@ -18,7 +18,12 @@ export async function GroupExplorer({ humanId }: { humanId: string }) {
     return (
         <div className="container mx-auto px-2 pb-2 space-y-4">
             <div className="flex gap-2 items-center justify-between">
-                <TypographyH3>{result.group.name}</TypographyH3>
+                <div className="flex items-baseline gap-2">
+                    <TypographyH3>{result.group.name}</TypographyH3>
+                    <span className="text-sm text-muted-foreground">
+                        ({result.total})
+                    </span>
+                </div>
                 <AddGroupToListButton
                     groupId={result.group.id}
                     groupName={result.group.name}
