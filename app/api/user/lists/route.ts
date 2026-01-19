@@ -96,6 +96,8 @@ export async function PATCH(request: Request) {
             return Response.json({ error: "Name cannot be empty" }, { status: 400 });
         }
         updateData.name = name.trim();
+        // Update timestamp when name changes
+        updateData.updatedAt = new Date();
     }
 
     if (Object.keys(updateData).length === 0) {
