@@ -41,7 +41,13 @@ export async function searchGroups(value: string) {
             )
         SELECT group_name, human_id, group_id
         FROM combined
-        ORDER BY similarity(unaccent(lower(group_name)), unaccent(lower(${value}))) DESC
+        ORDER BY
+            CASE
+                WHEN unaccent(lower(group_name)) LIKE unaccent(lower(${value})) || '%'
+                THEN 0
+                ELSE 1
+            END,
+            similarity(unaccent(lower(group_name)), unaccent(lower(${value}))) DESC
         LIMIT 20
     `;
 
