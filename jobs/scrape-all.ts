@@ -7,29 +7,43 @@ import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
 import { randomDelay } from "@/lib/scrappers/http-client";
 import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { sql, and, eq, isNull, ne, or } from "drizzle-orm";
+import { products, productsShopsPrices } from "@/db/schema/products";
 
 async function main() {
-  const allShopPrices = await db.query.productsShopsPrices.findMany({
-    where: (scp, { isNull, eq, or, and, ne }) =>
+  const allShopPrices = await db
+    .select({
+      productId: productsShopsPrices.productId,
+      shopId: productsShopsPrices.shopId,
+      url: productsShopsPrices.url,
+      api: productsShopsPrices.api,
+      currentPrice: productsShopsPrices.currentPrice,
+      regularPrice: productsShopsPrices.regularPrice,
+      updateAt: productsShopsPrices.updateAt,
+      hidden: productsShopsPrices.hidden,
+    })
+    .from(productsShopsPrices)
+    .innerJoin(products, eq(productsShopsPrices.productId, products.id))
+    .where(
       and(
-        ne(scp.shopId, 3),
+        ne(productsShopsPrices.shopId, 3),
+        or(isNull(products.deleted), eq(products.deleted, false)),
         or(
           and(
             or(
-              isNull(scp.updateAt),
-              sql`${scp.updateAt} < now() - INTERVAL '12 HOURS'`
+              isNull(productsShopsPrices.updateAt),
+              sql`${productsShopsPrices.updateAt} < now() - INTERVAL '12 HOURS'`
             ),
-            or(isNull(scp.hidden), eq(scp.hidden, false))
+            or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
           ),
           and(
-            eq(scp.hidden, true),
-            sql`${scp.updateAt} < now() - INTERVAL '3 DAYS'`
+            eq(productsShopsPrices.hidden, true),
+            sql`${productsShopsPrices.updateAt} < now() - INTERVAL '3 DAYS'`
           )
         )
-      ),
-    limit: 1000,
-  });
+      )
+    )
+    .limit(1000);
 
   console.log(`[INFO] Found ${allShopPrices.length} shop prices to update`);
 
