@@ -5,6 +5,7 @@ import { CategorySearch } from "@/components/categories-search";
 
 export const maxDuration = 50;
 import { ExploreProductsList } from "@/components/explore-products-list";
+import { ExploreSearchHeader } from "@/components/explore-search-header";
 import { TypographyH3 } from "@/components/typography-h3";
 import { getExploreProducts } from "@/lib/explore-products";
 import { getUser } from "@/lib/supabase";
@@ -86,6 +87,10 @@ export default async function Page({ params, searchParams }: Props) {
 
   return (
     <>
+      <ExploreSearchHeader
+        searchValue={rawSearchValue}
+        hasCategories={groupResults.length > 0}
+      />
       <CategorySearch groupResults={groupResults} />
       <div className="px-2 md:px-0">
         <div className="flex items-baseline gap-2">

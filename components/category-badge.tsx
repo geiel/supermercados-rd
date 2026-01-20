@@ -138,6 +138,8 @@ export function CategoryBadge({
   );
 
   const isMutating = isCreatingList;
+  const shouldShowLabel = showLabel || isMobile;
+  const addLabel = "Comparar";
 
   const addButtonStyle = isInAnyList
     ? { backgroundColor: CHECKED_COLOR, color: "white" }
@@ -146,16 +148,16 @@ export function CategoryBadge({
   const addButtonContent = isInAnyList ? (
     <>
       <Check className="size-4" />
-      {showLabel && <span>Lista</span>}
+      {shouldShowLabel && <span>{addLabel}</span>}
     </>
   ) : (
     <>
       <Plus className="size-4" />
-      {showLabel && <span>Lista</span>}
+      {shouldShowLabel && <span>{addLabel}</span>}
     </>
   );
 
-  const addButtonClassName = showLabel
+  const addButtonClassName = shouldShowLabel
     ? "flex items-center justify-center gap-1 px-3 py-1.5 rounded-full mr-2 transition-colors text-xs font-medium"
     : "flex items-center justify-center p-2 rounded-full mr-2 transition-colors";
 

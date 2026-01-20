@@ -39,6 +39,7 @@ type UseAddToListReturn = {
     // State
     isLocalMode: boolean;
     isLoading: boolean;
+    hasAnyGroup: boolean;
 };
 
 // ============================================================================
@@ -293,6 +294,7 @@ function useLocalAddToList(): UseAddToListReturn {
         isCreatingList: false,
         isLocalMode: true,
         isLoading: false,
+        hasAnyGroup: groups.length > 0,
     };
 }
 
@@ -609,6 +611,7 @@ function useDatabaseAddToList(): UseAddToListReturn {
         isCreatingList: createListMutation.isPending,
         isLocalMode: false,
         isLoading: itemsQuery.isLoading || groupItemsQuery.isLoading,
+        hasAnyGroup: (groupItemsQuery.data?.length ?? 0) > 0,
     };
 }
 
@@ -642,6 +645,7 @@ export function useAddToList(): UseAddToListReturn {
             isCreatingList: false,
             isLocalMode: true,
             isLoading: true,
+            hasAnyGroup: false,
         };
     }
 

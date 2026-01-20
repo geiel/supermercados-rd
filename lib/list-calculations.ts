@@ -33,6 +33,7 @@ export type ShopPrice = {
 export type ProductWithPrices = {
     id: number;
     categoryId: number;
+    categoryName?: string | null;
     name: string;
     image: string | null;
     unit: string;
