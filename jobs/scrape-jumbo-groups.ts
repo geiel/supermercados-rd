@@ -57,7 +57,7 @@ async function main() {
   for (const shopPrice of jumboGroupPrices) {
     await jumbo.processByProductShopPrice(shopPrice, true);
     // Random delay between 1.5-4 seconds to mimic human behavior
-    await randomDelay(1500, 4000);
+    await randomDelay(1000, 2000);
   }
 
   console.log("[INFO] Jumbo group-based price update completed");
