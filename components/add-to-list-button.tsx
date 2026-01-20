@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
   const [createListOpen, setCreateListOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
+  const router = useRouter();
 
   // Track when component has mounted to avoid hydration mismatch
   useEffect(() => {
@@ -63,6 +65,22 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
   } = useAddToList();
 
   const isInAnyList = hasProduct(productId);
+  const getListHref = useCallback((listId?: number) => {
+    if (listId) return `/lists/${listId}`;
+    return "/lists/local";
+  }, []);
+
+  const showAddedToast = useCallback(
+    (message: string, listId?: number) => {
+      toast.success(message, {
+        action: {
+          label: "Ver lista",
+          onClick: () => router.push(getListHref(listId)),
+        },
+      });
+    },
+    [router, getListHref]
+  );
 
   // Handle click for guests (local mode)
   const handleGuestClick = useCallback(() => {
@@ -70,9 +88,9 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
     if (isInAnyList) {
       toast.success("El producto ha sido eliminado de la lista");
     } else {
-      toast.success("El producto ha sido agregado a la lista");
+      showAddedToast("El producto ha sido agregado a la lista");
     }
-  }, [toggleProduct, productId, isInAnyList]);
+  }, [toggleProduct, productId, isInAnyList, showAddedToast]);
 
   // Handle click for logged-in users
   const handleLoggedInClick = useCallback(async () => {
@@ -94,7 +112,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
         toast.success(`El producto ha sido eliminado de ${listName}`);
       } else {
         addProduct(productId, listId);
-        toast.success(`El producto ha sido agregado a ${listName}`);
+        showAddedToast(`El producto ha sido agregado a ${listName}`, listId);
       }
       return;
     }
@@ -120,10 +138,10 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
         toast.success(`El producto ha sido eliminado de ${listName}`);
       } else {
         addProduct(productId, listId);
-        toast.success(`El producto ha sido agregado a ${listName}`);
+        showAddedToast(`El producto ha sido agregado a ${listName}`, listId);
       }
     },
-    [lists, productId, isProductInList, addProduct, removeProduct]
+    [lists, productId, isProductInList, addProduct, removeProduct, showAddedToast]
   );
 
   // Handler for when a new list is created (must be before early returns to respect Rules of Hooks)

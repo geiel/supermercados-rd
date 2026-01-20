@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,7 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
   const [isOpen, setIsOpen] = useState(false);
   const [createListOpen, setCreateListOpen] = useState(false);
   const isMobile = useIsMobile();
+  const router = useRouter();
 
   const {
     hasGroup,
@@ -57,6 +59,22 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
   } = useAddToList();
 
   const isInAnyList = hasGroup(groupId);
+  const getListHref = useCallback((listId?: number) => {
+    if (listId) return `/lists/${listId}`;
+    return "/lists/local";
+  }, []);
+
+  const showAddedToast = useCallback(
+    (message: string, listId?: number) => {
+      toast.success(message, {
+        action: {
+          label: "Ver lista",
+          onClick: () => router.push(getListHref(listId)),
+        },
+      });
+    },
+    [router, getListHref]
+  );
 
   // Handle click for guests (local mode)
   const handleGuestClick = useCallback(() => {
@@ -64,9 +82,9 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
     if (isInAnyList) {
       toast.success(`${groupName} ha sido eliminado de la lista`);
     } else {
-      toast.success(`${groupName} ha sido agregado a la lista`);
+      showAddedToast(`${groupName} ha sido agregado a la lista`);
     }
-  }, [toggleGroup, groupId, groupName, isInAnyList]);
+  }, [toggleGroup, groupId, groupName, isInAnyList, showAddedToast]);
 
   // Handle click for logged-in users
   const handleLoggedInClick = useCallback(async () => {
@@ -86,7 +104,7 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
         toast.success(`${groupName} ha sido eliminado de ${listName}`);
       } else {
         addGroup(groupId, listId);
-        toast.success(`${groupName} ha sido agregado a ${listName}`);
+        showAddedToast(`${groupName} ha sido agregado a ${listName}`, listId);
       }
       return;
     }
@@ -112,10 +130,10 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
         toast.success(`${groupName} ha sido eliminado de ${listName}`);
       } else {
         addGroup(groupId, listId);
-        toast.success(`${groupName} ha sido agregado a ${listName}`);
+        showAddedToast(`${groupName} ha sido agregado a ${listName}`, listId);
       }
     },
-    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup]
+    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup, showAddedToast]
   );
 
   // Handler for when a new list is created

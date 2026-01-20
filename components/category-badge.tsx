@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ export function CategoryBadge({
 }: CategoryBadgeProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  const router = useRouter();
 
   // Unified hook for both guests and logged-in users
   const {
@@ -62,6 +64,22 @@ export function CategoryBadge({
   } = useAddToList();
 
   const isInAnyList = hasGroup(groupId);
+  const getListHref = useCallback((listId?: number) => {
+    if (listId) return `/lists/${listId}`;
+    return "/lists/local";
+  }, []);
+
+  const showAddedToast = useCallback(
+    (message: string, listId?: number) => {
+      toast.success(message, {
+        action: {
+          label: "Ver lista",
+          onClick: () => router.push(getListHref(listId)),
+        },
+      });
+    },
+    [router, getListHref]
+  );
 
   // Handle click for guests (local mode)
   const handleGuestClick = useCallback(
@@ -72,10 +90,10 @@ export function CategoryBadge({
       if (isInAnyList) {
         toast.success(`${groupName} ha sido eliminado de la lista`);
       } else {
-        toast.success(`${groupName} ha sido agregado a la lista`);
+        showAddedToast(`${groupName} ha sido agregado a la lista`);
       }
     },
-    [toggleGroup, groupId, groupName, isInAnyList]
+    [toggleGroup, groupId, groupName, isInAnyList, showAddedToast]
   );
 
   // Handle click for logged-in users
@@ -100,7 +118,7 @@ export function CategoryBadge({
           toast.success(`${groupName} ha sido eliminado de ${listName}`);
         } else {
           addGroup(groupId, listId);
-          toast.success(`${groupName} ha sido agregado a ${listName}`);
+          showAddedToast(`${groupName} ha sido agregado a ${listName}`, listId);
         }
         return;
       }
@@ -131,10 +149,10 @@ export function CategoryBadge({
         toast.success(`${groupName} ha sido eliminado de ${listName}`);
       } else {
         addGroup(groupId, listId);
-        toast.success(`${groupName} ha sido agregado a ${listName}`);
+        showAddedToast(`${groupName} ha sido agregado a ${listName}`, listId);
       }
     },
-    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup]
+    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup, showAddedToast]
   );
 
   const isMutating = isCreatingList;
