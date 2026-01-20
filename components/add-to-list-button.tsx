@@ -135,6 +135,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
 
   const isMutating = isCreatingList;
   const isIconVariant = variant === "icon";
+  const buttonLabel = "Lista";
   // Only show loading state after mount to avoid hydration mismatch
   const isDisabled = hasMounted && (isLoading || isLoadingLists || isMutating);
 
@@ -143,7 +144,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
   ) : (
     <>
       {isInAnyList ? <Check className="size-4" /> : <Plus className="size-4" />}
-      Lista
+      {buttonLabel}
     </>
   );
 

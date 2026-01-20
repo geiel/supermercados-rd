@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "./ui/drawer";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { updateGroupIgnoredProducts, updateItemAmount, deleteItem, deleteGroupItem } from "@/lib/compare";
-import { ArrowRightSquare, Loader2, Trash } from "lucide-react";
+import { ArrowRightSquare, Loader2, Tag, Trash } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toSlug } from "@/lib/utils";
@@ -17,7 +17,10 @@ import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 
-type Product = productsSelect & { shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }> }
+type Product = productsSelect & {
+    shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }>
+    categoryName?: string | null
+}
 
 type ComparisonDisplay =
     | {
@@ -139,6 +142,7 @@ export function ProductItems({ items, openRowKey, onOpenChange, onLocalDeletePro
                                 product={entry.product} 
                                 amount={amount} 
                                 comparisonLabel={entry.comparisonLabel}
+                                groupName={entry.group?.name}
                                 href={productUrl}
                             />
                         </Item>
@@ -217,7 +221,12 @@ function ItemProductDialog({ entry, isOpen, onOpenChange, onAmountChange, onLoca
     if (!canShowDialog) {
         return (
             <Item asChild role="listItem" variant="outline">
-                <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
+                <ProductItemATag
+                    product={entry.product}
+                    amount={amount}
+                    comparisonLabel={entry.comparisonLabel}
+                    groupName={entry.group?.name}
+                />
             </Item>
         )
     }
@@ -226,7 +235,12 @@ function ItemProductDialog({ entry, isOpen, onOpenChange, onAmountChange, onLoca
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Item asChild role="listItem" variant="outline">
-                    <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
+                    <ProductItemATag
+                        product={entry.product}
+                        amount={amount}
+                        comparisonLabel={entry.comparisonLabel}
+                        groupName={entry.group?.name}
+                    />
                 </Item>
             </DialogTrigger>
             <DialogContent>
@@ -270,7 +284,12 @@ function ItemProductDrawer({ entry, isOpen, onOpenChange, onAmountChange, onLoca
     if (!canShowDrawer) {
         return (
             <Item asChild role="listItem" variant="outline">
-                <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
+                <ProductItemATag
+                    product={entry.product}
+                    amount={amount}
+                    comparisonLabel={entry.comparisonLabel}
+                    groupName={entry.group?.name}
+                />
             </Item>
         )
     }
@@ -279,7 +298,12 @@ function ItemProductDrawer({ entry, isOpen, onOpenChange, onAmountChange, onLoca
         <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
                 <Item asChild role="listItem" variant="outline">
-                    <ProductItemATag product={entry.product} amount={amount} comparisonLabel={entry.comparisonLabel} />
+                    <ProductItemATag
+                        product={entry.product}
+                        amount={amount}
+                        comparisonLabel={entry.comparisonLabel}
+                        groupName={entry.group?.name}
+                    />
                 </Item>
             </DrawerTrigger>
             <DrawerContent>
@@ -315,10 +339,11 @@ type ProductItemATagProps = React.ComponentPropsWithoutRef<"a"> & {
     product: Product;
     amount?: number | null
     comparisonLabel?: string | null
+    groupName?: string | null
 }
 
 const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps>(
-    ({ product, amount, comparisonLabel, onClick, ...props }, ref) => {
+    ({ product, amount, comparisonLabel, groupName, onClick, ...props }, ref) => {
         const displayAmount = amount && amount > 1 ? amount : null
         const priceEntries = product.shopCurrentPrices
             .map((shopPrice) => {
@@ -386,6 +411,8 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                     ? parseComparisonLabel(comparisonLabel)
                     : null
                 : computedComparison;
+        const resolvedGroupName = groupName?.trim();
+        const hasCategoryBadge = Boolean(resolvedGroupName);
 
         return (
             <a
@@ -426,33 +453,73 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                         </ItemDescription>
                     </div>
                 </ItemContent>
-                {resolvedComparison ? (
-                    <ItemFooter className="justify-end">
-                        <Badge
-                            variant="secondary"
-                            className={
-                                resolvedComparison.kind === "cheaper"
-                                    ? "bg-emerald-100 text-emerald-900"
-                                    : undefined
-                            }
-                        >
-                            {resolvedComparison.kind === "unknown" ? (
-                                resolvedComparison.label
-                            ) : (
-                                <>
-                                    <span>{resolvedComparison.prefix}</span>
-                                    <span className="font-semibold">{resolvedComparison.shopName}</span>
-                                </>
-                            )}
-                        </Badge>
-                    </ItemFooter>
-                ) : null}
+                <ProductItemBadges
+                    resolvedComparison={resolvedComparison}
+                    categoryName={resolvedGroupName}
+                    hasCategoryBadge={hasCategoryBadge}
+                />
             </a>
         )
     }
 )
 
 ProductItemATag.displayName = "ProductItemATag"
+
+type ProductItemBadgesProps = {
+    resolvedComparison: ComparisonDisplay | null
+    categoryName?: string | null
+    hasCategoryBadge: boolean
+}
+
+function ProductItemBadges({
+    resolvedComparison,
+    categoryName,
+    hasCategoryBadge,
+}: ProductItemBadgesProps) {
+    if (!resolvedComparison && !hasCategoryBadge) {
+        return null
+    }
+
+    const footerClassName = hasCategoryBadge && resolvedComparison
+        ? "flex-col items-end gap-1 md:flex-row md:items-center md:justify-between"
+        : hasCategoryBadge
+          ? "justify-start"
+          : "justify-end"
+
+    return (
+        <ItemFooter className={footerClassName}>
+            {hasCategoryBadge ? (
+                <Badge
+                    variant="secondary"
+                    className="border border-purple-200/70 bg-purple-100/70 text-purple-900"
+                >
+                    <Tag className="size-3" />
+                    <span className="font-medium">De categoría:</span>
+                    <span className="font-semibold">{categoryName}</span>
+                </Badge>
+            ) : null}
+            {resolvedComparison ? (
+                <Badge
+                    variant="secondary"
+                    className={
+                        resolvedComparison.kind === "cheaper"
+                            ? "bg-emerald-100 text-emerald-900 border-emerald-200/70"
+                            : undefined
+                    }
+                >
+                    {resolvedComparison.kind === "unknown" ? (
+                        resolvedComparison.label
+                    ) : (
+                        <>
+                            <span>{resolvedComparison.prefix}</span>
+                            <span className="font-semibold">{resolvedComparison.shopName}</span>
+                        </>
+                    )}
+                </Badge>
+            ) : null}
+        </ItemFooter>
+    )
+}
 
 type GroupDetailsProps = {
     group: GroupEntryInfo
@@ -642,7 +709,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
             disabled={ignorePending || isDeletingGroup}
         >
             {isDeletingGroup ? <Loader2 className="size-4 animate-spin" /> : <Trash className="size-4" />}
-            {isDeletingGroup ? "Eliminando..." : "Eliminar grupo"}
+            {isDeletingGroup ? "Eliminando..." : "Eliminar categoría"}
         </Button>
     ) : null;
 

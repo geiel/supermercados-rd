@@ -131,13 +131,13 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
   ) : (
     <>
       {isInAnyList ? <Check className="size-4" /> : <Plus className="size-4" />}
-      Agregar a lista
+      Comparar
     </>
   );
 
   const buttonStyle = isInAnyList
     ? { backgroundColor: CHECKED_COLOR, borderColor: CHECKED_COLOR, color: "white" }
-    : undefined;
+    : { backgroundColor: "black", color: "white" };
 
   const buttonClassName = isIconVariant
     ? "shrink-0 size-8 rounded-full p-0 bg-white/90 hover:bg-white shadow-sm"

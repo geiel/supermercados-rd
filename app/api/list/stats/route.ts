@@ -2,6 +2,7 @@ import { db } from "@/db";
 import {
     groups,
     products,
+    productsCategories,
     productsGroups as productsGroupsTable,
     productsShopsPrices as productsShopsPricesTable,
     shops,
@@ -226,6 +227,9 @@ export async function POST(request: Request) {
                               orOp(isNullOp(p.deleted), eqOp(p.deleted, false))
                           ),
                       with: {
+                          category: {
+                              columns: { name: true },
+                          },
                           shopCurrentPrices: {
                               where: (scp, { and: andOp, or: orOp, isNull: isNullOp, eq: eqOp }) =>
                                   andOp(
@@ -238,6 +242,10 @@ export async function POST(request: Request) {
                       },
                   })
                 : [];
+        const productPricesWithCategory = productPrices.map((product) => ({
+            ...product,
+            categoryName: product.category?.name ?? null,
+        }));
 
         // =====================================================================
         // Fetch groups with products
@@ -252,6 +260,7 @@ export async function POST(request: Request) {
                           groupHumanId: groups.humanNameId,
                           productId: products.id,
                           productCategoryId: products.categoryId,
+                          productCategoryName: productsCategories.name,
                           productName: products.name,
                           productImage: products.image,
                           productUnit: products.unit,
@@ -275,6 +284,7 @@ export async function POST(request: Request) {
                       .from(groups)
                       .innerJoin(productsGroupsTable, eq(productsGroupsTable.groupId, groups.id))
                       .innerJoin(products, eq(products.id, productsGroupsTable.productId))
+                      .leftJoin(productsCategories, eq(productsCategories.id, products.categoryId))
                       .leftJoin(
                           productsShopsPricesTable,
                           and(
@@ -336,6 +346,7 @@ export async function POST(request: Request) {
                     product = {
                         id: row.productId,
                         categoryId: row.productCategoryId,
+                        categoryName: row.productCategoryName ?? null,
                         name: row.productName,
                         image: row.productImage,
                         unit: row.productUnit,
@@ -437,7 +448,7 @@ export async function POST(request: Request) {
         // =====================================================================
         // Build list entries
         // =====================================================================
-        const productEntries: ListEntry[] = productPrices.map((product) => ({
+        const productEntries: ListEntry[] = productPricesWithCategory.map((product) => ({
             rowKey: `product-${product.id}`,
             product: product as ProductWithPrices,
             amount: listItemAmounts.get(product.id) ?? null,
