@@ -73,6 +73,7 @@ export type GroupAlternative = {
 export type GroupInfo = {
     id: number;
     name: string;
+    humanId?: string | null;
     alternatives: GroupAlternative[];
     ignoredProducts: ProductWithPrices[];
     listItemId?: number;
@@ -657,6 +658,7 @@ export function buildGroupEntry(
     const groupInfoBase: GroupInfo = {
         id: group.id,
         name: group.name,
+        humanId: group.humanId ?? null,
         ignoredProducts,
         listItemId,
         alternatives: [],

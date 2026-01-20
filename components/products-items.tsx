@@ -69,6 +69,7 @@ type GroupAlternative = {
 type GroupEntryInfo = {
     id: number
     name: string
+    humanId?: string | null
     alternatives: GroupAlternative[]
     ignoredProducts: Product[]
     listItemId?: number
@@ -700,6 +701,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
     const hasAlternatives = alternatives.length > 0;
     const hasIgnored = ignoredProducts.length > 0;
     const canDeleteGroup = Boolean(group.listItemId) || Boolean(onLocalDeleteGroup);
+    const groupLink = group.humanId ? `/groups/${group.humanId}` : null;
     const deleteGroupButton = canDeleteGroup ? (
         <Button
             size="sm"
@@ -710,6 +712,14 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
         >
             {isDeletingGroup ? <Loader2 className="size-4 animate-spin" /> : <Trash className="size-4" />}
             {isDeletingGroup ? "Eliminando..." : "Eliminar categoría"}
+        </Button>
+    ) : null;
+    const viewAllProductsButton = groupLink ? (
+        <Button size="sm" variant="outline" asChild>
+            <Link href={groupLink} onClick={() => onClose?.()}>
+                <Tag />
+                Ver categoría
+            </Link>
         </Button>
     ) : null;
 
@@ -853,13 +863,15 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
             </ScrollArea>
             {type === "drawer" ? (
                 <DrawerFooter>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
                         {deleteGroupButton}
+                        {viewAllProductsButton}
                     </div>
                 </DrawerFooter>
             ): (
                 <DialogFooter>
                     {deleteGroupButton}
+                    {viewAllProductsButton}
                 </DialogFooter>
             )}
         </>
