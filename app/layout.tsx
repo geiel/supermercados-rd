@@ -91,6 +91,33 @@ export const metadata: Metadata = {
   },
 };
 
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "SupermercadosRD",
+  url: "https://www.supermercadosrd.com",
+  description:
+    "Comparador de precios de supermercados en República Dominicana",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: "https://www.supermercadosrd.com/explore/{search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "SupermercadosRD",
+  url: "https://www.supermercadosrd.com",
+  logo: "https://www.supermercadosrd.com/logo.svg",
+  description:
+    "Plataforma de comparación de precios de supermercados en República Dominicana",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -99,42 +126,56 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <Providers>
-            <header className="h-[70px]">
-              <div className="px-2 py-2 container mx-auto">
-                <div className="flex items-center">
-                  <div className="flex-none">
-                    <Link href="/">
-                      <Image src="/logo.svg" alt="logo" width={170} height={20} />
-                    </Link>
-                  </div>
-                  <div className="flex gap-2 grow justify-end items-center">
-                    <Suspense>
-                      <HeaderSearchSlot />
-                    </Suspense>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Providers>
+          <header className="h-[70px]">
+            <div className="px-2 py-2 container mx-auto">
+              <div className="flex items-center">
+                <div className="flex-none">
+                  <Link href="/">
+                    <Image src="/logo.svg" alt="logo" width={170} height={20} />
+                  </Link>
+                </div>
+                <div className="flex gap-2 grow justify-end items-center">
+                  <Suspense>
+                    <HeaderSearchSlot />
+                  </Suspense>
 
-                    <Button variant="outline" size="icon-lg" asChild>
-                      <Link href="/lists">
-                          <NotepadText />
-                      </Link>
-                    </Button>
-                    <Suspense fallback={<Button size="icon-lg"><Spinner /></Button>}>
-                      <LogInLogOut />
-                    </Suspense>
-                  </div>
+                  <Button variant="outline" size="icon-lg" asChild>
+                    <Link href="/lists">
+                        <NotepadText />
+                    </Link>
+                  </Button>
+                  <Suspense fallback={<Button size="icon-lg"><Spinner /></Button>}>
+                    <LogInLogOut />
+                  </Suspense>
                 </div>
               </div>
-            </header>
-            {children}
-            <Footer />
-            <Toaster richColors position="top-center" />
-            <SpeedInsights />
-            <Analytics />
-          </Providers>
-        </body>
+            </div>
+          </header>
+          {children}
+          <Footer />
+          <Toaster richColors position="top-center" />
+          <SpeedInsights />
+          <Analytics />
+        </Providers>
+      </body>
     </html>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ReportIssueDrawer } from "@/components/report-issue-drawer";
 import { AlertTriangle } from "lucide-react";
+import posthog from "posthog-js";
 
 type Shop = {
   id: number;
@@ -41,6 +42,12 @@ export function ShopPriceRowActions({
 
   const handleBuscarClick = () => {
     setShowReportLink(true);
+    posthog.capture('shop_price_row_actions_buscar_click', {
+      shopId,
+      productId,
+      url,
+      shopName: shops.find((s) => s.id === shopId)?.name,
+    });
   };
 
   return (
