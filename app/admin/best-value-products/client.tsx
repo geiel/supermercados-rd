@@ -220,6 +220,7 @@ function ProductCard({ product }: { product: BestValueProduct }) {
       <Link
         href={`/product/${toSlug(product.productName)}/${product.productId}`}
         className="flex flex-col gap-2"
+        prefetch={false}
       >
         {/* Image */}
         <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">

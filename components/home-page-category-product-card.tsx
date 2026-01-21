@@ -23,6 +23,7 @@ export function HomePageCategoryProductCard({ product }: Props) {
       <Link
         href={`/product/${toSlug(product.name)}/${product.productId}`}
         className="flex flex-col gap-2"
+        prefetch={false}
       >
         <div className="relative w-full max-w-[180px] aspect-square mx-auto">
           {product.image ? (

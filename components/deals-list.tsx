@@ -413,6 +413,7 @@ function DealCard({ deal }: { deal: DealItem }) {
       <Link
         href={`/product/${toSlug(deal.name)}/${deal.productId}`}
         className="flex flex-col gap-2"
+        prefetch={false}
       >
         <div className="flex justify-center">
           <div className="h-[220px] w-[220px] relative">

@@ -186,6 +186,7 @@ export function CategoryBadge({
         <Link
           href={`/groups/${groupHumanNameId}`}
           className="px-5 py-2.5 w-full"
+          prefetch={false}
         >
           {groupName}
         </Link>
@@ -210,6 +211,7 @@ export function CategoryBadge({
           <Link
             href={`/groups/${groupHumanNameId}`}
             className="px-5 py-2.5 w-full"
+            prefetch={false}
           >
             {groupName}
           </Link>
