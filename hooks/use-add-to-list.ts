@@ -313,6 +313,9 @@ function useDatabaseAddToList(): UseAddToListReturn {
             if (!response.ok) throw new Error("Failed to fetch lists");
             return response.json();
         },
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 
     // Fetch all list items (products)
@@ -323,6 +326,9 @@ function useDatabaseAddToList(): UseAddToListReturn {
             if (!response.ok) throw new Error("Failed to fetch list items");
             return response.json();
         },
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 
     // Fetch all list group items
@@ -333,6 +339,9 @@ function useDatabaseAddToList(): UseAddToListReturn {
             if (!response.ok) throw new Error("Failed to fetch group items");
             return response.json();
         },
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 
     // Check if product is in any list
