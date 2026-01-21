@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "eslint .",
     "scrape-deals": "tsx jobs/scrape-deals.ts",
-    "scrape-jumbo-groups": "tsx jobs/scrape-jumbo-groups.ts",
     "scrape-prices-batch": "tsx jobs/scrape-prices-batch.ts",
     "postinstall": "node scripts/postinstall.js"
   },
