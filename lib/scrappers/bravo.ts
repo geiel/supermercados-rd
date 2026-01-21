@@ -49,10 +49,20 @@ async function getProductInfo(api: string | null) {
         ),
       }),
     })
+    .or(z.object({
+      errors: z.array(z.object({
+        code: z.string(),
+      }))
+    }))
     .safeParse(jsonResponse);
 
   if (productInfo.error) {
     console.log(productInfo.error);
+    return null;
+  }
+
+  if ("errors" in productInfo.data) {
+    console.log(productInfo.data.errors);
     return null;
   }
 
@@ -67,7 +77,8 @@ async function getProductInfo(api: string | null) {
 
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
-  ignoreTimeValidation = false
+  ignoreTimeValidation = false,
+  dontLog = false
 ) {
   if (
     !ignoreTimeValidation &&
@@ -77,7 +88,7 @@ async function processByProductShopPrice(
     return;
   }
 
-  initProcessLog(scrapper, productShopPrice);
+  initProcessLog(scrapper, productShopPrice, dontLog);
   const productInfo = await getProductInfo(productShopPrice.api);
 
   if (!productInfo) {
@@ -92,7 +103,7 @@ async function processByProductShopPrice(
     Number(productShopPrice.currentPrice) ===
       Number(productInfo.pvpArticuloTienda)
   ) {
-    ignoreLog(scrapper, productShopPrice);
+    ignoreLog(scrapper, productShopPrice, dontLog);
     await db
       .update(productsShopsPrices)
       .set({ updateAt: new Date() })
@@ -135,7 +146,7 @@ async function processByProductShopPrice(
     });
 
   if (result.length === 0) {
-    doneDuplicatedLog(scrapper, productShopPrice);
+    doneDuplicatedLog(scrapper, productShopPrice, dontLog);
     return;
   }
 
@@ -145,7 +156,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
-  doneProcessLog(scrapper, productShopPrice);
+  doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 
 export const bravo = { processByProductShopPrice };

@@ -45,6 +45,9 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
         regular_price: z.string(),
       }),
     })
+    .or(z.object({
+      message: z.string(),
+    }))
     .safeParse(jsonResponse);
 
   if (productInfo.error) {
@@ -54,12 +57,19 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
     return null;
   }
 
+  if ("message" in productInfo.data) {
+    console.log(productInfo.data.message);
+    await hideProductPrice(productShopPrice);
+    return null;
+  }
+
   return productInfo.data;
 }
 
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
-  ignoreTimeValidation = false
+  ignoreTimeValidation = false,
+  dontLog = false
 ) {
   if (
     !ignoreTimeValidation &&
@@ -69,7 +79,7 @@ async function processByProductShopPrice(
     return;
   }
 
-  initProcessLog(scrapper, productShopPrice);
+  initProcessLog(scrapper, productShopPrice, dontLog);
   const productInfo = await getProductInfo(productShopPrice);
 
   if (!productInfo) {
@@ -82,7 +92,7 @@ async function processByProductShopPrice(
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) === Number(productInfo.product.price)
   ) {
-    ignoreLog(scrapper, productShopPrice);
+    ignoreLog(scrapper, productShopPrice, dontLog);
     await db
       .update(productsShopsPrices)
       .set({ updateAt: new Date() })
@@ -118,7 +128,7 @@ async function processByProductShopPrice(
     });
 
   if (result.length === 0) {
-    doneDuplicatedLog(scrapper, productShopPrice);
+    doneDuplicatedLog(scrapper, productShopPrice, dontLog);
     return;
   }
 
@@ -128,7 +138,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
-  doneProcessLog(scrapper, productShopPrice);
+  doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 
 export const sirena = { processByProductShopPrice };

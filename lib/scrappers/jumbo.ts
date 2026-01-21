@@ -28,7 +28,8 @@ async function getHtml(url: string) {
 
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
-  ignoreTimeValidation = false
+  ignoreTimeValidation = false,
+  dontLog = false
 ) {
   if (
     !ignoreTimeValidation &&
@@ -38,7 +39,7 @@ async function processByProductShopPrice(
     return;
   }
 
-  initProcessLog("Jumbo", productShopPrice);
+  initProcessLog("Jumbo", productShopPrice, dontLog);
   const html = await getHtml(productShopPrice.url);
 
   if (!html) {
@@ -62,7 +63,7 @@ async function processByProductShopPrice(
 
   await showProductPrice(productShopPrice);
   if (Number(productShopPrice.currentPrice) === Number(finalPrice)) {
-    ignoreLog("Jumbo", productShopPrice);
+    ignoreLog("Jumbo", productShopPrice, dontLog);
     await db
       .update(productsShopsPrices)
       .set({ updateAt: new Date() })
@@ -98,7 +99,7 @@ async function processByProductShopPrice(
     });
 
   if (result.length === 0) {
-    doneDuplicatedLog("Jumbo", productShopPrice);
+    doneDuplicatedLog("Jumbo", productShopPrice, dontLog);
     return;
   }
 
@@ -108,7 +109,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
-  doneProcessLog("Jumbo", productShopPrice);
+  doneProcessLog("Jumbo", productShopPrice, dontLog);
 }
 
 export const jumbo = { processByProductShopPrice };

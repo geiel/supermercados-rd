@@ -155,7 +155,8 @@ async function getProductInfo(
 
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
-  ignoreTimeValidation = false
+  ignoreTimeValidation = false,
+  dontLog = false
 ) {
   if (
     !ignoreTimeValidation &&
@@ -165,7 +166,7 @@ async function processByProductShopPrice(
     return;
   }
 
-  initProcessLog(scrapper, productShopPrice);
+  initProcessLog(scrapper, productShopPrice, dontLog);
   const price = await getProductInfo(productShopPrice);
 
   if (!price || !price.currentPrice) {
@@ -174,17 +175,12 @@ async function processByProductShopPrice(
     return;
   }
 
-  // await validateHistory(
-  //   productShopPrice.productId,
-  //   productShopPrice.shopId,
-  //   price.currentPrice
-  // );
 
   if (
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) === Number(price.currentPrice)
   ) {
-    ignoreLog(scrapper, productShopPrice);
+    ignoreLog(scrapper, productShopPrice, dontLog);
     await db
       .update(productsShopsPrices)
       .set({ updateAt: new Date() })
@@ -220,7 +216,7 @@ async function processByProductShopPrice(
     });
 
   if (result.length === 0) {
-    doneDuplicatedLog(scrapper, productShopPrice);
+    doneDuplicatedLog(scrapper, productShopPrice, dontLog);
     return;
   }
 
@@ -230,7 +226,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
-  doneProcessLog(scrapper, productShopPrice);
+  doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 
 export const pricesmart = { processByProductShopPrice };
