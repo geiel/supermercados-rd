@@ -1,6 +1,6 @@
 "use server";
 
-import { groups, products, productsGroups } from "@/db/schema";
+import { groups, products, productsGroups, productsShopsPrices } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { buildTsQueryV2, removeAccents } from "./search-query";
 import { sanitizeForTsQuery } from "./utils";
@@ -16,6 +16,7 @@ export async function searchGroups(value: string) {
             fts AS (
                 SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id
                 FROM ${products}
+                INNER JOIN ${productsShopsPrices} ON ${productsShopsPrices.productId} = ${products.id}
                 INNER JOIN ${productsGroups} ON ${productsGroups.productId} = ${products.id}
                 INNER JOIN ${groups} ON ${groups.id} = ${productsGroups.groupId}
                 WHERE
@@ -24,14 +25,17 @@ export async function searchGroups(value: string) {
                     OR
                     name_unaccent_en @@ to_tsquery('english', unaccent(lower(${tsQueryV2})))
                 )
+                AND ${productsShopsPrices.hidden} IS NOT TRUE
                 AND COALESCE(deleted, FALSE) = FALSE
             ),
             fuzzy AS (
                 SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id
                 FROM ${products}
+                INNER JOIN ${productsShopsPrices} ON ${productsShopsPrices.productId} = ${products.id}
                 INNER JOIN ${productsGroups} ON ${productsGroups.productId} = ${products.id}
                 INNER JOIN ${groups} ON ${groups.id} = ${productsGroups.groupId}
                 WHERE unaccent(lower(${products.name})) % unaccent(lower(${value}))
+                AND ${productsShopsPrices.hidden} IS NOT TRUE
                 AND deleted IS NOT TRUE
             ),
             combined AS (

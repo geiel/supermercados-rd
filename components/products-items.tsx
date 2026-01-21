@@ -725,9 +725,14 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
 
     if (!hasAlternatives && !hasIgnored) {
         return (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-                No hay alternativas disponibles en otros supermercados.
-            </div>
+            <>
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                    No hay alternativas disponibles en otros supermercados.
+                </div>
+                <DialogFooter>
+                    {deleteGroupButton}
+                </DialogFooter>
+            </>
         )
     }
 
