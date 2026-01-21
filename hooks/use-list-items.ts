@@ -279,45 +279,62 @@ function useLocalListItems(): UseListItemsReturn {
 // Database Mode Hook
 // ============================================================================
 
-function useDatabaseListItems(listId: number): UseListItemsReturn {
+function useDatabaseListItems(listId?: number): UseListItemsReturn {
     const queryClient = useQueryClient();
 
     // Fetch list items from database
     const itemsQuery = useQuery<listItemsSelect[]>({
-        queryKey: [...LIST_ITEMS_QUERY_KEY, listId],
+        queryKey: LIST_ITEMS_QUERY_KEY,
         queryFn: async () => {
             const response = await fetch(`/api/user/lists/items`);
             if (!response.ok) throw new Error("Failed to fetch list items");
-            const allItems: listItemsSelect[] = await response.json();
-            return allItems.filter((item) => item.listId === listId);
+            return response.json();
         },
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        enabled: !!listId,
     });
 
     // Fetch group items from database
     const groupItemsQuery = useQuery<listGroupItemsSelect[]>({
-        queryKey: [...LIST_GROUP_ITEMS_QUERY_KEY, listId],
+        queryKey: LIST_GROUP_ITEMS_QUERY_KEY,
         queryFn: async () => {
             const response = await fetch(`/api/user/lists/groups`);
             if (!response.ok) throw new Error("Failed to fetch group items");
-            const allItems: listGroupItemsSelect[] = await response.json();
-            return allItems.filter((item) => item.listId === listId);
+            return response.json();
         },
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        enabled: !!listId,
     });
 
     // Derive data from queries
+    const listItems = useMemo(
+        () => (listId ? itemsQuery.data?.filter((item) => item.listId === listId) ?? [] : []),
+        [itemsQuery.data, listId]
+    );
+
+    const listGroupItems = useMemo(
+        () =>
+            listId ? groupItemsQuery.data?.filter((item) => item.listId === listId) ?? [] : [],
+        [groupItemsQuery.data, listId]
+    );
+
     const products = useMemo(
-        () => itemsQuery.data?.map((item) => item.productId) ?? [],
-        [itemsQuery.data]
+        () => listItems.map((item) => item.productId),
+        [listItems]
     );
 
     const groups = useMemo(
-        () => groupItemsQuery.data?.map((item) => item.groupId) ?? [],
-        [groupItemsQuery.data]
+        () => listGroupItems.map((item) => item.groupId),
+        [listGroupItems]
     );
 
     const ignoredByGroup = useMemo(() => {
         const result: Record<number, number[]> = {};
-        for (const item of groupItemsQuery.data ?? []) {
+        for (const item of listGroupItems) {
             const ignored = (item.ignoredProducts ?? [])
                 .map((id) => Number(id))
                 .filter(Number.isFinite);
@@ -331,6 +348,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
     // Add product mutation
     const addProductMutation = useMutation({
         mutationFn: async (productId: number) => {
+            if (!listId) throw new Error("listId is required");
             const response = await fetch("/api/user/lists/items", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -341,7 +359,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
         },
         onSuccess: (newItem) => {
             queryClient.setQueryData<listItemsSelect[]>(
-                [...LIST_ITEMS_QUERY_KEY, listId],
+                LIST_ITEMS_QUERY_KEY,
                 (old) => (old ? [...old, newItem] : [newItem])
             );
         },
@@ -350,6 +368,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
     // Remove product mutation
     const removeProductMutation = useMutation({
         mutationFn: async (productId: number) => {
+            if (!listId) throw new Error("listId is required");
             const response = await fetch("/api/user/lists/items", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
@@ -358,10 +377,13 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
             if (!response.ok) throw new Error("Failed to remove product");
         },
         onMutate: async (productId) => {
-            await queryClient.cancelQueries({ queryKey: [...LIST_ITEMS_QUERY_KEY, listId] });
+            await queryClient.cancelQueries({ queryKey: LIST_ITEMS_QUERY_KEY });
             queryClient.setQueryData<listItemsSelect[]>(
-                [...LIST_ITEMS_QUERY_KEY, listId],
-                (old) => old?.filter((item) => item.productId !== productId) ?? []
+                LIST_ITEMS_QUERY_KEY,
+                (old) =>
+                    old?.filter(
+                        (item) => !(item.productId === productId && item.listId === listId)
+                    ) ?? []
             );
         },
     });
@@ -369,6 +391,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
     // Add group mutation
     const addGroupMutation = useMutation({
         mutationFn: async (groupId: number) => {
+            if (!listId) throw new Error("listId is required");
             const response = await fetch("/api/user/lists/groups", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -379,7 +402,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
         },
         onSuccess: (newItem) => {
             queryClient.setQueryData<listGroupItemsSelect[]>(
-                [...LIST_GROUP_ITEMS_QUERY_KEY, listId],
+                LIST_GROUP_ITEMS_QUERY_KEY,
                 (old) => (old ? [...old, newItem] : [newItem])
             );
         },
@@ -388,6 +411,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
     // Remove group mutation
     const removeGroupMutation = useMutation({
         mutationFn: async (groupId: number) => {
+            if (!listId) throw new Error("listId is required");
             const response = await fetch("/api/user/lists/groups", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
@@ -396,10 +420,12 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
             if (!response.ok) throw new Error("Failed to remove group");
         },
         onMutate: async (groupId) => {
-            await queryClient.cancelQueries({ queryKey: [...LIST_GROUP_ITEMS_QUERY_KEY, listId] });
+            await queryClient.cancelQueries({ queryKey: LIST_GROUP_ITEMS_QUERY_KEY });
             queryClient.setQueryData<listGroupItemsSelect[]>(
-                [...LIST_GROUP_ITEMS_QUERY_KEY, listId],
-                (old) => old?.filter((item) => item.groupId !== groupId) ?? []
+                LIST_GROUP_ITEMS_QUERY_KEY,
+                (old) =>
+                    old?.filter((item) => !(item.groupId === groupId && item.listId === listId)) ??
+                    []
             );
         },
     });
@@ -407,7 +433,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
     // Ignore product mutation
     const ignoreProductMutation = useMutation({
         mutationFn: async ({ groupId, productId }: { groupId: number; productId: number }) => {
-            const groupItem = groupItemsQuery.data?.find((item) => item.groupId === groupId);
+            const groupItem = listGroupItems.find((item) => item.groupId === groupId);
             if (!groupItem) throw new Error("Group item not found");
 
             const currentIgnored = (groupItem.ignoredProducts ?? []).map((id) => Number(id));
@@ -422,12 +448,12 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
             return { groupId, productId, newIgnored };
         },
         onMutate: async ({ groupId, productId }) => {
-            await queryClient.cancelQueries({ queryKey: [...LIST_GROUP_ITEMS_QUERY_KEY, listId] });
+            await queryClient.cancelQueries({ queryKey: LIST_GROUP_ITEMS_QUERY_KEY });
             queryClient.setQueryData<listGroupItemsSelect[]>(
-                [...LIST_GROUP_ITEMS_QUERY_KEY, listId],
+                LIST_GROUP_ITEMS_QUERY_KEY,
                 (old) =>
                     old?.map((item) => {
-                        if (item.groupId !== groupId) return item;
+                        if (item.groupId !== groupId || item.listId !== listId) return item;
                         const currentIgnored = item.ignoredProducts ?? [];
                         return {
                             ...item,
@@ -441,7 +467,7 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
     // Restore product mutation
     const restoreProductMutation = useMutation({
         mutationFn: async ({ groupId, productId }: { groupId: number; productId: number }) => {
-            const groupItem = groupItemsQuery.data?.find((item) => item.groupId === groupId);
+            const groupItem = listGroupItems.find((item) => item.groupId === groupId);
             if (!groupItem) throw new Error("Group item not found");
 
             const currentIgnored = (groupItem.ignoredProducts ?? []).map((id) => Number(id));
@@ -456,12 +482,12 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
             return { groupId, productId, newIgnored };
         },
         onMutate: async ({ groupId, productId }) => {
-            await queryClient.cancelQueries({ queryKey: [...LIST_GROUP_ITEMS_QUERY_KEY, listId] });
+            await queryClient.cancelQueries({ queryKey: LIST_GROUP_ITEMS_QUERY_KEY });
             queryClient.setQueryData<listGroupItemsSelect[]>(
-                [...LIST_GROUP_ITEMS_QUERY_KEY, listId],
+                LIST_GROUP_ITEMS_QUERY_KEY,
                 (old) =>
                     old?.map((item) => {
-                        if (item.groupId !== groupId) return item;
+                        if (item.groupId !== groupId || item.listId !== listId) return item;
                         const currentIgnored = item.ignoredProducts ?? [];
                         return {
                             ...item,
@@ -480,12 +506,48 @@ function useDatabaseListItems(listId: number): UseListItemsReturn {
         ignoredByGroup,
         isLoading: itemsQuery.isLoading || groupItemsQuery.isLoading,
         isLocalMode: false,
-        addProduct: (productId) => addProductMutation.mutate(productId),
-        removeProduct: (productId) => removeProductMutation.mutate(productId),
-        addGroup: (groupId) => addGroupMutation.mutate(groupId),
-        removeGroup: (groupId) => removeGroupMutation.mutate(groupId),
-        ignoreProduct: (groupId, productId) => ignoreProductMutation.mutate({ groupId, productId }),
-        restoreProduct: (groupId, productId) => restoreProductMutation.mutate({ groupId, productId }),
+        addProduct: (productId) => {
+            if (!listId) {
+                console.warn("listId is required to add a product");
+                return;
+            }
+            addProductMutation.mutate(productId);
+        },
+        removeProduct: (productId) => {
+            if (!listId) {
+                console.warn("listId is required to remove a product");
+                return;
+            }
+            removeProductMutation.mutate(productId);
+        },
+        addGroup: (groupId) => {
+            if (!listId) {
+                console.warn("listId is required to add a group");
+                return;
+            }
+            addGroupMutation.mutate(groupId);
+        },
+        removeGroup: (groupId) => {
+            if (!listId) {
+                console.warn("listId is required to remove a group");
+                return;
+            }
+            removeGroupMutation.mutate(groupId);
+        },
+        ignoreProduct: (groupId, productId) => {
+            if (!listId) {
+                console.warn("listId is required to ignore a product");
+                return;
+            }
+            ignoreProductMutation.mutate({ groupId, productId });
+        },
+        restoreProduct: (groupId, productId) => {
+            if (!listId) {
+                console.warn("listId is required to restore a product");
+                return;
+            }
+            restoreProductMutation.mutate({ groupId, productId });
+        },
     };
 }
 
@@ -502,7 +564,7 @@ export function useListItems(options: UseListItemsOptions = {}): UseListItemsRet
 
     // Use the appropriate implementation
     const localResult = useLocalListItems();
-    const dbResult = useDatabaseListItems(listId ?? 0);
+    const dbResult = useDatabaseListItems(listId);
 
     // Return based on mode
     if (isUserLoading) {

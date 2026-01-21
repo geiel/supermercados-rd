@@ -3,23 +3,22 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ListSelect } from "@/db/schema";
 
-const USER_LIST_QUERY_KEY = ["user-list"];
+const LIST_QUERY_KEY = ["user-lists"];
 
 export function useUserList(listId?: number) {
-    return useQuery<ListSelect | null>({
-        queryKey: [...USER_LIST_QUERY_KEY, listId],
+    return useQuery<ListSelect[], Error, ListSelect | null>({
+        queryKey: LIST_QUERY_KEY,
         queryFn: async () => {
-            if (!listId) return null;
-            
             const response = await fetch("/api/user/lists");
             if (!response.ok) {
                 throw new Error("Failed to fetch user lists");
             }
-            
-            const lists: ListSelect[] = await response.json();
-            return lists.find((list) => list.id === listId) ?? null;
+            return response.json() as Promise<ListSelect[]>;
         },
+        select: (lists) => (listId ? lists.find((list) => list.id === listId) ?? null : null),
         enabled: !!listId,
-        staleTime: 30 * 1000, // 30 seconds
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 }

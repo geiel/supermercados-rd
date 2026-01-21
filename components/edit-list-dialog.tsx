@@ -26,6 +26,8 @@ import type { ListSelect } from "@/db/schema";
 
 const LIST_QUERY_KEY = ["user-lists"];
 const USER_LIST_QUERY_KEY = ["user-list"];
+const LIST_ITEMS_QUERY_KEY = ["list-items"];
+const LIST_GROUP_ITEMS_QUERY_KEY = ["list-group-items"];
 
 type EditListDialogProps = {
   list: ListSelect;
@@ -107,6 +109,16 @@ export function EditListDialog({
     onSuccess: () => {
       queryClient.setQueryData<ListSelect[]>(LIST_QUERY_KEY, (old) =>
         old?.filter((l) => l.id !== list.id) ?? []
+      );
+      queryClient.setQueryData(
+        LIST_ITEMS_QUERY_KEY,
+        (old: { listId: number }[] | undefined) =>
+          old?.filter((item) => item.listId !== list.id) ?? []
+      );
+      queryClient.setQueryData(
+        LIST_GROUP_ITEMS_QUERY_KEY,
+        (old: { listId: number }[] | undefined) =>
+          old?.filter((item) => item.listId !== list.id) ?? []
       );
       toast.success("Lista eliminada");
       onOpenChange(false);
