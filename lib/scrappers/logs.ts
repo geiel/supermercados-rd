@@ -1,6 +1,9 @@
 import { productsShopsPrices } from "@/db/schema/products";
 
-export function initProcessLog(scrapper: string, product: productsShopsPrices) {
+export function initProcessLog(scrapper: string, product: productsShopsPrices, dontLog: boolean) {
+  if (dontLog) {
+    return;
+  }
   console.log(
     `INFO Init process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId}`
   );
@@ -23,19 +26,28 @@ export function processErrorLog(
   );
 }
 
-export function doneProcessLog(scrapper: string, product: productsShopsPrices) {
+export function doneProcessLog(scrapper: string, product: productsShopsPrices, dontLog: boolean) {
+  if (dontLog) {
+    return;
+  }
   console.log(
     `DONE process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId} currentPrice=${product.currentPrice}`
   );
 }
 
-export function ignoreLog(scrapper: string, product: productsShopsPrices) {
+export function ignoreLog(scrapper: string, product: productsShopsPrices, dontLog: boolean) {
+  if (dontLog) {
+    return;
+  }
   console.log(
     `IGNORE process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId}`
   );
 }
 
-export function doneDuplicatedLog(scrapper: string, product: productsShopsPrices) {
+export function doneDuplicatedLog(scrapper: string, product: productsShopsPrices, dontLog: boolean) {
+  if (dontLog) {
+    return;
+  }
   console.log(
     `DONE/IGNORE process ${scrapper} url=${product.url} productId=${product.productId} shopId=${product.shopId}`
   )

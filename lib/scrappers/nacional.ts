@@ -32,7 +32,8 @@ async function getHtml(url: string) {
 
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
-  ignoreTimeValidation = false
+  ignoreTimeValidation = false,
+  dontLog = false
 ) {
   if (
     !ignoreTimeValidation &&
@@ -42,7 +43,7 @@ async function processByProductShopPrice(
     return;
   }
 
-  initProcessLog(scrapper, productShopPrice);
+  initProcessLog(scrapper, productShopPrice, dontLog);
   const html = await getHtml(productShopPrice.url);
 
   if (!html) {
@@ -81,7 +82,7 @@ async function processByProductShopPrice(
 
   await showProductPrice(productShopPrice);
   if (Number(productShopPrice.currentPrice) === Number(finalPrice)) {
-    ignoreLog(scrapper, productShopPrice);
+    ignoreLog(scrapper, productShopPrice, dontLog);
     await db
       .update(productsShopsPrices)
       .set({ updateAt: new Date() })
@@ -117,7 +118,7 @@ async function processByProductShopPrice(
     });
 
   if (result.length === 0) {
-    doneDuplicatedLog(scrapper, productShopPrice);
+    doneDuplicatedLog(scrapper, productShopPrice, dontLog);
     return;
   }
 
@@ -127,7 +128,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
-  doneProcessLog(scrapper, productShopPrice);
+  doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 
 export const nacional = { processByProductShopPrice };

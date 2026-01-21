@@ -1,4 +1,4 @@
-name: Refresh Products
+name: Refresh Prices Batch
 
 on:
   schedule:
@@ -24,5 +24,8 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
 
-      - name: Run Scrape
-        run: pnpm run scrape
+      - name: Install Chrome for Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Run prices batch
+        run: pnpm run scrape-prices-batch

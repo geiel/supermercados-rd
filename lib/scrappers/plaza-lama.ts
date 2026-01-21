@@ -30,14 +30,14 @@ const raw = [
   },
 ];
 
-async function getProductInfo(sku: string | null) {
-  if (!sku) {
+async function getProductInfo(productShopPrice: productsShopsPrices) {
+  if (!productShopPrice.api) {
     return null;
   }
 
   let jsonResponse: unknown;
 
-  raw[0].variables.getProductsBySkuInput.skus = [sku];
+  raw[0].variables.getProductsBySkuInput.skus = [productShopPrice.api];
 
   try {
     const headers = getPlazaLamaHeaders();
@@ -74,7 +74,7 @@ async function getProductInfo(sku: string | null) {
                 })
               ),
             })
-          ),
+          ).default([]),
         }),
       })
     )
@@ -85,12 +85,19 @@ async function getProductInfo(sku: string | null) {
     return null;
   }
 
+  if (productInfo.data[0].data.getProductsBySKU.length === 0) {
+    console.log("Plaza Lama: Product not found");
+    await hideProductPrice(productShopPrice);
+    return null;
+  }
+
   return productInfo.data[0];
 }
 
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
-  ignoreTimeValidation = false
+  ignoreTimeValidation = false,
+  dontLog = false
 ) {
   if (
     !ignoreTimeValidation &&
@@ -100,8 +107,8 @@ async function processByProductShopPrice(
     return;
   }
 
-  initProcessLog(scrapper, productShopPrice);
-  const productInfo = await getProductInfo(productShopPrice.api);
+  initProcessLog(scrapper, productShopPrice, dontLog);
+  const productInfo = await getProductInfo(productShopPrice);
 
   if (!productInfo) {
     processErrorLog(scrapper, productShopPrice);
@@ -125,7 +132,7 @@ async function processByProductShopPrice(
     productShopPrice.currentPrice &&
     Number(productShopPrice.currentPrice) === productPrice
   ) {
-    ignoreLog(scrapper, productShopPrice);
+    ignoreLog(scrapper, productShopPrice, dontLog);
     await db
       .update(productsShopsPrices)
       .set({ updateAt: new Date() })
@@ -157,7 +164,7 @@ async function processByProductShopPrice(
     ).returning({ productId: productsShopsPrices.productId, currentPrice: productsShopsPrices.currentPrice });
   
   if (result.length === 0) {
-    doneDuplicatedLog(scrapper, productShopPrice);
+    doneDuplicatedLog(scrapper, productShopPrice, dontLog);
     return;
   }
 
@@ -167,7 +174,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
-  doneProcessLog(scrapper, productShopPrice);
+  doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 
 export const plazaLama = { processByProductShopPrice };
