@@ -33,7 +33,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 
-const CHEAPEST_COLOR = "var(--chart-1)";
+const CHEAPEST_COLOR = "#4A2169";
 const SHOP_COLORS = [
   "var(--chart-2)",
   "var(--chart-3)",

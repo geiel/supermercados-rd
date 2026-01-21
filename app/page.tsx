@@ -1,4 +1,3 @@
-import { ExploreSection } from "@/components/explore-section";
 import { FrontPageDealCard } from "@/components/front-page-deal-card";
 import { HomePageCategoriesSection } from "@/components/home-page-categories-section";
 import { TypographyH3 } from "@/components/typography-h3";
