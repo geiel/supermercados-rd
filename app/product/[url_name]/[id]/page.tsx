@@ -258,6 +258,11 @@ export default async function Page({ params }: Props) {
         </section>
 
         <section className="flex flex-col gap-2">
+          <div className="font-bold text-2xl">Productos relacionados</div>
+          <RelatedProducts relatedProducts={relatedProducts.products} />
+        </section>
+
+        <section className="flex flex-col gap-2">
           <div className="font-bold text-2xl">Historial de precios</div>
           <PricesChart
             priceHistory={product.pricesHistory}
@@ -265,11 +270,6 @@ export default async function Page({ params }: Props) {
             shops={shops}
             visibilityHistory={product.visibilityHistory}
           />
-        </section>
-
-        <section className="flex flex-col gap-2">
-          <div className="font-bold text-2xl">Productos relacionados</div>
-          <RelatedProducts relatedProducts={relatedProducts.products} />
         </section>
 
         <ProductFeedbackSection productId={product.id} shops={shops} />
