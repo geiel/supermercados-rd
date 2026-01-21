@@ -97,7 +97,7 @@ async function ComplexCategoryPreview({ complexCategoryId }: { complexCategoryId
     return (
         <div className="grid grid-cols-2 gap-2">
             {productsPreview.map(price => (
-                <Link key={price.productId} href={`/product/${toSlug(price.product.name)}/${price.productId}`} className="flex flex-col gap-2 max-w-full bg-white p-2 rounded">
+                <Link key={price.productId} href={`/product/${toSlug(price.product.name)}/${price.productId}`} className="flex flex-col gap-2 max-w-full bg-white p-2 rounded" prefetch={false}>
                     <div className="flex justify-center">
                         <div className="h-[130px] w-[130px] relative">
                             {price.product.image ? (

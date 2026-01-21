@@ -67,6 +67,7 @@ export default function BrandName({
             <Link
               href={`/product/${toSlug(product.name)}/${product.id}`}
               className="flex flex-col gap-2"
+              prefetch={false}
             >
               <div className="flex justify-center">
                 {product.image ? (

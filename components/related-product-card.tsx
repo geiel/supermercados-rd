@@ -37,6 +37,7 @@ export function RelatedProductCard({ product }: RelatedProductCardProps) {
       <Link
         href={`/product/${toSlug(product.name)}/${product.id}`}
         className="flex flex-col gap-2"
+        prefetch={false}
       >
         <div className="h-[130px] w-[130px] relative">
           {product.image ? (

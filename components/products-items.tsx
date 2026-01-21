@@ -716,7 +716,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
     ) : null;
     const viewAllProductsButton = groupLink ? (
         <Button size="sm" variant="outline" asChild>
-            <Link href={groupLink} onClick={() => onClose?.()}>
+            <Link href={groupLink} onClick={() => onClose?.()} prefetch={false}>
                 <Tag />
                 Ver categoría
             </Link>
@@ -1027,7 +1027,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
                         {isDeleting ? <Loader2 className="animate-spin" /> : <Trash />}
                     </Button>
                     <Button size="icon-lg" variant="outline" aria-label="Ver producto" asChild>
-                        <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct}>
+                        <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct} prefetch={false}>
                             <ArrowRightSquare />
                         </Link>
                     </Button>
@@ -1087,7 +1087,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
                     {isDeleting ? <Loader2 className="animate-spin" /> : <Trash />}
                 </Button>
                 <Button size="icon-lg" variant="outline" aria-label="Ver producto" asChild>
-                    <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct}>
+                    <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct} prefetch={false}>
                         <ArrowRightSquare />
                     </Link>
                 </Button>
