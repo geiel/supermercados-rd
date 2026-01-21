@@ -2,7 +2,7 @@ name: Refresh Jumbo Products
 
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '0 3,6 * * *'
   workflow_dispatch:
 
 jobs:
