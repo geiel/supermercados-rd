@@ -1,11 +1,14 @@
+import { Metadata } from "next";
+import { Suspense } from "react";
+import { BadgePercent } from "lucide-react";
+
 import { DealsList } from "@/components/deals-list";
 import { TypographyH3 } from "@/components/typography-h3";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
 import { getDeals, parseShopId } from "@/lib/deals";
 import { DEALS_DESKTOP_PAGE_SIZE } from "@/types/deals";
-import { Metadata } from "next";
-import { Suspense } from "react";
 
 type Props = {
   searchParams: Promise<{ shop_id?: string }>;
@@ -109,7 +112,7 @@ async function DealsContent({ searchParams }: Props) {
 
   const title = shop ? `Ofertas en ${shop.name}` : "Ofertas de hoy";
   const emptyMessage = shop
-    ? "No hay ofertas disponibles para este supermercado."
+    ? `No hay ofertas disponibles para ${shop.name} en este momento.`
     : "No hay ofertas disponibles por ahora.";
   const hasDeals = dealsResult.total > 0;
 
@@ -126,8 +129,16 @@ async function DealsContent({ searchParams }: Props) {
         </div>
 
         {!hasDeals ? (
-          <div className="px-2 md:px-0 text-sm text-muted-foreground">
-            {emptyMessage}
+          <div className="px-2 md:px-0">
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <BadgePercent />
+                </EmptyMedia>
+                <EmptyTitle>No hay ofertas disponibles</EmptyTitle>
+                <EmptyDescription>{emptyMessage}</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           </div>
         ) : (
           <DealsList
