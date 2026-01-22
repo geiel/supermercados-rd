@@ -33,7 +33,7 @@ type UseAddToListReturn = {
     isLoadingLists: boolean;
 
     // Create a new list (for logged-in users only)
-    createList: (name: string) => void;
+    createList: (name: string) => Promise<ListSelect | undefined>;
     isCreatingList: boolean;
 
     // State
@@ -290,7 +290,7 @@ function useLocalAddToList(): UseAddToListReturn {
         toggleGroup,
         lists: undefined,
         isLoadingLists: false,
-        createList: () => {},
+        createList: async () => undefined,
         isCreatingList: false,
         isLocalMode: true,
         isLoading: false,
@@ -616,7 +616,7 @@ function useDatabaseAddToList(): UseAddToListReturn {
         },
         lists: listsQuery.data,
         isLoadingLists: listsQuery.isLoading,
-        createList: (name) => createListMutation.mutate(name),
+        createList: (name) => createListMutation.mutateAsync(name),
         isCreatingList: createListMutation.isPending,
         isLocalMode: false,
         isLoading: itemsQuery.isLoading || groupItemsQuery.isLoading,
@@ -650,7 +650,7 @@ export function useAddToList(): UseAddToListReturn {
             toggleGroup: () => {},
             lists: undefined,
             isLoadingLists: true,
-            createList: () => {},
+            createList: async () => undefined,
             isCreatingList: false,
             isLocalMode: true,
             isLoading: true,

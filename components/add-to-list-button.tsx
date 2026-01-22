@@ -96,10 +96,18 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
   const handleLoggedInClick = useCallback(async () => {
     // No lists - create default and add
     if (!lists || lists.length === 0) {
-      createList(DEFAULT_LIST_NAME);
-      // Note: We'd need to wait for list creation and then add
-      // For now, we'll handle this case by opening the dropdown
       toast.info("Creando lista...");
+      try {
+        const newList = await createList(DEFAULT_LIST_NAME);
+        if (!newList) {
+          toast.error("No se pudo crear la lista");
+          return;
+        }
+        addProduct(productId, newList.id);
+        showAddedToast(`El producto ha sido agregado a ${newList.name}`, newList.id);
+      } catch {
+        toast.error("No se pudo crear la lista");
+      }
       return;
     }
 
@@ -119,7 +127,7 @@ export function AddToListButton({ productId, variant = "default" }: AddToListBut
 
     // Multiple lists - open dropdown/drawer so user can choose
     setIsOpen(true);
-  }, [lists, productId, isProductInList, addProduct, removeProduct, createList]);
+  }, [lists, productId, isProductInList, addProduct, removeProduct, createList, showAddedToast]);
 
   const handleClick = useCallback(() => {
     if (isLocalMode) {

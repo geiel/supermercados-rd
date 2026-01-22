@@ -219,6 +219,10 @@ export function PricesChart({
 
   const [selectedShopIds, setSelectedShopIds] = React.useState<number[]>([]);
   const [historyRange, setHistoryRange] = React.useState<HistoryRange>("3");
+  const [isShopMenuOpen, setIsShopMenuOpen] = React.useState(false);
+  const lastPointerTypeRef = React.useRef<React.PointerEvent["pointerType"] | null>(
+    null
+  );
 
   const selectedShops = React.useMemo(
     () =>
@@ -524,9 +528,23 @@ export function PricesChart({
     <Card>
       <CardHeader>
         <CardAction>
-          <DropdownMenu>
+          <DropdownMenu open={isShopMenuOpen} onOpenChange={setIsShopMenuOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onPointerDown={(event) => {
+                  lastPointerTypeRef.current = event.pointerType;
+                  if (event.pointerType === "touch") {
+                    event.preventDefault();
+                  }
+                }}
+                onClick={() => {
+                  if (lastPointerTypeRef.current === "touch") {
+                    setIsShopMenuOpen((prev) => !prev);
+                  }
+                }}
+              >
                 Supermercados
                 {selectedShops.length > 0 ? (
                   <Badge variant="secondary" className="ml-1">

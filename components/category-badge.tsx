@@ -104,8 +104,18 @@ export function CategoryBadge({
 
       // No lists - create default and add
       if (!lists || lists.length === 0) {
-        createList(DEFAULT_LIST_NAME);
         toast.info("Creando lista...");
+        try {
+          const newList = await createList(DEFAULT_LIST_NAME);
+          if (!newList) {
+            toast.error("No se pudo crear la lista");
+            return;
+          }
+          addGroup(groupId, newList.id);
+          showAddedToast(`${groupName} ha sido agregado a ${newList.name}`, newList.id);
+        } catch {
+          toast.error("No se pudo crear la lista");
+        }
         return;
       }
 
@@ -126,7 +136,7 @@ export function CategoryBadge({
       // Multiple lists - open dropdown/drawer
       setIsOpen(true);
     },
-    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup, createList]
+    [lists, groupId, groupName, isGroupInList, addGroup, removeGroup, createList, showAddedToast]
   );
 
   const handleClick = useCallback(
