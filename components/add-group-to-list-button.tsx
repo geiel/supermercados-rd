@@ -90,8 +90,18 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
   const handleLoggedInClick = useCallback(async () => {
     // No lists - create default and add
     if (!lists || lists.length === 0) {
-      createList(DEFAULT_LIST_NAME);
       toast.info("Creando lista...");
+      try {
+        const newList = await createList(DEFAULT_LIST_NAME);
+        if (!newList) {
+          toast.error("No se pudo crear la lista");
+          return;
+        }
+        addGroup(groupId, newList.id);
+        showAddedToast(`${groupName} ha sido agregado a ${newList.name}`, newList.id);
+      } catch {
+        toast.error("No se pudo crear la lista");
+      }
       return;
     }
 
@@ -111,7 +121,7 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
 
     // Multiple lists - open dropdown/drawer so user can choose
     setIsOpen(true);
-  }, [lists, groupId, groupName, isGroupInList, addGroup, removeGroup, createList]);
+  }, [lists, groupId, groupName, isGroupInList, addGroup, removeGroup, createList, showAddedToast]);
 
   const handleClick = useCallback(() => {
     if (isLocalMode) {
