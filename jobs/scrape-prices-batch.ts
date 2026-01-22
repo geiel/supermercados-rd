@@ -12,7 +12,7 @@ import { sql, and, eq, isNull, or } from "drizzle-orm";
 import { products, productsShopsPrices } from "@/db/schema/products";
 
 const shopIds = [1, 2, 3, 4, 5, 6] as const;
-const iterationCount = 120;
+const iterationCount = 200;
 
 async function main() {
   const shopPricesFilter = and(
