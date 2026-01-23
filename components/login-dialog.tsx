@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -50,7 +49,6 @@ export function LoginDialog({
     "signin" | "signup" | null
   >(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const router = useRouter();
   const isEmailLoading = emailAction !== null;
 
   // Support both controlled and uncontrolled modes
@@ -70,7 +68,7 @@ export function LoginDialog({
       }
       setOpen(false);
       setPassword("");
-      router.refresh();
+      window.location.reload();
     } catch (error) {
       console.log(error);
       toast.error("Ocurrió un error al iniciar sesión");
@@ -100,7 +98,7 @@ export function LoginDialog({
         setOpen(false);
         setPassword("");
         setName("");
-        router.refresh();
+        window.location.reload();
         return;
       }
 
