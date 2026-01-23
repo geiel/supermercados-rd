@@ -1,0 +1,1 @@
+ALTER TABLE "sub_categories" ADD COLUMN "isExplorable" boolean DEFAULT true NOT NULL;
