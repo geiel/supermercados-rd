@@ -59,21 +59,12 @@ export const metadata: Metadata = {
     title: "SupermercadosRD - Compara precios de supermercados",
     description:
       "Compara precios de productos en supermercados de República Dominicana.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "SupermercadosRD - Comparador de precios de supermercados",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "SupermercadosRD - Compara precios de supermercados",
     description:
       "Compara precios de productos en supermercados de República Dominicana.",
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,
