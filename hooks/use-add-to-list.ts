@@ -1,9 +1,23 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "./use-user";
 import type { ListSelect, listItemsSelect, listGroupItemsSelect } from "@/db/schema";
+import {
+    // Products
+    getProductsSnapshot,
+    getProductsServerSnapshot,
+    subscribeProducts,
+    addLocalProduct,
+    removeLocalProduct,
+    // Groups
+    getGroupsSnapshot,
+    getGroupsServerSnapshot,
+    subscribeGroups,
+    addLocalGroup,
+    removeLocalGroup,
+} from "@/lib/local-list-store";
 
 // ============================================================================
 // Types
@@ -43,152 +57,6 @@ type UseAddToListReturn = {
 };
 
 // ============================================================================
-// Local Storage - Products
-// ============================================================================
-
-const LOCAL_STORAGE_KEY = "shopping-list";
-const SERVER_SNAPSHOT: number[] = [];
-let cachedSnapshot: number[] = SERVER_SNAPSHOT;
-const listeners = new Set<() => void>();
-let productsInitialized = false;
-
-function readProductsFromStorage(): number[] {
-    if (typeof window === "undefined") return SERVER_SNAPSHOT;
-    try {
-        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch {
-        return [];
-    }
-}
-
-function getProductsSnapshot(): number[] {
-    return cachedSnapshot;
-}
-
-function getProductsServerSnapshot(): number[] {
-    return SERVER_SNAPSHOT;
-}
-
-function initProductsListener() {
-    if (productsInitialized || typeof window === "undefined") return;
-    productsInitialized = true;
-    
-    // Initialize cache from storage
-    cachedSnapshot = readProductsFromStorage();
-    
-    // Listen for storage events (cross-tab sync)
-    window.addEventListener("storage", (e) => {
-        if (e.key === LOCAL_STORAGE_KEY) {
-            updateProductsCache();
-        }
-    });
-}
-
-function subscribeProducts(callback: () => void): () => void {
-    initProductsListener();
-    listeners.add(callback);
-    
-    // Sync cache with storage on each new subscription
-    const currentStorage = readProductsFromStorage();
-    if (JSON.stringify(currentStorage) !== JSON.stringify(cachedSnapshot)) {
-        cachedSnapshot = currentStorage;
-        // Notify all listeners of the change
-        queueMicrotask(() => {
-            for (const listener of listeners) {
-                listener();
-            }
-        });
-    }
-    
-    return () => listeners.delete(callback);
-}
-
-function updateProductsCache() {
-    const newSnapshot = readProductsFromStorage();
-    // Only update if actually changed
-    if (JSON.stringify(newSnapshot) !== JSON.stringify(cachedSnapshot)) {
-        cachedSnapshot = newSnapshot;
-        for (const listener of listeners) {
-            listener();
-        }
-    }
-}
-
-// ============================================================================
-// Local Storage - Groups
-// ============================================================================
-
-const LOCAL_STORAGE_GROUPS_KEY = "shopping-list-groups";
-const SERVER_SNAPSHOT_GROUPS: number[] = [];
-let cachedSnapshotGroups: number[] = SERVER_SNAPSHOT_GROUPS;
-const listenersGroups = new Set<() => void>();
-let groupsInitialized = false;
-
-function readGroupsFromStorage(): number[] {
-    if (typeof window === "undefined") return SERVER_SNAPSHOT_GROUPS;
-    try {
-        const stored = localStorage.getItem(LOCAL_STORAGE_GROUPS_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch {
-        return [];
-    }
-}
-
-function getGroupsSnapshot(): number[] {
-    return cachedSnapshotGroups;
-}
-
-function getGroupsServerSnapshot(): number[] {
-    return SERVER_SNAPSHOT_GROUPS;
-}
-
-function initGroupsListener() {
-    if (groupsInitialized || typeof window === "undefined") return;
-    groupsInitialized = true;
-    
-    // Initialize cache from storage
-    cachedSnapshotGroups = readGroupsFromStorage();
-    
-    // Listen for storage events (cross-tab sync)
-    window.addEventListener("storage", (e) => {
-        if (e.key === LOCAL_STORAGE_GROUPS_KEY) {
-            updateGroupsCache();
-        }
-    });
-}
-
-function subscribeGroups(callback: () => void): () => void {
-    initGroupsListener();
-    listenersGroups.add(callback);
-    
-    // Sync cache with storage on each new subscription
-    const currentStorage = readGroupsFromStorage();
-    if (JSON.stringify(currentStorage) !== JSON.stringify(cachedSnapshotGroups)) {
-        cachedSnapshotGroups = currentStorage;
-        // Notify all listeners of the change
-        queueMicrotask(() => {
-            for (const listener of listenersGroups) {
-                listener();
-            }
-        });
-    }
-    
-    return () => listenersGroups.delete(callback);
-}
-
-function updateGroupsCache() {
-    const newSnapshot = readGroupsFromStorage();
-    // Only update if actually changed
-    if (JSON.stringify(newSnapshot) !== JSON.stringify(cachedSnapshotGroups)) {
-        cachedSnapshotGroups = newSnapshot;
-        for (const listener of listenersGroups) {
-            listener();
-        }
-    }
-}
-
-// ============================================================================
 // Query Keys
 // ============================================================================
 
@@ -223,58 +91,26 @@ function useLocalAddToList(): UseAddToListReturn {
         [groups]
     );
 
-    const addProduct = useCallback((productId: number) => {
-        const current = readProductsFromStorage();
-        if (!current.includes(productId)) {
-            const updated = [...current, productId];
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-            updateProductsCache();
-        }
-    }, []);
-
-    const removeProduct = useCallback((productId: number) => {
-        const current = readProductsFromStorage();
-        const updated = current.filter((id) => id !== productId);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-        updateProductsCache();
-    }, []);
-
     const toggleProduct = useCallback(
         (productId: number) => {
-            if (hasProduct(productId)) {
-                removeProduct(productId);
+            if (products.includes(productId)) {
+                removeLocalProduct(productId);
             } else {
-                addProduct(productId);
+                addLocalProduct(productId);
             }
         },
-        [hasProduct, addProduct, removeProduct]
+        [products]
     );
-
-    const addGroup = useCallback((groupId: number) => {
-        const current = readGroupsFromStorage();
-        if (!current.includes(groupId)) {
-            const updated = [...current, groupId];
-            localStorage.setItem(LOCAL_STORAGE_GROUPS_KEY, JSON.stringify(updated));
-            updateGroupsCache();
-        }
-    }, []);
-
-    const removeGroup = useCallback((groupId: number) => {
-        const current = readGroupsFromStorage();
-        const updated = current.filter((id) => id !== groupId);
-        localStorage.setItem(LOCAL_STORAGE_GROUPS_KEY, JSON.stringify(updated));
-        updateGroupsCache();
-    }, []);
 
     const toggleGroup = useCallback(
         (groupId: number) => {
-            if (hasGroup(groupId)) {
-                removeGroup(groupId);
+            if (groups.includes(groupId)) {
+                removeLocalGroup(groupId);
             } else {
-                addGroup(groupId);
+                addLocalGroup(groupId);
             }
         },
-        [hasGroup, addGroup, removeGroup]
+        [groups]
     );
 
     return {
@@ -282,10 +118,10 @@ function useLocalAddToList(): UseAddToListReturn {
         hasGroup,
         isProductInList: hasProduct,
         isGroupInList: hasGroup,
-        addProduct,
-        removeProduct,
-        addGroup,
-        removeGroup,
+        addProduct: addLocalProduct,
+        removeProduct: removeLocalProduct,
+        addGroup: addLocalGroup,
+        removeGroup: removeLocalGroup,
         toggleProduct,
         toggleGroup,
         lists: undefined,
