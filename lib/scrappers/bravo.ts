@@ -12,6 +12,7 @@ import {
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { hideProductPrice, showProductPrice } from "../db-utils";
 import { getBravoHeaders, fetchWithRetry } from "./http-client";
+import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "Bravo";
 
@@ -156,6 +157,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
+  revalidateProduct(productShopPrice.productId);
   doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 

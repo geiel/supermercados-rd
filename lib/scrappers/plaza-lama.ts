@@ -12,6 +12,7 @@ import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { hideProductPrice, showProductPrice } from "../db-utils";
 import { getPlazaLamaHeaders, fetchWithRetry } from "./http-client";
+import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "Plaza Lama";
 
@@ -174,6 +175,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
+  revalidateProduct(productShopPrice.productId);
   doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 

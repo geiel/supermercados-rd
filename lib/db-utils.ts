@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { productsPricesHistory, productsShopsPrices } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
+import { revalidateProduct } from "./revalidate-product";
 
 export async function hideProductPrice(productShopPrice: productsShopsPrices) {
   console.log(
@@ -20,6 +21,7 @@ export async function hideProductPrice(productShopPrice: productsShopsPrices) {
         eq(productsShopsPrices.shopId, productShopPrice.shopId)
       )
     );
+  revalidateProduct(productShopPrice.productId);
 }
 
 export async function showProductPrice(productShopPrice: productsShopsPrices) {
@@ -41,6 +43,7 @@ export async function showProductPrice(productShopPrice: productsShopsPrices) {
         eq(productsShopsPrices.shopId, productShopPrice.shopId)
       )
     );
+  revalidateProduct(productShopPrice.productId);
 }
 
 export async function validateHistory(

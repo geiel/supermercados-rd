@@ -39,6 +39,7 @@ export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
       <Link
         href={`/product/${toSlug(deal.name)}/${deal.productId}`}
         className="flex flex-col gap-2"
+        prefetch={false}
       >
         <div className="relative w-full max-w-[180px] aspect-square mx-auto">
           {deal.image ? (

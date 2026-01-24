@@ -9,17 +9,12 @@ import { RelatedProducts } from "@/components/related-products";
 import { ShopPriceRowActions } from "@/components/shop-price-row";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
-import { productsShopsPrices } from "@/db/schema";
-import { bravo } from "@/lib/scrappers/bravo";
-import { nacional } from "@/lib/scrappers/nacional";
-import { plazaLama } from "@/lib/scrappers/plaza-lama";
-import { pricesmart } from "@/lib/scrappers/pricesmart";
-import { sirena } from "@/lib/scrappers/sirena";
 import { searchProducts } from "@/lib/search-query";
 import { sanitizeForTsQuery } from "@/lib/utils";
 import { MessageCircleWarning } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
+import { cacheTag, cacheLife } from "next/cache";
 
 type Props = {
   params: Promise<{ id: string; url_name: string }>;
@@ -27,20 +22,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, url_name } = await params;
-  const product = await db.query.products.findFirst({
-    columns: { name: true, unit: true, image: true },
-    where: (products, { eq }) => eq(products.id, Number(id)),
-    with: {
-      shopCurrentPrices: {
-        columns: { currentPrice: true },
-        where: (scp, { isNull, eq, or, isNotNull }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
-        limit: 1,
-      },
-      brand: { columns: { name: true } },
-    },
-  });
+  const product = await getProductMetadata(Number(id));
 
   if (!product) {
     return { title: "Producto no encontrado" };
@@ -80,28 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { id } = await params;
 
-  const product = await db.query.products.findFirst({
-    where: (products, { eq }) => eq(products.id, Number(id)),
-    with: {
-      shopCurrentPrices: {
-        where: (scp, { isNull, eq, or }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-        with: {
-          shop: true,
-        },
-        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
-      },
-      brand: true,
-      possibleBrand: true,
-      pricesHistory: true,
-      visibilityHistory: true,
-      groupProduct: {
-        with: {
-          group: true,
-        },
-      },
-    },
-  });
+  const product = await getProductData(Number(id));
 
   if (!product) {
     return <div>Producto no encontrado.</div>;
@@ -275,60 +236,29 @@ export default async function Page({ params }: Props) {
   );
 }
 
-async function ShopPrice({
+function ShopPrice({
   shopPrice,
   unit,
   categoryId,
   productName,
 }: {
-  shopPrice: productsShopsPrices;
+  shopPrice: { currentPrice: string | null; regularPrice: string | null };
   unit: string;
   categoryId: number;
   productName: string;
 }) {
-  switch (shopPrice.shopId) {
-    case 1:
-      await sirena.processByProductShopPrice(shopPrice);
-      break;
-    case 2:
-      await nacional.processByProductShopPrice(shopPrice);
-      break;
-    case 4:
-      await plazaLama.processByProductShopPrice(shopPrice);
-      break;
-    case 5:
-      await pricesmart.processByProductShopPrice(shopPrice);
-      break;
-    case 6:
-      await bravo.processByProductShopPrice(shopPrice);
-      break;
-  }
-
-  const lowerPrice = await db.query.productsShopsPrices.findFirst({
-    columns: {
-      currentPrice: true,
-      regularPrice: true,
-    },
-    where: (priceTable, { isNotNull, eq, and }) =>
-      and(
-        isNotNull(priceTable.currentPrice),
-        eq(priceTable.productId, shopPrice.productId),
-        eq(priceTable.shopId, shopPrice.shopId)
-      ),
-  });
-
   return (
     <div className="col-span-2">
       <div className="flex gap-1 items-center overflow-auto">
-        <div className="font-bold text-lg">RD${lowerPrice?.currentPrice}</div>
-        {Number(lowerPrice?.currentPrice) < Number(lowerPrice?.regularPrice) ? (
+        <div className="font-bold text-lg">RD${shopPrice.currentPrice}</div>
+        {Number(shopPrice.currentPrice) < Number(shopPrice.regularPrice) ? (
           <div className="line-through text-lg">
-            ${lowerPrice?.regularPrice}
+            ${shopPrice.regularPrice}
           </div>
         ) : null}
       </div>
       <PricePerUnit
-        price={Number(lowerPrice?.currentPrice)}
+        price={Number(shopPrice.currentPrice)}
         unit={unit}
         categoryId={categoryId}
         className="opacity-60"
@@ -338,14 +268,66 @@ async function ShopPrice({
   );
 }
 
-async function getShops() {
-  'use cache'
+async function getProductData(id: number) {
+  "use cache";
+  cacheTag(`product-${id}`);
+  cacheLife("product");
 
+  return await db.query.products.findFirst({
+    where: (products, { eq }) => eq(products.id, id),
+    with: {
+      shopCurrentPrices: {
+        where: (scp, { isNull, eq, or }) =>
+          or(isNull(scp.hidden), eq(scp.hidden, false)),
+        with: {
+          shop: true,
+        },
+        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+      },
+      brand: true,
+      possibleBrand: true,
+      pricesHistory: true,
+      visibilityHistory: true,
+      groupProduct: {
+        with: {
+          group: true,
+        },
+      },
+    },
+  });
+}
+
+async function getProductMetadata(id: number) {
+  "use cache";
+  cacheTag(`product-${id}`);
+  cacheLife("product");
+
+  return await db.query.products.findFirst({
+    columns: { name: true, unit: true, image: true },
+    where: (products, { eq }) => eq(products.id, id),
+    with: {
+      shopCurrentPrices: {
+        columns: { currentPrice: true },
+        where: (scp, { isNull, eq, or }) =>
+          or(isNull(scp.hidden), eq(scp.hidden, false)),
+        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+        limit: 1,
+      },
+      brand: { columns: { name: true } },
+    },
+  });
+}
+
+async function getShops() {
+  "use cache";
+  cacheLife("days");
   return await db.query.shops.findMany();
 }
 
 async function searchRelatedProducts(name: string, canSeeHiddenProducts: boolean) {
-  'use cache'
+  "use cache";
+  cacheLife("product");
+
   return await searchProducts(
     sanitizeForTsQuery(name),
     16,
