@@ -15,6 +15,7 @@ import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { isLessThan12HoursAgo } from "./utils";
 import { hideProductPrice, showProductPrice } from "../db-utils";
 import { getSirenaHeaders, fetchWithRetry } from "./http-client";
+import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "La Sirena";
 
@@ -138,6 +139,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
+  revalidateProduct(productShopPrice.productId);
   doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 

@@ -15,6 +15,7 @@ import {
 import { isLessThan12HoursAgo } from "./utils";
 import { hideProductPrice, showProductPrice } from "../db-utils";
 import { getNacionalHeaders, fetchWithRetry } from "./http-client";
+import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "Nacional";
 
@@ -128,6 +129,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
+  revalidateProduct(productShopPrice.productId);
   doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 
