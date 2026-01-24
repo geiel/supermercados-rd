@@ -157,7 +157,7 @@ async function processByProductShopPrice(
     createdAt: new Date(),
   });
 
-  revalidateProduct(productShopPrice.productId);
+  await revalidateProduct(productShopPrice.productId);
   doneProcessLog(scrapper, productShopPrice, dontLog);
 }
 
