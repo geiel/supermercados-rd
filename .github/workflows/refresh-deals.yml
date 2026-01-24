@@ -11,6 +11,7 @@ jobs:
     environment: Production
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      REVALIDATION_SECRET: ${{ secrets.REVALIDATION_SECRET }}
       NODE_TLS_REJECT_UNAUTHORIZED: '0'
 
     steps:
