@@ -176,7 +176,9 @@ export default async function Page({ params }: Props) {
       <div className="flex flex-col gap-10">
         <section className="flex flex-col">
           <div className="font-bold text-2xl">Donde comprar</div>
-          {product.shopCurrentPrices.map((shopPrice, i) => (
+          {product.shopCurrentPrices
+            .filter((shopPrice) => shopPrice.currentPrice !== null)
+            .map((shopPrice, i) => (
             <div
               key={i}
               className="grid grid-cols-4 items-center py-4"
