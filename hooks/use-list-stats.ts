@@ -131,8 +131,8 @@ export function useListStats(options: UseListStatsOptions): UseListStatsReturn {
         refetchOnWindowFocus: false,
         // Only enable if we have items to fetch
         enabled: enabled && hasItems,
-        // Consider data fresh for 30 seconds
-        staleTime: 30 * 1000,
+        // Consider data fresh for 5 minutes
+        staleTime: 5 * 60 * 1000,
     });
 
     // Return empty data while loading or disabled

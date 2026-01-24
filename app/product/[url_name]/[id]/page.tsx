@@ -16,8 +16,7 @@ import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { sirena } from "@/lib/scrappers/sirena";
 import { searchProducts } from "@/lib/search-query";
-import { getUser } from "@/lib/supabase";
-import { sanitizeForTsQuery, toSlug } from "@/lib/utils";
+import { sanitizeForTsQuery } from "@/lib/utils";
 import { MessageCircleWarning } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
@@ -108,10 +107,7 @@ export default async function Page({ params }: Props) {
     return <div>Producto no encontrado.</div>;
   }
 
-  const user = await getUser();
-  const canSeeHiddenProducts = user?.email?.toLowerCase() === "geielpeguero@gmail.com";
-
-  const relatedProducts = await searchRelatedProducts(product.name, canSeeHiddenProducts);
+  const relatedProducts = await searchRelatedProducts(product.name, false);
   relatedProducts.products.splice(
     relatedProducts.products.findIndex((i) => i.id === product.id),
     1
