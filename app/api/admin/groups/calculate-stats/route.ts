@@ -196,7 +196,7 @@ export async function POST() {
     });
   } catch (error) {
     console.error(
-      "[api/groups/calculate-stats] Failed to update group stats",
+      "[api/admin/groups/calculate-stats] Failed to update group stats",
       error
     );
     return NextResponse.json(

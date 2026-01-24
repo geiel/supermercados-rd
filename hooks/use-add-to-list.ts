@@ -302,10 +302,10 @@ function useLocalAddToList(): UseAddToListReturn {
 // Database Mode Hook
 // ============================================================================
 
-function useDatabaseAddToList(): UseAddToListReturn {
+function useDatabaseAddToList(enabled: boolean): UseAddToListReturn {
     const queryClient = useQueryClient();
 
-    // Fetch user's lists
+    // Fetch user's lists - only when user is logged in
     const listsQuery = useQuery<ListSelect[]>({
         queryKey: LIST_QUERY_KEY,
         queryFn: async () => {
@@ -316,9 +316,10 @@ function useDatabaseAddToList(): UseAddToListReturn {
         staleTime: Infinity,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
+        enabled,
     });
 
-    // Fetch all list items (products)
+    // Fetch all list items (products) - only when user is logged in
     const itemsQuery = useQuery<listItemsSelect[]>({
         queryKey: LIST_ITEMS_QUERY_KEY,
         queryFn: async () => {
@@ -329,9 +330,10 @@ function useDatabaseAddToList(): UseAddToListReturn {
         staleTime: Infinity,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
+        enabled,
     });
 
-    // Fetch all list group items
+    // Fetch all list group items - only when user is logged in
     const groupItemsQuery = useQuery<listGroupItemsSelect[]>({
         queryKey: LIST_GROUP_ITEMS_QUERY_KEY,
         queryFn: async () => {
@@ -342,6 +344,7 @@ function useDatabaseAddToList(): UseAddToListReturn {
         staleTime: Infinity,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
+        enabled,
     });
 
     // Check if product is in any list
@@ -634,7 +637,7 @@ export function useAddToList(): UseAddToListReturn {
     const isLocalMode = !user;
 
     const localResult = useLocalAddToList();
-    const dbResult = useDatabaseAddToList();
+    const dbResult = useDatabaseAddToList(!!user);
 
     if (isUserLoading) {
         return {
