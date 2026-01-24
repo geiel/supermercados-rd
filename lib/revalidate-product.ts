@@ -3,6 +3,8 @@ const BASE_URL =
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET;
 
 export async function revalidateProduct(productId: number) {
+  console.log(BASE_URL, REVALIDATION_SECRET);
+
   try {
     const response = await fetch(`${BASE_URL}/api/revalidate/product`, {
       method: "POST",
