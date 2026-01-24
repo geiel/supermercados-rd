@@ -21,7 +21,7 @@ export async function hideProductPrice(productShopPrice: productsShopsPrices) {
         eq(productsShopsPrices.shopId, productShopPrice.shopId)
       )
     );
-  revalidateProduct(productShopPrice.productId);
+  await revalidateProduct(productShopPrice.productId);
 }
 
 export async function showProductPrice(productShopPrice: productsShopsPrices) {
@@ -43,7 +43,7 @@ export async function showProductPrice(productShopPrice: productsShopsPrices) {
         eq(productsShopsPrices.shopId, productShopPrice.shopId)
       )
     );
-  revalidateProduct(productShopPrice.productId);
+  await revalidateProduct(productShopPrice.productId);
 }
 
 export async function validateHistory(
