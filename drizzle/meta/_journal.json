@@ -309,6 +309,13 @@
       "when": 1769029016009,
       "tag": "0043_dizzy_ultimo",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1769380844290,
+      "tag": "0044_warm_vampiro",
+      "breakpoints": true
     }
   ]
 }
