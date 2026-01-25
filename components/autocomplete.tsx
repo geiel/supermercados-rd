@@ -55,6 +55,10 @@ const saveRecentSearch = (query: string) => {
 type ProductSuggestion = {
   phrase: string;
   sml: number;
+  groupId: number | null;
+  groupName: string | null;
+  groupHumanId: string | null;
+  parentGroupName: string | null;
 };
 
 type AutoCompleteProps = {
@@ -63,7 +67,7 @@ type AutoCompleteProps = {
   value?: productsSelect;
   productName?: string;
   onInputChange?: (value: string) => void;
-  onSearch: (inputValue: string) => void;
+  onSearch: (inputValue: string, groupHumanId?: string | null) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -243,12 +247,12 @@ export const AutoComplete = ({
   }, [autoFocus, isOpen]);
 
   const handleSearch = useCallback(
-    (nextValue: string) => {
+    (nextValue: string, groupHumanId?: string | null) => {
       if (nextValue.trim()) {
         saveRecentSearch(nextValue.trim());
         setRecentSearches(getRecentSearches());
       }
-      onSearch(nextValue);
+      onSearch(nextValue, groupHumanId);
       setTimeout(() => {
         setOpen(false);
       }, 100);
@@ -279,7 +283,7 @@ export const AutoComplete = ({
         );
 
         if (optionToSelect) {
-          handleSearch(optionToSelect.phrase);
+          handleSearch(optionToSelect.phrase, optionToSelect.groupHumanId);
         } else {
           handleSearch(input.value);
         }
@@ -307,7 +311,7 @@ export const AutoComplete = ({
   const handleSelectProduct = useCallback(
     (selectedSuggestion: ProductSuggestion) => {
       setInputValue(selectedSuggestion.phrase);
-      handleSearch(selectedSuggestion.phrase);
+      handleSearch(selectedSuggestion.phrase, selectedSuggestion.groupHumanId);
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -335,8 +339,22 @@ export const AutoComplete = ({
   const hasSearchValue = inputValue.trim().length > 0;
   
   // When input is empty, show recent searches; otherwise show suggestions
-  const displayItems: { phrase: string; type: SuggestionType }[] = hasSearchValue
-    ? suggestions.map((s) => ({ phrase: s.phrase, type: "suggestion" as const }))
+  type DisplayItem = {
+    phrase: string;
+    type: SuggestionType;
+    groupId?: number | null;
+    groupHumanId?: string | null;
+    parentGroupName?: string | null;
+  };
+  
+  const displayItems: DisplayItem[] = hasSearchValue
+    ? suggestions.map((s) => ({
+        phrase: s.phrase,
+        type: "suggestion" as const,
+        groupId: s.groupId,
+        groupHumanId: s.groupHumanId,
+        parentGroupName: s.parentGroupName,
+      }))
     : recentSearches.map((phrase) => ({ phrase, type: "recent" as const }));
   
   const hasMultipleSuggestions = displayItems.length >= 1;
@@ -479,7 +497,7 @@ export const AutoComplete = ({
                           event.preventDefault();
                           event.stopPropagation();
                         }}
-                        onSelect={() => handleSelectProduct({ phrase: item.phrase, sml: 0 })}
+                        onSelect={() => handleSelectProduct({ phrase: item.phrase, sml: 0, groupId: item.groupId ?? null, groupName: null, groupHumanId: item.groupHumanId ?? null, parentGroupName: item.parentGroupName ?? null })}
                         className={cn("flex w-full items-center gap-2 text-base")}
                       >
                         {isRecent ? (
@@ -492,6 +510,11 @@ export const AutoComplete = ({
                             ? item.phrase
                             : renderHighlightedPhrase(item.phrase, inputValue)}
                         </span>
+                        {item.groupId && (
+                          <span className="text-sm text-muted-foreground opacity-70 shrink-0">
+                            {item.parentGroupName ? `en ${item.parentGroupName}` : "Categoría"}
+                          </span>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon-sm"

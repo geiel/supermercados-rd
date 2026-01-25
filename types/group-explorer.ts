@@ -51,9 +51,16 @@ export type GroupExplorerGroup = {
   cheaperProductId: number | null;
 };
 
+export type GroupExplorerChildGroup = {
+  id: number;
+  name: string;
+  humanNameId: string;
+};
+
 export type GroupExplorerResponse = {
   group: GroupExplorerGroup;
   products: GroupExplorerProduct[];
+  childGroups: GroupExplorerChildGroup[];
   total: number;
   nextOffset: number;
 };

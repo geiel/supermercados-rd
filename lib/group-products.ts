@@ -12,6 +12,7 @@ import {
   productsShopsPrices,
 } from "@/db/schema";
 import type {
+  GroupExplorerChildGroup,
   GroupExplorerProduct,
   GroupExplorerResponse,
   GroupExplorerSort,
@@ -54,6 +55,22 @@ export async function getGroupProducts({
   if (!group) {
     return null;
   }
+
+  // Fetch child groups where parentGroupId equals current group's id
+  const childGroupsRows = await db.query.groups.findMany({
+    columns: {
+      id: true,
+      name: true,
+      humanNameId: true,
+    },
+    where: (groups, { eq }) => eq(groups.parentGroupId, group.id),
+  });
+
+  const childGroups: GroupExplorerChildGroup[] = childGroupsRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    humanNameId: row.humanNameId,
+  }));
 
   const priceFilters = and(
     isNotNull(productsShopsPrices.currentPrice),
@@ -263,6 +280,7 @@ export async function getGroupProducts({
       cheaperProductId: group.cheaperProductId,
     },
     products: productsList,
+    childGroups,
     total,
     nextOffset: offset + productsList.length,
   };

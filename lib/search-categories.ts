@@ -27,6 +27,7 @@ export async function searchGroups(value: string) {
                 )
                 AND ${productsShopsPrices.hidden} IS NOT TRUE
                 AND COALESCE(deleted, FALSE) = FALSE
+                AND ${groups.parentGroupId} IS NULL
             ),
             fuzzy AS (
                 SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id
@@ -37,6 +38,7 @@ export async function searchGroups(value: string) {
                 WHERE unaccent(lower(${products.name})) % unaccent(lower(${value}))
                 AND ${productsShopsPrices.hidden} IS NOT TRUE
                 AND deleted IS NOT TRUE
+                AND ${groups.parentGroupId} IS NULL
             ),
             combined AS (
                 SELECT DISTINCT group_name, human_id, group_id FROM fts
