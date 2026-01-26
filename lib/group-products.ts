@@ -33,6 +33,7 @@ type GroupRow = {
   humanNameId: string;
   cheaperProductId: number | null;
   compareBy: string | null;
+  isComparable: boolean;
 };
 
 export async function getGroupProducts({
@@ -48,6 +49,7 @@ export async function getGroupProducts({
       humanNameId: true,
       cheaperProductId: true,
       compareBy: true,
+      isComparable: true,
     },
     where: (groups, { eq }) => eq(groups.humanNameId, humanId),
   })) as GroupRow | undefined;
@@ -62,6 +64,7 @@ export async function getGroupProducts({
       id: true,
       name: true,
       humanNameId: true,
+      isComparable: true,
     },
     where: (groups, { eq }) => eq(groups.parentGroupId, group.id),
   });
@@ -70,6 +73,7 @@ export async function getGroupProducts({
     id: row.id,
     name: row.name,
     humanNameId: row.humanNameId,
+    isComparable: row.isComparable,
   }));
 
   const priceFilters = and(
@@ -278,6 +282,7 @@ export async function getGroupProducts({
       name: group.name,
       humanId: group.humanNameId,
       cheaperProductId: group.cheaperProductId,
+      isComparable: group.isComparable,
     },
     products: productsList,
     childGroups,

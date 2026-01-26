@@ -36,6 +36,7 @@ type CategoryBadgeProps = {
   groupName: string;
   groupHumanNameId: string;
   showLabel?: boolean;
+  isComparable?: boolean;
 };
 
 export function CategoryBadge({
@@ -43,6 +44,7 @@ export function CategoryBadge({
   groupName,
   groupHumanNameId,
   showLabel = false,
+  isComparable = true,
 }: CategoryBadgeProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -200,15 +202,32 @@ export function CategoryBadge({
         >
           {groupName}
         </Link>
-        <button
-          type="button"
-          className={addButtonClassName}
-          style={addButtonStyle}
-          onClick={handleClick}
-          disabled={isLoading || isLoadingLists || isMutating}
+        {isComparable && (
+          <button
+            type="button"
+            className={addButtonClassName}
+            style={addButtonStyle}
+            onClick={handleClick}
+            disabled={isLoading || isLoadingLists || isMutating}
+          >
+            {addButtonContent}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // If not comparable, show only the link without add button
+  if (!isComparable) {
+    return (
+      <div className="inline-flex items-center justify-between gap-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:shadow">
+        <Link
+          href={`/groups/${groupHumanNameId}`}
+          className="px-5 py-2.5 w-full"
+          prefetch={false}
         >
-          {addButtonContent}
-        </button>
+          {groupName}
+        </Link>
       </div>
     );
   }

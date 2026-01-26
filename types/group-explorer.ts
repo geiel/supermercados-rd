@@ -49,12 +49,14 @@ export type GroupExplorerGroup = {
   name: string;
   humanId: string;
   cheaperProductId: number | null;
+  isComparable: boolean;
 };
 
 export type GroupExplorerChildGroup = {
   id: number;
   name: string;
   humanNameId: string;
+  isComparable: boolean;
 };
 
 export type GroupExplorerResponse = {

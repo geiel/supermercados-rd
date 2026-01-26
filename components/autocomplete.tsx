@@ -25,27 +25,58 @@ import { productsSelect } from "@/db/schema";
 import { ArrowLeft, ArrowRight, ArrowUpLeft, Search, Clock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const RECENT_SEARCHES_KEY = "recent-searches";
+const RECENT_SEARCHES_KEY = "recent-searches-v2";
 const MAX_RECENT_SEARCHES = 5;
 
 type SuggestionType = "suggestion" | "recent";
 
-const getRecentSearches = (): string[] => {
+type RecentSearch = {
+  phrase: string;
+  groupId?: number | null;
+  groupHumanId?: string | null;
+  parentGroupName?: string | null;
+};
+
+const getRecentSearches = (): RecentSearch[] => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    // Handle migration from old format (string[]) to new format (RecentSearch[])
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      if (typeof parsed[0] === "string") {
+        // Old format - migrate to new format
+        return parsed.map((phrase: string) => ({ phrase }));
+      }
+      return parsed;
+    }
+    return [];
   } catch {
     return [];
   }
 };
 
-const saveRecentSearch = (query: string) => {
+const saveRecentSearch = (
+  query: string,
+  groupId?: number | null,
+  groupHumanId?: string | null,
+  parentGroupName?: string | null
+) => {
   if (typeof window === "undefined" || !query.trim()) return;
   try {
     const recent = getRecentSearches();
-    const filtered = recent.filter((item) => item.toLowerCase() !== query.toLowerCase());
-    const updated = [query, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    // Filter out duplicates by phrase (case-insensitive)
+    const filtered = recent.filter(
+      (item) => item.phrase.toLowerCase() !== query.toLowerCase()
+    );
+    const newEntry: RecentSearch = {
+      phrase: query,
+      groupId: groupId ?? null,
+      groupHumanId: groupHumanId ?? null,
+      parentGroupName: parentGroupName ?? null,
+    };
+    const updated = [newEntry, ...filtered].slice(0, MAX_RECENT_SEARCHES);
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
   } catch {
     // Ignore localStorage errors
@@ -210,7 +241,7 @@ export const AutoComplete = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [isOpenInternal, setOpenInternal] = useState(false);
   const isOpen = open ?? isOpenInternal;
   const setOpen = useCallback(
@@ -247,9 +278,14 @@ export const AutoComplete = ({
   }, [autoFocus, isOpen]);
 
   const handleSearch = useCallback(
-    (nextValue: string, groupHumanId?: string | null) => {
+    (
+      nextValue: string,
+      groupHumanId?: string | null,
+      groupId?: number | null,
+      parentGroupName?: string | null
+    ) => {
       if (nextValue.trim()) {
-        saveRecentSearch(nextValue.trim());
+        saveRecentSearch(nextValue.trim(), groupId, groupHumanId, parentGroupName);
         setRecentSearches(getRecentSearches());
       }
       onSearch(nextValue, groupHumanId);
@@ -283,7 +319,12 @@ export const AutoComplete = ({
         );
 
         if (optionToSelect) {
-          handleSearch(optionToSelect.phrase, optionToSelect.groupHumanId);
+          handleSearch(
+            optionToSelect.phrase,
+            optionToSelect.groupHumanId,
+            optionToSelect.groupId,
+            optionToSelect.parentGroupName
+          );
         } else {
           handleSearch(input.value);
         }
@@ -311,7 +352,12 @@ export const AutoComplete = ({
   const handleSelectProduct = useCallback(
     (selectedSuggestion: ProductSuggestion) => {
       setInputValue(selectedSuggestion.phrase);
-      handleSearch(selectedSuggestion.phrase, selectedSuggestion.groupHumanId);
+      handleSearch(
+        selectedSuggestion.phrase,
+        selectedSuggestion.groupHumanId,
+        selectedSuggestion.groupId,
+        selectedSuggestion.parentGroupName
+      );
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -355,7 +401,13 @@ export const AutoComplete = ({
         groupHumanId: s.groupHumanId,
         parentGroupName: s.parentGroupName,
       }))
-    : recentSearches.map((phrase) => ({ phrase, type: "recent" as const }));
+    : recentSearches.map((recent) => ({
+        phrase: recent.phrase,
+        type: "recent" as const,
+        groupId: recent.groupId,
+        groupHumanId: recent.groupHumanId,
+        parentGroupName: recent.parentGroupName,
+      }));
   
   const hasMultipleSuggestions = displayItems.length >= 1;
   const inputBottomRadiusClass = hasMultipleSuggestions

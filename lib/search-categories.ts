@@ -14,7 +14,7 @@ export async function searchGroups(value: string) {
     const query = sql`
         WITH
             fts AS (
-                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id
+                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id, ${groups.isComparable} AS is_comparable
                 FROM ${products}
                 INNER JOIN ${productsShopsPrices} ON ${productsShopsPrices.productId} = ${products.id}
                 INNER JOIN ${productsGroups} ON ${productsGroups.productId} = ${products.id}
@@ -30,7 +30,7 @@ export async function searchGroups(value: string) {
                 AND ${groups.parentGroupId} IS NULL
             ),
             fuzzy AS (
-                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id
+                SELECT ${groups.name} AS group_name, ${groups.humanNameId} AS human_id, ${groups.id} AS group_id, ${groups.isComparable} AS is_comparable
                 FROM ${products}
                 INNER JOIN ${productsShopsPrices} ON ${productsShopsPrices.productId} = ${products.id}
                 INNER JOIN ${productsGroups} ON ${productsGroups.productId} = ${products.id}
@@ -41,11 +41,11 @@ export async function searchGroups(value: string) {
                 AND ${groups.parentGroupId} IS NULL
             ),
             combined AS (
-                SELECT DISTINCT group_name, human_id, group_id FROM fts
+                SELECT DISTINCT group_name, human_id, group_id, is_comparable FROM fts
                 UNION
-                SELECT DISTINCT group_name, human_id, group_id FROM fuzzy
+                SELECT DISTINCT group_name, human_id, group_id, is_comparable FROM fuzzy
             )
-        SELECT group_name, human_id, group_id
+        SELECT group_name, human_id, group_id, is_comparable
         FROM combined
         ORDER BY
             CASE
@@ -57,6 +57,6 @@ export async function searchGroups(value: string) {
         LIMIT 20
     `;
 
-    const rows = await db.execute<{ group_name: string; human_id: string; group_id: number }>(query);
-    return rows.map((row) => ({name: row.group_name, humanId: row.human_id, groupId: row.group_id}));
+    const rows = await db.execute<{ group_name: string; human_id: string; group_id: number; is_comparable: boolean }>(query);
+    return rows.map((row) => ({name: row.group_name, humanId: row.human_id, groupId: row.group_id, isComparable: row.is_comparable}));
 }

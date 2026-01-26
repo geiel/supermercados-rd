@@ -26,10 +26,12 @@ export async function GroupExplorer({ humanId }: { humanId: string }) {
                         ({result.total})
                     </span>
                 </div>
-                <AddGroupToListButton
-                    groupId={result.group.id}
-                    groupName={result.group.name}
-                />
+                {result.group.isComparable && (
+                    <AddGroupToListButton
+                        groupId={result.group.id}
+                        groupName={result.group.name}
+                    />
+                )}
             </div>
             {result.childGroups.length > 0 && (
                 <div className="space-y-2">
@@ -42,6 +44,7 @@ export async function GroupExplorer({ humanId }: { humanId: string }) {
                                     groupId={child.id}
                                     groupName={child.name}
                                     groupHumanNameId={child.humanNameId}
+                                    isComparable={child.isComparable}
                                 />
                             ))}
                         </div>

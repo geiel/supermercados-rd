@@ -6,7 +6,7 @@ import { TypographyH3 } from "./typography-h3";
 import { Button } from "./ui/button";
 import { SuggestCategoryDrawer } from "./suggest-category-drawer";
 
-type GroupResult = { name: string; humanId: string; groupId: number };
+type GroupResult = { name: string; humanId: string; groupId: number; isComparable: boolean };
 
 export function CategorySearch({ groupResults }: { groupResults: Array<GroupResult> }) {
     const [showAllMobile, setShowAllMobile] = useState(false);
@@ -28,6 +28,7 @@ export function CategorySearch({ groupResults }: { groupResults: Array<GroupResu
               groupId={group.groupId}
               groupName={group.name}
               groupHumanNameId={group.humanId}
+              isComparable={group.isComparable}
             />
           ))}
           <SuggestCategoryDrawer>
@@ -43,6 +44,7 @@ export function CategorySearch({ groupResults }: { groupResults: Array<GroupResu
               groupId={group.groupId}
               groupName={group.name}
               groupHumanNameId={group.humanId}
+              isComparable={group.isComparable}
             />
           ))}
           {!showAllMobile && groupResults.length > 4 ? (
