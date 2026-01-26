@@ -12,7 +12,40 @@ import { sql, and, eq, isNull, or } from "drizzle-orm";
 import { products, productsShopsPrices } from "@/db/schema/products";
 
 const shopIds = [1, 2, 3, 4, 5, 6] as const;
-const iterationCount = 200;
+const iterationCount = 50;
+const urlsPerShop = 5;
+
+async function processShopPrice(shopPrice: {
+  productId: number;
+  shopId: number;
+  url: string;
+  api: string | null;
+  currentPrice: string | null;
+  regularPrice: string | null;
+  updateAt: Date | null;
+  hidden: boolean | null;
+}) {
+  switch (shopPrice.shopId) {
+    case 1:
+      await sirena.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 2:
+      await nacional.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 3:
+      await jumbo.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 4:
+      await plazaLama.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 5:
+      await pricesmart.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 6:
+      await bravo.processByProductShopPrice(shopPrice, false, true);
+      break;
+  }
+}
 
 async function main() {
   const shopPricesFilter = and(
@@ -34,6 +67,9 @@ async function main() {
 
   console.time("batch-shop-prices");
   for (let iteration = 1; iteration <= iterationCount; iteration += 1) {
+    const iterationStart = Date.now();
+
+    // Fetch 5 URLs per shop
     const perShopPrices = await Promise.all(
       shopIds.map(async (shopId) => {
         const rows = await db
@@ -51,46 +87,44 @@ async function main() {
           .innerJoin(products, eq(productsShopsPrices.productId, products.id))
           .where(and(eq(productsShopsPrices.shopId, shopId), shopPricesFilter))
           .orderBy(productsShopsPrices.updateAt)
-          .limit(1);
+          .limit(urlsPerShop);
 
-        return rows[0];
+        return rows;
       })
     );
 
-    const shopPrices = perShopPrices.filter(
-      (shopPrice): shopPrice is NonNullable<typeof shopPrice> => Boolean(shopPrice)
-    );
-
+    // Calculate total URLs to process
+    const totalUrls = perShopPrices.reduce((sum, prices) => sum + prices.length, 0);
     console.log(
-      `[INFO] Iteration ${iteration}/${iterationCount} - ${shopPrices.length} shop prices found`
+      `[INFO] Iteration ${iteration}/${iterationCount} - ${totalUrls} URLs found across ${shopIds.length} shops`
     );
 
-    await Promise.all(
-      shopPrices.map(async (shopPrice) => {
-        switch (shopPrice.shopId) {
-          case 1:
-            await sirena.processByProductShopPrice(shopPrice, false, true);
-            break;
-          case 2:
-            await nacional.processByProductShopPrice(shopPrice, false, true);
-            break;
-          case 3:
-            await jumbo.processByProductShopPrice(shopPrice, false, true);
-            break;
-          case 4:
-            await plazaLama.processByProductShopPrice(shopPrice, false, true);
-            break;
-          case 5:
-            await pricesmart.processByProductShopPrice(shopPrice, false, true);
-            break;
-          case 6:
-            await bravo.processByProductShopPrice(shopPrice, false, true);
-            break;
-        }
-      })
-    );
+    // Process round by round: first URL from each shop, then second, etc.
+    // This ensures no shop is called twice at the same time
+    for (let round = 0; round < urlsPerShop; round++) {
+      const roundPrices = perShopPrices
+        .map((shopPrices) => shopPrices[round])
+        .filter((price): price is NonNullable<typeof price> => Boolean(price));
 
-    await randomDelay(800, 1000);
+      if (roundPrices.length === 0) break;
+
+      console.log(
+        `[INFO] Iteration ${iteration} - Round ${round + 1}/${urlsPerShop} - Processing ${roundPrices.length} URLs`
+      );
+
+      // Process one URL per shop in parallel (no shop called twice at the same time)
+      await Promise.all(roundPrices.map((shopPrice) => processShopPrice(shopPrice)));
+
+      // Add delay between rounds (600-1200ms)
+      if (round < urlsPerShop - 1 && roundPrices.length > 0) {
+        await randomDelay(600, 1200);
+      }
+    }
+
+    await randomDelay(600, 1200);
+
+    const iterationTime = Date.now() - iterationStart;
+    console.log(`[INFO] Iteration ${iteration}/${iterationCount} completed in ${iterationTime}ms`);
   }
   console.timeEnd("batch-shop-prices");
 
