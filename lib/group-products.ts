@@ -96,7 +96,10 @@ export async function getGroupProducts({
   const priceFilters = and(...priceFilterConditions);
 
   // Build product filters
-  const productFilterConditions = [eq(productsGroups.groupId, group.id)];
+  const productFilterConditions = [
+    eq(productsGroups.groupId, group.id),
+    or(isNull(products.deleted), eq(products.deleted, false)),
+  ];
 
   // Add unit filter if provided
   if (units && units.length > 0) {

@@ -69,7 +69,10 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     const priceFilters = and(...priceFilterConditions);
-    const productFilterConditions = [eq(productsGroups.groupId, group.id)];
+    const productFilterConditions = [
+      eq(productsGroups.groupId, group.id),
+      or(isNull(products.deleted), eq(products.deleted, false)),
+    ];
 
     if (units.length > 0) {
       productFilterConditions.push(inArray(products.unit, units));
