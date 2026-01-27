@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, ResponsiveContainer, Cell } from "recharts";
@@ -422,14 +422,22 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
 
   const currentMinPrice = searchParams.get("min_price");
   const currentMaxPrice = searchParams.get("max_price");
+  const currentMinValue = currentMinPrice || "";
+  const currentMaxValue = currentMaxPrice || "";
+  const currentPriceKey = `${currentMinValue}|${currentMaxValue}`;
   const priceStatsParams = useMemo(
     () => buildFilterParams(searchParams, ["shop_ids", "units"]),
     [searchParams]
   );
 
-  const [localMin, setLocalMin] = useState(currentMinPrice || "");
-  const [localMax, setLocalMax] = useState(currentMaxPrice || "");
-  const [sliderValues, setSliderValues] = useState<[number, number] | null>(null);
+  const [localMin, setLocalMin] = useState(currentMinValue);
+  const [localMax, setLocalMax] = useState(currentMaxValue);
+  const [isEditingMin, setIsEditingMin] = useState(false);
+  const [isEditingMax, setIsEditingMax] = useState(false);
+  const [sliderDraft, setSliderDraft] = useState<{
+    key: string;
+    values: [number, number];
+  } | null>(null);
 
   const { data: priceStats, isLoading } = useQuery<PriceStatsResponse>({
     queryKey: ["group-price-stats", humanId, priceStatsParams],
@@ -444,13 +452,22 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
     staleTime: 60000,
   });
 
-  // Sync local state with URL params
-  useEffect(() => {
-    setLocalMin(currentMinPrice || "");
-    setLocalMax(currentMaxPrice || "");
-    // Reset slider values when URL params change
-    setSliderValues(null);
-  }, [currentMinPrice, currentMaxPrice]);
+  const effectiveSliderValues =
+    sliderDraft && sliderDraft.key === currentPriceKey ? sliderDraft.values : null;
+  const hasDraftValues =
+    effectiveSliderValues !== null || isEditingMin || isEditingMax;
+  const displayMin = hasDraftValues ? localMin : currentMinValue;
+  const displayMax = hasDraftValues ? localMax : currentMaxValue;
+
+  const syncLocalFromDisplay = useCallback(() => {
+    if (effectiveSliderValues) {
+      setLocalMin(String(effectiveSliderValues[0]));
+      setLocalMax(String(effectiveSliderValues[1]));
+      return;
+    }
+    setLocalMin(currentMinValue);
+    setLocalMax(currentMaxValue);
+  }, [currentMaxValue, currentMinValue, effectiveSliderValues]);
 
   const updatePriceRange = useCallback(
     (min: number | null, max: number | null) => {
@@ -482,12 +499,12 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
     (values: number[]) => {
       if (values.length === 2 && priceStats) {
         const [min, max] = values;
-        setSliderValues([min, max]);
+        setSliderDraft({ key: currentPriceKey, values: [min, max] });
         setLocalMin(String(min));
         setLocalMax(String(max));
       }
     },
-    [priceStats]
+    [currentPriceKey, priceStats]
   );
 
   const handleSliderCommit = useCallback(
@@ -496,18 +513,42 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
         const [min, max] = values;
         const actualMin = min === priceStats.min ? null : min;
         const actualMax = max === priceStats.max ? null : max;
-        // Keep sliderValues set - it will be reset by useEffect when URL params change
         updatePriceRange(actualMin, actualMax);
       }
     },
     [priceStats, updatePriceRange]
   );
 
-  const handleInputBlur = useCallback(() => {
+  const commitInputs = useCallback(() => {
     const min = localMin ? Number(localMin) : null;
     const max = localMax ? Number(localMax) : null;
-    updatePriceRange(min, max);
-  }, [localMin, localMax, updatePriceRange]);
+    const normalizedMin =
+      min !== null && Number.isFinite(min) && min > 0 ? min : null;
+    const normalizedMax =
+      max !== null && Number.isFinite(max) && max > 0 ? max : null;
+
+    if (priceStats) {
+      setSliderDraft({
+        key: currentPriceKey,
+        values: [
+          normalizedMin ?? priceStats.min,
+          normalizedMax ?? priceStats.max,
+        ],
+      });
+    }
+
+    updatePriceRange(normalizedMin, normalizedMax);
+  }, [currentPriceKey, localMax, localMin, priceStats, updatePriceRange]);
+
+  const handleMinBlur = useCallback(() => {
+    setIsEditingMin(false);
+    commitInputs();
+  }, [commitInputs]);
+
+  const handleMaxBlur = useCallback(() => {
+    setIsEditingMax(false);
+    commitInputs();
+  }, [commitInputs]);
 
   const handleQuickFilter = useCallback(
     (minPrice: number | null, maxPrice: number | null) => {
@@ -518,12 +559,11 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
 
   const sliderValue = useMemo(() => {
     if (!priceStats) return [0, 100];
-    // Use local slider values during/after dragging until URL updates
-    if (sliderValues) return sliderValues;
+    if (effectiveSliderValues) return effectiveSliderValues;
     const min = currentMinPrice ? Number(currentMinPrice) : priceStats.min;
     const max = currentMaxPrice ? Number(currentMaxPrice) : priceStats.max;
     return [min, max];
-  }, [currentMinPrice, currentMaxPrice, priceStats, sliderValues]);
+  }, [currentMinPrice, currentMaxPrice, effectiveSliderValues, priceStats]);
 
   const activeQuickFilter = useMemo(() => {
     if (!priceStats) return null;
@@ -578,20 +618,44 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
             <Input
               type="number"
               placeholder={String(priceStats.min)}
-              value={localMin}
-              onChange={(e) => setLocalMin(e.target.value)}
-              onBlur={handleInputBlur}
-              onKeyDown={(e) => e.key === "Enter" && handleInputBlur()}
+              value={displayMin}
+              onFocus={() => {
+                syncLocalFromDisplay();
+                setIsEditingMin(true);
+              }}
+              onChange={(e) => {
+                setLocalMin(e.target.value);
+                setIsEditingMin(true);
+              }}
+              onBlur={handleMinBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleMinBlur();
+                }
+              }}
               className="h-9"
             />
             <span className="text-muted-foreground">-</span>
             <Input
               type="number"
               placeholder={String(priceStats.max)}
-              value={localMax}
-              onChange={(e) => setLocalMax(e.target.value)}
-              onBlur={handleInputBlur}
-              onKeyDown={(e) => e.key === "Enter" && handleInputBlur()}
+              value={displayMax}
+              onFocus={() => {
+                syncLocalFromDisplay();
+                setIsEditingMax(true);
+              }}
+              onChange={(e) => {
+                setLocalMax(e.target.value);
+                setIsEditingMax(true);
+              }}
+              onBlur={handleMaxBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleMaxBlur();
+                }
+              }}
               className="h-9"
             />
           </div>
