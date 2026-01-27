@@ -64,6 +64,11 @@ export async function GET(request: Request, { params }: RouteParams) {
     );
 
     // Get unique units with counts for products in this group
+    const productFilterConditions = [
+      eq(productsGroups.groupId, group.id),
+      or(isNull(products.deleted), eq(products.deleted, false)),
+    ];
+
     const unitRows = await db
       .select({
         unit: products.unit,
@@ -75,7 +80,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         productsShopsPrices,
         and(eq(productsShopsPrices.productId, products.id), basePriceFilters)
       )
-      .where(eq(productsGroups.groupId, group.id))
+      .where(and(...productFilterConditions))
       .groupBy(products.unit)
       .orderBy(sql`count(distinct ${products.id}) desc`);
 
@@ -104,7 +109,10 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     const filteredPriceFilters = and(...filteredPriceConditions);
-    const productFilterConditions = [eq(productsGroups.groupId, group.id)];
+    const filteredProductFilterConditions = [
+      eq(productsGroups.groupId, group.id),
+      or(isNull(products.deleted), eq(products.deleted, false)),
+    ];
 
     const minCurrentPrice = sql<string>`min(${productsShopsPrices.currentPrice})`;
     const havingConditions: ReturnType<typeof sql>[] = [];
@@ -132,7 +140,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         productsShopsPrices,
         and(eq(productsShopsPrices.productId, products.id), filteredPriceFilters)
       )
-      .where(and(...productFilterConditions))
+      .where(and(...filteredProductFilterConditions))
       .groupBy(products.id, products.unit);
 
     const filteredProductsQuery = havingClause

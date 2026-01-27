@@ -64,6 +64,11 @@ export async function GET(request: Request, { params }: RouteParams) {
     );
 
     // Get shops with product counts for this group
+    const productFilterConditions = [
+      eq(productsGroups.groupId, group.id),
+      or(isNull(products.deleted), eq(products.deleted, false)),
+    ];
+
     const shopRows = await db
       .select({
         shopId: shops.id,
@@ -77,7 +82,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         and(eq(productsShopsPrices.productId, products.id), basePriceFilters)
       )
       .innerJoin(shops, eq(shops.id, productsShopsPrices.shopId))
-      .where(eq(productsGroups.groupId, group.id))
+      .where(and(...productFilterConditions))
       .groupBy(shops.id, shops.name)
       .orderBy(sql`count(distinct ${products.id}) desc`);
 
@@ -112,10 +117,13 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     const filteredPriceFilters = and(...filteredPriceConditions);
-    const productFilterConditions = [eq(productsGroups.groupId, group.id)];
+    const filteredProductFilterConditions = [
+      eq(productsGroups.groupId, group.id),
+      or(isNull(products.deleted), eq(products.deleted, false)),
+    ];
 
     if (units.length > 0) {
-      productFilterConditions.push(inArray(products.unit, units));
+      filteredProductFilterConditions.push(inArray(products.unit, units));
     }
 
     const filteredShopRows = await db
@@ -130,7 +138,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         and(eq(productsShopsPrices.productId, products.id), filteredPriceFilters)
       )
       .innerJoin(shops, eq(shops.id, productsShopsPrices.shopId))
-      .where(and(...productFilterConditions))
+      .where(and(...filteredProductFilterConditions))
       .groupBy(shops.id);
 
     const countsByShopId = new Map<number, number>(
