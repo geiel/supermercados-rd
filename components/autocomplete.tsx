@@ -25,27 +25,58 @@ import { productsSelect } from "@/db/schema";
 import { ArrowLeft, ArrowRight, ArrowUpLeft, Search, Clock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const RECENT_SEARCHES_KEY = "recent-searches";
+const RECENT_SEARCHES_KEY = "recent-searches-v2";
 const MAX_RECENT_SEARCHES = 5;
 
 type SuggestionType = "suggestion" | "recent";
 
-const getRecentSearches = (): string[] => {
+type RecentSearch = {
+  phrase: string;
+  groupId?: number | null;
+  groupHumanId?: string | null;
+  parentGroupName?: string | null;
+};
+
+const getRecentSearches = (): RecentSearch[] => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    // Handle migration from old format (string[]) to new format (RecentSearch[])
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      if (typeof parsed[0] === "string") {
+        // Old format - migrate to new format
+        return parsed.map((phrase: string) => ({ phrase }));
+      }
+      return parsed;
+    }
+    return [];
   } catch {
     return [];
   }
 };
 
-const saveRecentSearch = (query: string) => {
+const saveRecentSearch = (
+  query: string,
+  groupId?: number | null,
+  groupHumanId?: string | null,
+  parentGroupName?: string | null
+) => {
   if (typeof window === "undefined" || !query.trim()) return;
   try {
     const recent = getRecentSearches();
-    const filtered = recent.filter((item) => item.toLowerCase() !== query.toLowerCase());
-    const updated = [query, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    // Filter out duplicates by phrase (case-insensitive)
+    const filtered = recent.filter(
+      (item) => item.phrase.toLowerCase() !== query.toLowerCase()
+    );
+    const newEntry: RecentSearch = {
+      phrase: query,
+      groupId: groupId ?? null,
+      groupHumanId: groupHumanId ?? null,
+      parentGroupName: parentGroupName ?? null,
+    };
+    const updated = [newEntry, ...filtered].slice(0, MAX_RECENT_SEARCHES);
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
   } catch {
     // Ignore localStorage errors
@@ -55,6 +86,10 @@ const saveRecentSearch = (query: string) => {
 type ProductSuggestion = {
   phrase: string;
   sml: number;
+  groupId: number | null;
+  groupName: string | null;
+  groupHumanId: string | null;
+  parentGroupName: string | null;
 };
 
 type AutoCompleteProps = {
@@ -63,7 +98,7 @@ type AutoCompleteProps = {
   value?: productsSelect;
   productName?: string;
   onInputChange?: (value: string) => void;
-  onSearch: (inputValue: string) => void;
+  onSearch: (inputValue: string, groupHumanId?: string | null) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -206,7 +241,7 @@ export const AutoComplete = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [isOpenInternal, setOpenInternal] = useState(false);
   const isOpen = open ?? isOpenInternal;
   const setOpen = useCallback(
@@ -243,12 +278,17 @@ export const AutoComplete = ({
   }, [autoFocus, isOpen]);
 
   const handleSearch = useCallback(
-    (nextValue: string) => {
+    (
+      nextValue: string,
+      groupHumanId?: string | null,
+      groupId?: number | null,
+      parentGroupName?: string | null
+    ) => {
       if (nextValue.trim()) {
-        saveRecentSearch(nextValue.trim());
+        saveRecentSearch(nextValue.trim(), groupId, groupHumanId, parentGroupName);
         setRecentSearches(getRecentSearches());
       }
-      onSearch(nextValue);
+      onSearch(nextValue, groupHumanId);
       setTimeout(() => {
         setOpen(false);
       }, 100);
@@ -279,7 +319,12 @@ export const AutoComplete = ({
         );
 
         if (optionToSelect) {
-          handleSearch(optionToSelect.phrase);
+          handleSearch(
+            optionToSelect.phrase,
+            optionToSelect.groupHumanId,
+            optionToSelect.groupId,
+            optionToSelect.parentGroupName
+          );
         } else {
           handleSearch(input.value);
         }
@@ -307,7 +352,12 @@ export const AutoComplete = ({
   const handleSelectProduct = useCallback(
     (selectedSuggestion: ProductSuggestion) => {
       setInputValue(selectedSuggestion.phrase);
-      handleSearch(selectedSuggestion.phrase);
+      handleSearch(
+        selectedSuggestion.phrase,
+        selectedSuggestion.groupHumanId,
+        selectedSuggestion.groupId,
+        selectedSuggestion.parentGroupName
+      );
 
       // This is a hack to prevent the input from being focused after the user selects an option
       // We can call this hack: "The next tick"
@@ -335,9 +385,29 @@ export const AutoComplete = ({
   const hasSearchValue = inputValue.trim().length > 0;
   
   // When input is empty, show recent searches; otherwise show suggestions
-  const displayItems: { phrase: string; type: SuggestionType }[] = hasSearchValue
-    ? suggestions.map((s) => ({ phrase: s.phrase, type: "suggestion" as const }))
-    : recentSearches.map((phrase) => ({ phrase, type: "recent" as const }));
+  type DisplayItem = {
+    phrase: string;
+    type: SuggestionType;
+    groupId?: number | null;
+    groupHumanId?: string | null;
+    parentGroupName?: string | null;
+  };
+  
+  const displayItems: DisplayItem[] = hasSearchValue
+    ? suggestions.map((s) => ({
+        phrase: s.phrase,
+        type: "suggestion" as const,
+        groupId: s.groupId,
+        groupHumanId: s.groupHumanId,
+        parentGroupName: s.parentGroupName,
+      }))
+    : recentSearches.map((recent) => ({
+        phrase: recent.phrase,
+        type: "recent" as const,
+        groupId: recent.groupId,
+        groupHumanId: recent.groupHumanId,
+        parentGroupName: recent.parentGroupName,
+      }));
   
   const hasMultipleSuggestions = displayItems.length >= 1;
   const inputBottomRadiusClass = hasMultipleSuggestions
@@ -479,7 +549,7 @@ export const AutoComplete = ({
                           event.preventDefault();
                           event.stopPropagation();
                         }}
-                        onSelect={() => handleSelectProduct({ phrase: item.phrase, sml: 0 })}
+                        onSelect={() => handleSelectProduct({ phrase: item.phrase, sml: 0, groupId: item.groupId ?? null, groupName: null, groupHumanId: item.groupHumanId ?? null, parentGroupName: item.parentGroupName ?? null })}
                         className={cn("flex w-full items-center gap-2 text-base")}
                       >
                         {isRecent ? (
@@ -492,6 +562,11 @@ export const AutoComplete = ({
                             ? item.phrase
                             : renderHighlightedPhrase(item.phrase, inputValue)}
                         </span>
+                        {item.groupId && (
+                          <span className="text-sm text-muted-foreground opacity-70 shrink-0">
+                            {item.parentGroupName ? `en ${item.parentGroupName}` : "Categoría"}
+                          </span>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon-sm"

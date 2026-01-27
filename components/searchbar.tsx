@@ -34,16 +34,27 @@ export function SearchBar({ open, onOpenChange, autoFocus }: SearchBarProps) {
       const response = await fetch(`/api/suggestions?value=${debouncedValue}`);
 
       return z
-        .array(z.object({ phrase: z.string(), sml: z.number() }))
+        .array(z.object({
+          phrase: z.string(),
+          sml: z.number(),
+          groupId: z.number().nullable(),
+          groupName: z.string().nullable(),
+          groupHumanId: z.string().nullable(),
+          parentGroupName: z.string().nullable(),
+        }))
         .parse(await response.json());
     },
     placeholderData: shouldFetch ? keepPreviousData : undefined,
   });
 
-  function explore(value: string) {
+  function explore(value: string, groupHumanId?: string | null) {
     if (!value) return;
 
-    router.push(`/explore/${encodeURIComponent(value)}`);
+    if (groupHumanId) {
+      router.push(`/groups/${groupHumanId}`);
+    } else {
+      router.push(`/explore/${encodeURIComponent(value)}`);
+    }
   }
 
   return (

@@ -1,4 +1,4 @@
-import { integer, pgTable, primaryKey, text, boolean } from "drizzle-orm/pg-core";
+import { integer, pgTable, primaryKey, text, boolean, AnyPgColumn } from "drizzle-orm/pg-core";
 import { products } from "./products";
 import { relations } from "drizzle-orm";
 
@@ -10,7 +10,9 @@ export const groups = pgTable("groups", {
     cheaperProductId: integer().references(() => products.id),
     bestValueProductId: integer().references(() => products.id),
     showSearch: boolean().notNull().default(true),
-    compareBy: text()
+    compareBy: text(),
+    isComparable: boolean().notNull().default(true),
+    parentGroupId: integer().references((): AnyPgColumn => groups.id)
 });
 
 export const groupsRelations = relations(groups, ({ many }) => ({

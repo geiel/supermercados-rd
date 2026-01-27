@@ -12,18 +12,22 @@ import {
   productsShopsPrices,
 } from "@/db/schema";
 import type {
+  GroupExplorerChildGroup,
+  GroupExplorerFilters,
   GroupExplorerProduct,
   GroupExplorerResponse,
   GroupExplorerSort,
 } from "@/types/group-explorer";
 import { GROUP_EXPLORER_DEFAULT_SORT } from "@/types/group-explorer";
 import { parseUnitWithGroupConversion, type Measurement } from "@/lib/unit-utils";
+import { inArray } from "drizzle-orm";
 
 type GetGroupProductsOptions = {
   humanId: string;
   offset?: number;
   limit: number;
   sort?: GroupExplorerSort;
+  filters?: GroupExplorerFilters;
 };
 
 type GroupRow = {
@@ -32,6 +36,7 @@ type GroupRow = {
   humanNameId: string;
   cheaperProductId: number | null;
   compareBy: string | null;
+  isComparable: boolean;
 };
 
 export async function getGroupProducts({
@@ -39,7 +44,10 @@ export async function getGroupProducts({
   offset = 0,
   limit,
   sort = GROUP_EXPLORER_DEFAULT_SORT,
+  filters = {},
 }: GetGroupProductsOptions): Promise<GroupExplorerResponse | null> {
+  const { shopIds, units, minPrice, maxPrice } = filters;
+
   const group = (await db.query.groups.findFirst({
     columns: {
       id: true,
@@ -47,6 +55,7 @@ export async function getGroupProducts({
       humanNameId: true,
       cheaperProductId: true,
       compareBy: true,
+      isComparable: true,
     },
     where: (groups, { eq }) => eq(groups.humanNameId, humanId),
   })) as GroupRow | undefined;
@@ -55,27 +64,100 @@ export async function getGroupProducts({
     return null;
   }
 
-  const priceFilters = and(
-    isNotNull(productsShopsPrices.currentPrice),
-    or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
-  );
+  // Fetch child groups where parentGroupId equals current group's id
+  const childGroupsRows = await db.query.groups.findMany({
+    columns: {
+      id: true,
+      name: true,
+      humanNameId: true,
+      isComparable: true,
+    },
+    where: (groups, { eq }) => eq(groups.parentGroupId, group.id),
+  });
 
-  const totalRows = await db
-    .select({
-      count: sql<number>`count(distinct ${products.id})`,
-    })
-    .from(productsGroups)
-    .innerJoin(products, eq(products.id, productsGroups.productId))
-    .innerJoin(
-      productsShopsPrices,
-      and(eq(productsShopsPrices.productId, products.id), priceFilters)
-    )
-    .where(eq(productsGroups.groupId, group.id));
+  const childGroups: GroupExplorerChildGroup[] = childGroupsRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    humanNameId: row.humanNameId,
+    isComparable: row.isComparable,
+  }));
+
+  // Build price filters with optional shop filtering
+  const priceFilterConditions = [
+    isNotNull(productsShopsPrices.currentPrice),
+    or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false)),
+  ];
+
+  // Add shop filter if provided
+  if (shopIds && shopIds.length > 0) {
+    priceFilterConditions.push(inArray(productsShopsPrices.shopId, shopIds));
+  }
+
+  const priceFilters = and(...priceFilterConditions);
+
+  // Build product filters
+  const productFilterConditions = [eq(productsGroups.groupId, group.id)];
+
+  // Add unit filter if provided
+  if (units && units.length > 0) {
+    productFilterConditions.push(inArray(products.unit, units));
+  }
+
+  const productFilters = and(...productFilterConditions);
+
+  // Build HAVING clause for price range
+  const minCurrentPrice = sql<string>`min(${productsShopsPrices.currentPrice})`;
+  const havingConditions: ReturnType<typeof sql>[] = [];
+
+  if (minPrice !== undefined && minPrice !== null) {
+    havingConditions.push(sql`${minCurrentPrice} >= ${minPrice}`);
+  }
+  if (maxPrice !== undefined && maxPrice !== null) {
+    havingConditions.push(sql`${minCurrentPrice} <= ${maxPrice}`);
+  }
+
+  const havingClause = havingConditions.length > 0 
+    ? sql.join(havingConditions, sql` AND `)
+    : undefined;
+
+  // Apply HAVING clause for price range in count
+  let totalRows: { count: number }[];
+  if (havingClause) {
+    totalRows = await db
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(
+        db
+          .select({ productId: products.id })
+          .from(productsGroups)
+          .innerJoin(products, eq(products.id, productsGroups.productId))
+          .innerJoin(
+            productsShopsPrices,
+            and(eq(productsShopsPrices.productId, products.id), priceFilters)
+          )
+          .where(productFilters)
+          .groupBy(products.id)
+          .having(havingClause)
+          .as("filtered_products")
+      );
+  } else {
+    totalRows = await db
+      .select({
+        count: sql<number>`count(distinct ${products.id})`,
+      })
+      .from(productsGroups)
+      .innerJoin(products, eq(products.id, productsGroups.productId))
+      .innerJoin(
+        productsShopsPrices,
+        and(eq(productsShopsPrices.productId, products.id), priceFilters)
+      )
+      .where(productFilters);
+  }
 
   const total = Number(totalRows[0]?.count ?? 0);
 
   const pBrand = alias(productsBrands, "possible_brand");
-  const minCurrentPrice = sql<string>`min(${productsShopsPrices.currentPrice})`;
   const relevanceRank = sql<number>`coalesce(${products.rank}, 0)`;
 
   // For best_value sorting, we need to handle it differently based on measurement type
@@ -102,7 +184,8 @@ export async function getGroupProducts({
   const fetchLimit = isBestValueSort ? 1000 : limit;
   const fetchOffset = isBestValueSort ? 0 : offset;
 
-  const rows = await db
+  // Build the main query with filters
+  const baseQuery = db
     .select({
       productId: products.id,
       productName: products.name,
@@ -127,7 +210,7 @@ export async function getGroupProducts({
     )
     .innerJoin(productsBrands, eq(products.brandId, productsBrands.id))
     .leftJoin(pBrand, eq(products.possibleBrandId, pBrand.id))
-    .where(eq(productsGroups.groupId, group.id))
+    .where(productFilters)
     .groupBy(
       products.id,
       products.name,
@@ -140,7 +223,14 @@ export async function getGroupProducts({
       productsBrands.name,
       pBrand.id,
       pBrand.name
-    )
+    );
+
+  // Add HAVING clause if price range filters are set
+  const queryWithHaving = havingClause 
+    ? baseQuery.having(havingClause)
+    : baseQuery;
+
+  const rows = await queryWithHaving
     .orderBy(...orderBy)
     .limit(fetchLimit)
     .offset(fetchOffset);
@@ -261,8 +351,10 @@ export async function getGroupProducts({
       name: group.name,
       humanId: group.humanNameId,
       cheaperProductId: group.cheaperProductId,
+      isComparable: group.isComparable,
     },
     products: productsList,
+    childGroups,
     total,
     nextOffset: offset + productsList.length,
   };

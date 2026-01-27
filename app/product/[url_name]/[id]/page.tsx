@@ -130,6 +130,7 @@ export default async function Page({ params }: Props) {
                     groupId={group.id}
                     groupName={group.name}
                     groupHumanNameId={group.humanNameId}
+                    isComparable={group.isComparable}
                     showLabel
                   />
                 ))}

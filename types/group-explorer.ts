@@ -10,16 +10,16 @@ export const GROUP_EXPLORER_SORT_VALUES = [
 
 export type GroupExplorerSort = (typeof GROUP_EXPLORER_SORT_VALUES)[number];
 
-export const GROUP_EXPLORER_DEFAULT_SORT: GroupExplorerSort = "lowest_price";
+export const GROUP_EXPLORER_DEFAULT_SORT: GroupExplorerSort = "relevance";
 
 export const GROUP_EXPLORER_SORT_OPTIONS: {
   value: GroupExplorerSort;
   label: string;
 }[] = [
+  { value: "relevance", label: "Relevancia" },
   { value: "lowest_price", label: "Precio mas bajo" },
   { value: "best_value", label: "Mejor valor" },
   { value: "highest_price", label: "Precio mas alto" },
-  { value: "relevance", label: "Relevancia" },
 ];
 
 export const isGroupExplorerSort = (
@@ -49,11 +49,61 @@ export type GroupExplorerGroup = {
   name: string;
   humanId: string;
   cheaperProductId: number | null;
+  isComparable: boolean;
+};
+
+export type GroupExplorerChildGroup = {
+  id: number;
+  name: string;
+  humanNameId: string;
+  isComparable: boolean;
 };
 
 export type GroupExplorerResponse = {
   group: GroupExplorerGroup;
   products: GroupExplorerProduct[];
+  childGroups: GroupExplorerChildGroup[];
   total: number;
   nextOffset: number;
+};
+
+// Filter types
+export type GroupExplorerFilters = {
+  shopIds?: number[];
+  units?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+};
+
+// Price stats types for histogram
+export type PriceStatsBucket = {
+  rangeStart: number;
+  rangeEnd: number;
+  count: number;
+};
+
+export type PriceStatsResponse = {
+  min: number;
+  max: number;
+  buckets: PriceStatsBucket[];
+  quickFilters: {
+    label: string;
+    minPrice: number | null;
+    maxPrice: number | null;
+    count: number;
+  }[];
+};
+
+// Unit options type
+export type UnitOption = {
+  value: string;
+  label: string;
+  count: number;
+};
+
+// Shop option type for filters
+export type ShopOption = {
+  id: number;
+  name: string;
+  count: number;
 };

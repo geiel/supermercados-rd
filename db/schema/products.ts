@@ -10,7 +10,7 @@ import {
   timestamp,
   unique,
 } from "drizzle-orm/pg-core";
-import { productsGroups } from "./groups";
+import { groups, productsGroups } from "./groups";
 
 export const products = pgTable(
   "products",
@@ -43,6 +43,7 @@ export const products = pgTable(
 
 export const searchPhases = pgTable("search_phrases", {
   phrase: text().primaryKey(),
+  groupId: integer().references(() => groups.id)
 });
 
 export const productsRelations = relations(products, ({ many, one }) => ({

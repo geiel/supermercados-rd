@@ -1,6 +1,4 @@
 import { Metadata } from "next";
-import { PackageSearch } from "lucide-react";
-
 import { CategorySearch } from "@/components/categories-search";
 
 export const maxDuration = 50;
@@ -15,14 +13,6 @@ import {
   normalizeUnitFiltersForSearch,
   parseUnitFilterParam,
 } from "@/utils/unit-filter";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-
 type Props = {
   params: Promise<{ value: string }>;
   searchParams: Promise<{
@@ -68,22 +58,6 @@ export default async function Page({ params, searchParams }: Props) {
       }),
       searchGroups(rawSearchValue),
     ]);
-
-  if (products.length === 0) {
-    return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <PackageSearch />
-          </EmptyMedia>
-          <EmptyTitle>Productos no encontrados</EmptyTitle>
-          <EmptyDescription>
-            No se encontraron productos que coincidan con tu búsqueda. Intenta con otros términos o ajusta los filtros.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
 
   return (
     <>
