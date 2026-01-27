@@ -726,6 +726,7 @@ function PriceHistogram({
                 <Cell
                   key={index}
                   fill={isInRange ? "hsl(var(--primary))" : "hsl(var(--muted))"}
+                  fillOpacity={isInRange ? 0.75 : 0.55}
                 />
               );
             })}
