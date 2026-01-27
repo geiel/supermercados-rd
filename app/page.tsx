@@ -100,7 +100,7 @@ export default function Home() {
 
 async function TodaysDealsSection() {
   const todaysDeals = await db.query.todaysDeals.findMany({
-    orderBy: (deals, { desc }) => [desc(deals.dropPercentage), desc(deals.rank)],
+    orderBy: (deals, { desc }) => [desc(deals.dateWasSet), desc(deals.rank)],
     limit: 20
   });
 

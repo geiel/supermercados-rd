@@ -11,7 +11,7 @@ export const DEALS_SORT_VALUES = [
 
 export type DealsSort = (typeof DEALS_SORT_VALUES)[number];
 
-export const DEALS_DEFAULT_SORT: DealsSort = "highest_discount";
+export const DEALS_DEFAULT_SORT: DealsSort = "most_recent";
 
 export const DEALS_SORT_OPTIONS: {
   value: DealsSort;
