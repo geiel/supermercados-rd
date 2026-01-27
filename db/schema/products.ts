@@ -191,7 +191,7 @@ export const productsVisibilityHistoryRelations = relations(productsVisibilityHi
       fields: [productsVisibilityHistory.shopId],
       references: [shops.id],
     }),
-}))
+}));
 
 export type productsSelect = typeof products.$inferSelect;
 export type productsInsert = typeof products.$inferInsert;

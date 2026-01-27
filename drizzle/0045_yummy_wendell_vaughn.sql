@@ -1,0 +1,1 @@
+ALTER TABLE "todays_deals" ADD COLUMN "dateWasSet" timestamp with time zone NOT NULL;

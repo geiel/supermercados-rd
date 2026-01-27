@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { BadgePercent, ChevronDown } from "lucide-react";
 
 import { AddToListButton } from "@/components/add-to-list-button";
+import { DealsActiveFilters, DealsFilters } from "@/components/deals-filters";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
@@ -20,6 +22,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -67,14 +76,27 @@ export function DealsList({
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
+  const searchParams = useSearchParams();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedMoreRef = useRef(false);
   const hasAdjustedForMobileRef = useRef(false);
   const isLoadingRef = useRef(false);
   const lastListKeyRef = useRef<string | null>(null);
+  const lastFilterKeyRef = useRef<string | null>(null);
+  const shouldReloadForFiltersRef = useRef(false);
   const requestIdRef = useRef(0);
 
   const listKey = typeof shopId === "number" ? `shop:${shopId}` : "all";
+  const filterKey = useMemo(() => {
+    const shopIds = searchParams.get("shop_ids") || "";
+    const shopIdParam = searchParams.get("shop_id") || "";
+    const groupIds = searchParams.get("group_ids") || "";
+    const minPrice = searchParams.get("min_price") || "";
+    const maxPrice = searchParams.get("max_price") || "";
+    const minDrop = searchParams.get("min_drop") || "";
+    const shopKey = shopIds || shopIdParam;
+    return `${shopKey}|${groupIds}|${minPrice}|${maxPrice}|${minDrop}`;
+  }, [searchParams]);
   const pageSize = isMobile ? DEALS_MOBILE_PAGE_SIZE : DEALS_DESKTOP_PAGE_SIZE;
   const sortLabel = useMemo(() => {
     const match = DEALS_SORT_OPTIONS.find((option) => option.value === sort);
@@ -92,6 +114,7 @@ export function DealsList({
     }
 
     lastListKeyRef.current = listKey;
+    lastFilterKeyRef.current = filterKey;
     hasLoadedMoreRef.current = false;
     hasAdjustedForMobileRef.current = false;
     isLoadingRef.current = false;
@@ -105,7 +128,19 @@ export function DealsList({
     setErrorMessage(null);
     setSort(DEALS_DEFAULT_SORT);
     setIsSortOpen(false);
-  }, [initialDeals, initialOffset, listKey, total]);
+  }, [filterKey, initialDeals, initialOffset, listKey, total]);
+
+  useEffect(() => {
+    if (lastFilterKeyRef.current === filterKey || lastFilterKeyRef.current === null) {
+      lastFilterKeyRef.current = filterKey;
+      return;
+    }
+
+    lastFilterKeyRef.current = filterKey;
+    hasLoadedMoreRef.current = false;
+    hasAdjustedForMobileRef.current = false;
+    shouldReloadForFiltersRef.current = true;
+  }, [filterKey]);
 
   useEffect(() => {
     if (!isMobile || hasAdjustedForMobileRef.current || hasLoadedMoreRef.current) {
@@ -127,6 +162,7 @@ export function DealsList({
 
   const hasMore = deals.length < totalCount;
   const isSorting = isLoading && deals.length === 0;
+  const isEmpty = deals.length === 0 && !isLoading;
 
   const appendDeals = useCallback((incoming: DealItem[]) => {
     if (incoming.length === 0) {
@@ -136,15 +172,35 @@ export function DealsList({
     setDeals((current) => mergeDeals(current, incoming));
   }, []);
 
-  const loadPage = useCallback(
+  const buildFilterParams = useCallback(() => {
+    const params = new URLSearchParams();
+    const shopIds = searchParams.get("shop_ids");
+    const shopIdParam = searchParams.get("shop_id");
+    const groupIds = searchParams.get("group_ids");
+    const minPrice = searchParams.get("min_price");
+    const maxPrice = searchParams.get("max_price");
+    const minDrop = searchParams.get("min_drop");
+
+    if (shopIds) {
+      params.set("shop_ids", shopIds);
+    } else if (shopIdParam) {
+      params.set("shop_id", shopIdParam);
+    }
+
+    if (groupIds) params.set("group_ids", groupIds);
+    if (minPrice) params.set("min_price", minPrice);
+    if (maxPrice) params.set("max_price", maxPrice);
+    if (minDrop) params.set("min_drop", minDrop);
+
+    return params;
+  }, [searchParams]);
+
+  const loadPageWithFilters = useCallback(
     async (targetOffset: number, targetLimit: number, targetSort: DealsSort) => {
-      const params = new URLSearchParams();
+      const params = buildFilterParams();
       params.set("offset", String(targetOffset));
       params.set("limit", String(targetLimit));
       params.set("sort", targetSort);
-      if (typeof shopId === "number") {
-        params.set("shop_id", String(shopId));
-      }
 
       const response = await fetch(`/api/deals?${params.toString()}`, {
         cache: "no-store",
@@ -156,7 +212,14 @@ export function DealsList({
 
       return (await response.json()) as DealsResponse;
     },
-    [shopId]
+    [buildFilterParams]
+  );
+
+  const loadPage = useCallback(
+    async (targetOffset: number, targetLimit: number, targetSort: DealsSort) => {
+      return loadPageWithFilters(targetOffset, targetLimit, targetSort);
+    },
+    [loadPageWithFilters]
   );
 
   const loadFirstPage = useCallback(
@@ -175,7 +238,7 @@ export function DealsList({
       hasAdjustedForMobileRef.current = false;
 
       try {
-        const data = await loadPage(0, pageSize, targetSort);
+        const data = await loadPageWithFilters(0, pageSize, targetSort);
 
         if (requestId !== requestIdRef.current) {
           return;
@@ -194,8 +257,15 @@ export function DealsList({
         }
       }
     },
-    [loadPage, pageSize]
+    [loadPageWithFilters, pageSize]
   );
+
+  useEffect(() => {
+    if (shouldReloadForFiltersRef.current) {
+      shouldReloadForFiltersRef.current = false;
+      void loadFirstPage(sort);
+    }
+  }, [loadFirstPage, sort]);
 
   const handleSortChange = useCallback(
     (nextSort: DealsSort) => {
@@ -282,84 +352,101 @@ export function DealsList({
 
   return (
     <>
-      <div className="flex items-center justify-end pb-2">
-        {isMobile ? (
-          <Drawer open={isSortOpen} onOpenChange={setIsSortOpen}>
-            <DrawerTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={isSorting}
-                aria-busy={isSorting}
-              >
-                {isSorting ? (
-                  <>
-                    <Spinner /> Ordenar
-                  </>
-                ) : (
-                  <>
-                    {sortLabel} <ChevronDown />
-                  </>
-                )}
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle>Ordenar ofertas</DrawerTitle>
-              </DrawerHeader>
-              <div className="px-4 pb-4">
-                <RadioGroup value={sort} onValueChange={handleSelectChange}>
-                  {DEALS_SORT_OPTIONS.map((option) => (
-                    <div
-                      key={option.value}
-                      className="flex items-center space-x-3 py-2 cursor-pointer"
-                      onClick={() => handleSortChange(option.value)}
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        disabled={isSorting}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <span className="text-sm font-medium leading-none flex-1">
-                        {option.label}
-                      </span>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-              <DrawerFooter>
-                <DrawerClose asChild>
-                  <Button variant="outline">Cerrar</Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
-        ) : (
-          <Select value={sort} onValueChange={handleSelectChange}>
-            <SelectTrigger
-              size="sm"
-              className="w-full md:w-[200px]"
+      <div className="flex items-center gap-2 pb-2 lg:hidden">
+        <div className="flex-1">
+          <DealsFilters variant="mobile" />
+        </div>
+        <Drawer open={isSortOpen} onOpenChange={setIsSortOpen}>
+          <DrawerTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex-1"
               disabled={isSorting}
               aria-busy={isSorting}
             >
-              <SelectValue placeholder="Ordenar" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {DEALS_SORT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+              {isSorting ? (
+                <>
+                  <Spinner /> Ordenar
+                </>
+              ) : (
+                <>
+                  {sortLabel} <ChevronDown />
+                </>
+              )}
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Ordenar ofertas</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-4">
+              <RadioGroup value={sort} onValueChange={handleSelectChange}>
+                {DEALS_SORT_OPTIONS.map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-3 py-2 cursor-pointer"
+                    onClick={() => handleSortChange(option.value)}
+                  >
+                    <RadioGroupItem
+                      value={option.value}
+                      disabled={isSorting}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="text-sm font-medium leading-none flex-1">
+                      {option.label}
+                    </span>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="outline">Cerrar</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      </div>
+      <div className="hidden lg:flex items-start gap-4 pb-2">
+        <div className="flex-1">
+          <DealsActiveFilters />
+        </div>
+        <Select value={sort} onValueChange={handleSelectChange}>
+          <SelectTrigger
+            size="sm"
+            className="w-full md:w-[200px]"
+            disabled={isSorting}
+            aria-busy={isSorting}
+          >
+            <SelectValue placeholder="Ordenar" />
+          </SelectTrigger>
+          <SelectContent align="end">
+            {DEALS_SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {deals.length === 0 && isLoading ? (
         <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
           <Spinner /> Cargando...
         </div>
+      ) : isEmpty ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <BadgePercent />
+            </EmptyMedia>
+            <EmptyTitle>No hay ofertas con estos filtros</EmptyTitle>
+            <EmptyDescription>
+              Prueba ajustar los filtros para ver mas resultados.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-4">
           {deals.map((deal) => (
             <DealCard key={deal.productId} deal={deal} />
           ))}

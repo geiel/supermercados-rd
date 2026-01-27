@@ -52,7 +52,7 @@ export function BestValueProductsClient({
     setRecalculateResult(null);
 
     try {
-      const response = await fetch("/api/groups/calculate-stats", {
+      const response = await fetch("/api/admin/groups/calculate-stats", {
         method: "POST",
       });
 
