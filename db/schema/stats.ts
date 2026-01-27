@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, numeric, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { integer, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import { products, shops } from "./products";
 
 export const todaysDeals = pgTable("todays_deals", {
@@ -15,7 +15,8 @@ export const todaysDeals = pgTable("todays_deals", {
     dropAmount: numeric().notNull(),
     dropPercentage: numeric().notNull(),
     shopId: integer().notNull().references(() => shops.id),
-    amountOfShops: numeric().notNull()
+    amountOfShops: numeric().notNull(),
+    dateWasSet: timestamp({ withTimezone: true }).notNull()
 });
 
 export const todaysDealsRelations = relations(todaysDeals, ({ one }) => ({

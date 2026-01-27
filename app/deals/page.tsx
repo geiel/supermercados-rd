@@ -1,24 +1,34 @@
 import { Metadata } from "next";
+import Image from "next/image";
 import { Suspense } from "react";
 import { BadgePercent } from "lucide-react";
 
+import { DealsFilters } from "@/components/deals-filters";
 import { DealsList } from "@/components/deals-list";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
 import { getDeals, parseShopId } from "@/lib/deals";
-import { DEALS_DESKTOP_PAGE_SIZE } from "@/types/deals";
+import { DEALS_DESKTOP_PAGE_SIZE, type DealsFilters as DealsFiltersType } from "@/types/deals";
 
 type Props = {
-  searchParams: Promise<{ shop_id?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const { shop_id } = await searchParams;
-  const shopIdValue = parseShopId(shop_id);
+  const resolvedSearchParams = await searchParams;
+  const shopIdParam =
+    typeof resolvedSearchParams.shop_id === "string"
+      ? resolvedSearchParams.shop_id
+      : undefined;
+  const shopIdsParam =
+    typeof resolvedSearchParams.shop_ids === "string"
+      ? resolvedSearchParams.shop_ids
+      : undefined;
+  const shopIdValue = parseShopId(shopIdParam);
 
-  if (shop_id && shopIdValue === null) {
+  if (shopIdParam && shopIdValue === null && !shopIdsParam) {
     return {
       title: "Ofertas",
       description: "Ofertas y descuentos en supermercados de República Dominicana.",
@@ -90,19 +100,28 @@ export default function Page({ searchParams }: Props) {
 }
 
 async function DealsContent({ searchParams }: Props) {
-  const { shop_id } = await searchParams;
-  const shopIdValue = parseShopId(shop_id);
+  const resolvedSearchParams = await searchParams;
+  const shopIdParam =
+    typeof resolvedSearchParams.shop_id === "string"
+      ? resolvedSearchParams.shop_id
+      : undefined;
+  const shopIdsParam =
+    typeof resolvedSearchParams.shop_ids === "string"
+      ? resolvedSearchParams.shop_ids
+      : undefined;
+  const shopIdValue = parseShopId(shopIdParam);
+  const filters = parseFiltersFromSearchParams(resolvedSearchParams);
 
-  if (shop_id && shopIdValue === null) {
+  if (shopIdParam && shopIdValue === null && !shopIdsParam) {
     return <div>Supermercado no encontrado.</div>;
   }
 
   const [shop, dealsResult] = await Promise.all([
     typeof shopIdValue === "number" ? getShop(shopIdValue) : Promise.resolve(null),
     getDeals({
-      shopId: typeof shopIdValue === "number" ? shopIdValue : undefined,
       offset: 0,
       limit: DEALS_DESKTOP_PAGE_SIZE,
+      filters,
     }),
   ]);
 
@@ -117,40 +136,129 @@ async function DealsContent({ searchParams }: Props) {
   const hasDeals = dealsResult.total > 0;
 
   return (
-    <main className="container mx-auto pb-4">
-      <div className="flex flex-1 flex-col gap-4">
-        <div className="px-2 md:px-0">
-          <div className="flex items-baseline gap-2">
-            <TypographyH3>{title}</TypographyH3>
-            <span className="text-sm text-muted-foreground">
-              ({dealsResult.total})
-            </span>
-          </div>
-        </div>
-
-        {!hasDeals ? (
+    <>
+      <DealsHero />
+      <main className="container mx-auto pb-4 pt-4">
+        <div className="flex flex-1 flex-col gap-4">
           <div className="px-2 md:px-0">
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <BadgePercent />
-                </EmptyMedia>
-                <EmptyTitle>No hay ofertas disponibles</EmptyTitle>
-                <EmptyDescription>{emptyMessage}</EmptyDescription>
-              </EmptyHeader>
-            </Empty>
+            <div className="flex items-baseline gap-2">
+              <TypographyH3>{title}</TypographyH3>
+              <span className="text-sm text-muted-foreground">({dealsResult.total})</span>
+            </div>
           </div>
-        ) : (
-          <DealsList
-            shopId={typeof shopIdValue === "number" ? shopIdValue : undefined}
-            initialDeals={dealsResult.deals}
-            total={dealsResult.total}
-            initialOffset={dealsResult.nextOffset}
-          />
-        )}
-      </div>
-    </main>
+
+          {!hasDeals ? (
+            <div className="flex gap-6">
+              <DealsFilters variant="desktop" />
+              <div className="flex-1 min-w-0 px-2 md:px-0">
+                <div className="pb-2 lg:hidden">
+                  <DealsFilters variant="mobile" />
+                </div>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <BadgePercent />
+                    </EmptyMedia>
+                    <EmptyTitle>No hay ofertas disponibles</EmptyTitle>
+                    <EmptyDescription>{emptyMessage}</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-6">
+              <DealsFilters variant="desktop" />
+              <div className="flex-1 min-w-0">
+                <DealsList
+                  shopId={typeof shopIdValue === "number" ? shopIdValue : undefined}
+                  initialDeals={dealsResult.deals}
+                  total={dealsResult.total}
+                  initialOffset={dealsResult.nextOffset}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </>
   );
+}
+
+function parseFiltersFromSearchParams(
+  searchParams?: { [key: string]: string | string[] | undefined }
+): DealsFiltersType {
+  if (!searchParams) return {};
+
+  const filters: DealsFiltersType = {};
+  const shopIds = new Set<number>();
+  const shopIdsParam =
+    typeof searchParams.shop_ids === "string" ? searchParams.shop_ids : undefined;
+  const shopIdParam =
+    typeof searchParams.shop_id === "string" ? searchParams.shop_id : undefined;
+
+  if (shopIdsParam) {
+    shopIdsParam
+      .split(",")
+      .map((value) => parseInt(value.trim(), 10))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .forEach((value) => shopIds.add(value));
+  }
+
+  if (shopIdParam) {
+    const parsed = Number(shopIdParam);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      shopIds.add(parsed);
+    }
+  }
+
+  if (shopIds.size > 0) {
+    filters.shopIds = Array.from(shopIds);
+  }
+
+  const groupIdsParam =
+    typeof searchParams.group_ids === "string"
+      ? searchParams.group_ids
+      : undefined;
+
+  if (groupIdsParam) {
+    const groupIds = groupIdsParam
+      .split(",")
+      .map((value) => parseInt(value.trim(), 10))
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    if (groupIds.length > 0) {
+      filters.groupIds = groupIds;
+    }
+  }
+
+  const minPriceParam =
+    typeof searchParams.min_price === "string" ? searchParams.min_price : undefined;
+  if (minPriceParam) {
+    const parsed = Number(minPriceParam);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      filters.minPrice = parsed;
+    }
+  }
+
+  const maxPriceParam =
+    typeof searchParams.max_price === "string" ? searchParams.max_price : undefined;
+  if (maxPriceParam) {
+    const parsed = Number(maxPriceParam);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      filters.maxPrice = parsed;
+    }
+  }
+
+  const minDropParam =
+    typeof searchParams.min_drop === "string" ? searchParams.min_drop : undefined;
+  if (minDropParam) {
+    const parsed = Number(minDropParam);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      filters.minDrop = parsed;
+    }
+  }
+
+  return filters;
 }
 
 async function getShop(shopId: number) {
@@ -169,28 +277,64 @@ async function getShop(shopId: number) {
 
 function DealsSkeleton() {
   return (
-    <main className="container mx-auto pb-4">
-      <div className="flex flex-1 flex-col gap-4">
-        <div className="px-2 md:px-0">
-          <div className="flex items-baseline gap-2">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-10" />
+    <>
+      <DealsHero />
+      <main className="container mx-auto pb-4">
+        <div className="flex flex-1 flex-col gap-4">
+          <div className="px-2 md:px-0">
+            <div className="flex items-baseline gap-2">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-10" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <div
+                key={index}
+                className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
+              >
+                <Skeleton className="w-full max-w-[220px] aspect-square mx-auto" />
+                <Skeleton className="h-4 w-12 mt-3" />
+                <Skeleton className="h-4 w-full mt-2" />
+                <Skeleton className="h-4 w-2/3 mt-2" />
+              </div>
+            ))}
           </div>
         </div>
-        <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, index) => (
-            <div
-              key={index}
-              className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
-            >
-              <Skeleton className="w-full max-w-[220px] aspect-square mx-auto" />
-              <Skeleton className="h-4 w-12 mt-3" />
-              <Skeleton className="h-4 w-full mt-2" />
-              <Skeleton className="h-4 w-2/3 mt-2" />
-            </div>
-          ))}
+      </main>
+    </>
+  );
+}
+
+function DealsHero() {
+  return (
+    <section className="relative isolate w-full max-h-[38vh] overflow-hidden bg-[#0b0812] lg:max-h-[28vh]">
+      <div className="absolute inset-0 bg-gradient-to-l from-black/80 via-black/50 to-transparent z-10 lg:hidden" />
+      <div className="relative container mx-auto flex max-h-[38vh] w-full flex-col justify-center gap-8 px-4 md:px-0 py-12 lg:max-h-[28vh] lg:flex-row lg:items-center lg:justify-between lg:pb-8 lg:pt-10">
+        <div className="relative z-10 max-w-2xl space-y-4 lg:max-w-xl">
+          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Encuentra el mejor precio
+          </h1>
+          <p className="text-base text-white/80 sm:text-lg">
+            Comparamos miles de productos cada día para mostrarte dónde comprar
+            más barato hoy.
+          </p>
+        </div>
+
+        <div className="absolute inset-y-0 right-0 flex w-full items-center justify-end lg:static lg:w-[520px] xl:w-[600px]">
+          <div className="relative h-[30vh] w-[96vw] max-w-[620px] overflow-visible sm:h-[32vh] sm:w-[96vw] sm:max-w-[720px] lg:h-[30vh] lg:w-full lg:max-w-none xl:h-[36vh]">
+            <Image
+              src="/deals-image.png"
+              alt="Productos en oferta"
+              fill
+              priority
+              sizes="(max-width: 640px) 96vw, (max-width: 1024px) 96vw, (max-width: 1280px) 720px, 820px"
+              className="origin-right object-contain object-right drop-shadow-[0_25px_60px_rgba(0,0,0,0.45)] duration-300 transition-transform"
+              unoptimized
+            />
+          </div>
         </div>
       </div>
-    </main>
+    </section>
   );
 }
