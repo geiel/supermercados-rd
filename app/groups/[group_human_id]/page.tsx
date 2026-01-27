@@ -6,6 +6,7 @@ import { Suspense } from "react";
 
 type Props = {
   params: Promise<{ group_human_id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -45,18 +46,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function Page({ params }: Props) {
+export default function Page({ params, searchParams }: Props) {
     return (
         <Suspense fallback={<GroupExplorerFallback />}>
-            <GroupExplorerPage params={params} />
+            <GroupExplorerPage params={params} searchParams={searchParams} />
         </Suspense>
     );
 }
 
-async function GroupExplorerPage({ params }: Props) {
+async function GroupExplorerPage({ params, searchParams }: Props) {
     const { group_human_id } = await params;
+    const resolvedSearchParams = await searchParams;
 
-    return <GroupExplorer humanId={group_human_id} />
+    return <GroupExplorer humanId={group_human_id} searchParams={resolvedSearchParams} />
 }
 
 function GroupExplorerFallback() {

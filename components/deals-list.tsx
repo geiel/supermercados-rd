@@ -298,7 +298,7 @@ export function DealsList({
                   </>
                 ) : (
                   <>
-                    Ordenar: {sortLabel} <ChevronDown />
+                    {sortLabel} <ChevronDown />
                   </>
                 )}
               </Button>

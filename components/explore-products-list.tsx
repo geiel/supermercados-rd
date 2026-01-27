@@ -4,12 +4,20 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { PackageSearch } from "lucide-react";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { ProductImage } from "@/components/product-image";
 import { ProductBrand } from "@/components/product-brand";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { Unit } from "@/components/unit";
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toSlug } from "@/lib/utils";
@@ -196,6 +204,7 @@ export function ExploreProductsList({
       ? data.pages[data.pages.length - 1].total
       : total;
   const hasMore = Boolean(hasNextPage && products.length < totalCount);
+  const isEmpty = products.length === 0;
 
   const handleShowMore = useCallback(() => {
     if (!hasMore || isFetchingNextPage) {
@@ -207,11 +216,26 @@ export function ExploreProductsList({
 
   return (
     <>
-      <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
-        {products.map((product) => (
-          <ExploreProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {isEmpty ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <PackageSearch />
+            </EmptyMedia>
+            <EmptyTitle>Productos no encontrados</EmptyTitle>
+            <EmptyDescription>
+              No se encontraron productos con estos filtros. Ajusta los filtros
+              o intenta con otra búsqueda.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
+          {products.map((product) => (
+            <ExploreProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
       {hasMore ? (
         <div className="flex justify-center py-4 px-4">
           <Button

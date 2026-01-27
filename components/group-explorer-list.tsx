@@ -3,9 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ChevronDown, PackageSearch } from "lucide-react";
 
 import { AddToListButton } from "@/components/add-to-list-button";
+import {
+  GroupExplorerActiveFilters,
+  GroupExplorerFilters,
+} from "@/components/group-explorer-filters";
 import { GroupExplorerGridSkeleton } from "@/components/group-explorer-skeleton";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductBrand } from "@/components/product-brand";
@@ -21,6 +26,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -38,6 +50,7 @@ import {
   GROUP_EXPLORER_MOBILE_PAGE_SIZE,
   GROUP_EXPLORER_SORT_OPTIONS,
   isGroupExplorerSort,
+  type GroupExplorerChildGroup,
   type GroupExplorerProduct,
   type GroupExplorerResponse,
   type GroupExplorerSort,
@@ -48,6 +61,7 @@ type GroupExplorerListProps = {
   initialProducts: GroupExplorerProduct[];
   total: number;
   initialOffset: number;
+  childGroups: GroupExplorerChildGroup[];
 };
 
 export function GroupExplorerList({
@@ -55,6 +69,7 @@ export function GroupExplorerList({
   initialProducts,
   total,
   initialOffset,
+  childGroups,
 }: GroupExplorerListProps) {
   const [products, setProducts] = useState<GroupExplorerProduct[]>(
     initialProducts
@@ -70,12 +85,23 @@ export function GroupExplorerList({
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
+  const searchParams = useSearchParams();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedMoreRef = useRef(false);
   const hasAdjustedForMobileRef = useRef(false);
   const isLoadingRef = useRef(false);
   const lastGroupKeyRef = useRef<string | null>(null);
+  const lastFilterKeyRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
+
+  // Build a key that includes both group and filters
+  const filterKey = useMemo(() => {
+    const shopIds = searchParams.get("shop_ids") || "";
+    const units = searchParams.get("units") || "";
+    const minPrice = searchParams.get("min_price") || "";
+    const maxPrice = searchParams.get("max_price") || "";
+    return `${shopIds}|${units}|${minPrice}|${maxPrice}`;
+  }, [searchParams]);
 
   const groupKey = humanId;
   const pageSize = isMobile
@@ -99,6 +125,7 @@ export function GroupExplorerList({
     }
 
     lastGroupKeyRef.current = groupKey;
+    lastFilterKeyRef.current = filterKey;
     hasLoadedMoreRef.current = false;
     hasAdjustedForMobileRef.current = false;
     isLoadingRef.current = false;
@@ -112,7 +139,23 @@ export function GroupExplorerList({
     setErrorMessage(null);
     setSort(GROUP_EXPLORER_DEFAULT_SORT);
     setIsSortOpen(false);
-  }, [groupKey, initialOffset, initialProducts, total]);
+  }, [groupKey, filterKey, initialOffset, initialProducts, total]);
+
+  // Track if we should reload due to filter changes
+  const shouldReloadForFiltersRef = useRef(false);
+
+  // Detect filter changes
+  useEffect(() => {
+    if (lastFilterKeyRef.current === filterKey || lastFilterKeyRef.current === null) {
+      lastFilterKeyRef.current = filterKey;
+      return;
+    }
+
+    lastFilterKeyRef.current = filterKey;
+    hasLoadedMoreRef.current = false;
+    hasAdjustedForMobileRef.current = false;
+    shouldReloadForFiltersRef.current = true;
+  }, [filterKey]);
 
   useEffect(() => {
     if (!isMobile || hasAdjustedForMobileRef.current || hasLoadedMoreRef.current) {
@@ -134,6 +177,7 @@ export function GroupExplorerList({
 
   const hasMore = products.length < totalCount;
   const isSorting = isLoading && products.length === 0;
+  const isEmpty = products.length === 0 && !isLoading;
 
   const appendProducts = useCallback((incoming: GroupExplorerProduct[]) => {
     if (incoming.length === 0) {
@@ -143,16 +187,34 @@ export function GroupExplorerList({
     setProducts((current) => mergeProducts(current, incoming));
   }, []);
 
-  const loadPage = useCallback(
+  const buildFilterParams = useCallback(() => {
+    const params = new URLSearchParams();
+    const shopIds = searchParams.get("shop_ids");
+    const units = searchParams.get("units");
+    const minPrice = searchParams.get("min_price");
+    const maxPrice = searchParams.get("max_price");
+
+    if (shopIds) params.set("shop_ids", shopIds);
+    if (units) params.set("units", units);
+    if (minPrice) params.set("min_price", minPrice);
+    if (maxPrice) params.set("max_price", maxPrice);
+
+    return params;
+  }, [searchParams]);
+
+  const loadPageWithFilters = useCallback(
     async (
       targetOffset: number,
       targetLimit: number,
       targetSort: GroupExplorerSort
     ) => {
+      const params = buildFilterParams();
+      params.set("offset", String(targetOffset));
+      params.set("limit", String(targetLimit));
+      params.set("sort", targetSort);
+
       const response = await fetch(
-        `/api/groups/${encodeURIComponent(
-          humanId
-        )}/products?offset=${targetOffset}&limit=${targetLimit}&sort=${targetSort}`,
+        `/api/groups/${encodeURIComponent(humanId)}/products?${params.toString()}`,
         { cache: "no-store" }
       );
 
@@ -162,7 +224,18 @@ export function GroupExplorerList({
 
       return (await response.json()) as GroupExplorerResponse;
     },
-    [humanId]
+    [humanId, buildFilterParams]
+  );
+
+  const loadPage = useCallback(
+    async (
+      targetOffset: number,
+      targetLimit: number,
+      targetSort: GroupExplorerSort
+    ) => {
+      return loadPageWithFilters(targetOffset, targetLimit, targetSort);
+    },
+    [loadPageWithFilters]
   );
 
   const loadFirstPage = useCallback(
@@ -181,7 +254,7 @@ export function GroupExplorerList({
       hasAdjustedForMobileRef.current = false;
 
       try {
-        const data = await loadPage(0, pageSize, targetSort);
+        const data = await loadPageWithFilters(0, pageSize, targetSort);
 
         if (requestId !== requestIdRef.current) {
           return;
@@ -200,8 +273,16 @@ export function GroupExplorerList({
         }
       }
     },
-    [loadPage, pageSize]
+    [loadPageWithFilters, pageSize]
   );
+
+  // Trigger reload when loadFirstPage updates and we have pending filter changes
+  useEffect(() => {
+    if (shouldReloadForFiltersRef.current) {
+      shouldReloadForFiltersRef.current = false;
+      void loadFirstPage(sort);
+    }
+  }, [loadFirstPage, sort]);
 
   const handleSortChange = useCallback(
     (nextSort: GroupExplorerSort) => {
@@ -288,13 +369,20 @@ export function GroupExplorerList({
 
   return (
     <>
-      <div className="flex items-center justify-end pb-2">
-        {isMobile ? (
-          <Drawer open={isSortOpen} onOpenChange={setIsSortOpen}>
+      {/* Mobile/Tablet: Filter + Sort buttons (hidden on lg and above) */}
+      <div className="flex items-center gap-2 pb-2 lg:hidden">
+        <div className="flex-1">
+          <GroupExplorerFilters
+            humanId={humanId}
+            childGroups={childGroups}
+            variant="mobile"
+          />
+        </div>
+        <Drawer open={isSortOpen} onOpenChange={setIsSortOpen}>
             <DrawerTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full"
+                className="flex-1"
                 disabled={isSorting}
                 aria-busy={isSorting}
               >
@@ -304,7 +392,7 @@ export function GroupExplorerList({
                   </>
                 ) : (
                   <>
-                    Ordenar: {sortLabel} <ChevronDown />
+                    {sortLabel} <ChevronDown />
                   </>
                 )}
               </Button>
@@ -340,30 +428,47 @@ export function GroupExplorerList({
               </DrawerFooter>
             </DrawerContent>
           </Drawer>
-        ) : (
-          <Select value={sort} onValueChange={handleSelectChange}>
-            <SelectTrigger
-              size="sm"
-              className="w-full md:w-[200px]"
-              disabled={isSorting}
-              aria-busy={isSorting}
-            >
-              <SelectValue placeholder="Ordenar" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {GROUP_EXPLORER_SORT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        </div>
+      {/* Desktop: filters badges + sort dropdown (hidden below lg) */}
+      <div className="hidden lg:flex items-start gap-4 pb-2">
+        <div className="flex-1">
+          <GroupExplorerActiveFilters humanId={humanId} />
+        </div>
+        <Select value={sort} onValueChange={handleSelectChange}>
+          <SelectTrigger
+            size="sm"
+            className="w-full md:w-[200px]"
+            disabled={isSorting}
+            aria-busy={isSorting}
+          >
+            <SelectValue placeholder="Ordenar" />
+          </SelectTrigger>
+          <SelectContent align="end">
+            {GROUP_EXPLORER_SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {products.length === 0 && isLoading ? (
         <GroupExplorerGridSkeleton count={pageSize} />
+      ) : isEmpty ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <PackageSearch />
+            </EmptyMedia>
+            <EmptyTitle>Productos no encontrados</EmptyTitle>
+            <EmptyDescription>
+              No hay productos con estos filtros. Ajusta los filtros para ver
+              resultados.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-4">
           {products.map((product) => (
             <GroupExplorerCard key={product.id} product={product} />
           ))}

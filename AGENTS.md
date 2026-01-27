@@ -7,4 +7,6 @@
 - All /api | endpoints that are only being used by /admin pages should be in the /api/admin folder so is protected.
 
 ## Installing new libraries
-- Always use `pnpm`
+- Always use `pnpm`.
+- Always use `shadcnui` components for every new primitive.
+- Always use `pnpm dlx shadcn@latest add {component}` command to install new shadcn components.
