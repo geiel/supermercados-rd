@@ -2,7 +2,7 @@ name: Refresh Todays Deals
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: "0 */3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       REVALIDATION_SECRET: ${{ secrets.REVALIDATION_SECRET }}
       NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
-      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
 
     steps:
       - uses: actions/checkout@v3
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18.x
-          cache: 'pnpm'
+          cache: "pnpm"
       - run: pnpm install
 
       - name: Install Chrome for Puppeteer
