@@ -289,7 +289,7 @@ function MobileFilters() {
           )}
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="max-h-[85vh]" repositionInputs={false}>
+      <DrawerContent className="max-h-[85vh]">
         <DrawerHeader className="flex flex-row items-center justify-between border-b pb-4">
           <DrawerTitle>Filtros</DrawerTitle>
           <DrawerClose asChild>
