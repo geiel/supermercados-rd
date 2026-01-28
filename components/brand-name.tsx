@@ -65,7 +65,7 @@ export default function BrandName({
             className="aspect-square p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]"
           >
             <Link
-              href={`/product/${toSlug(product.name)}/${product.id}`}
+              href={`/productos/${toSlug(product.name)}/${product.id}`}
               className="flex flex-col gap-2"
               prefetch={false}
             >

@@ -46,7 +46,7 @@ function slugify(text: string): string {
 function getShareUrl(list: ListSelect): string {
     const slug = slugify(list.name);
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    return `${baseUrl}/shared/${list.id}-${slug}`;
+    return `${baseUrl}/compartido/${list.id}-${slug}`;
 }
 
 export function ShareListDialog({

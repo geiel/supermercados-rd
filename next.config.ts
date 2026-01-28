@@ -28,6 +28,40 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/deals",
+        destination: "/ofertas",
+        permanent: true,
+      },
+      {
+        source: "/explore",
+        destination: "/explorar",
+        permanent: true,
+      },
+      {
+        source: "/explore/:value",
+        destination: "/explorar/:value",
+        permanent: true,
+      },
+      {
+        source: "/shared/:slug",
+        destination: "/compartido/:slug",
+        permanent: true,
+      },
+      {
+        source: "/groups/:group_human_id",
+        destination: "/grupos/:group_human_id",
+        permanent: true,
+      },
+      {
+        source: "/product/:path*",
+        destination: "/productos/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

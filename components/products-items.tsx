@@ -136,7 +136,7 @@ export function ProductItems({ items, openRowKey, onOpenChange, onLocalDeletePro
             <ItemGroup className="gap-2">
                 {localItems.map((entry) => {
                     const amount = entry.amount ?? entry.listItem?.amount;
-                    const productUrl = `/product/${toSlug(entry.product.name)}/${entry.product.id}`;
+                    const productUrl = `/productos/${toSlug(entry.product.name)}/${entry.product.id}`;
                     return (
                         <Item key={entry.rowKey} asChild role="listItem" variant="outline">
                             <ProductItemATag 
@@ -690,7 +690,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
         }
 
         event.preventDefault();
-        const href = `/product/${toSlug(product.name)}/${product.id}`;
+        const href = `/productos/${toSlug(product.name)}/${product.id}`;
 
         onClose?.();
         setTimeout(() => {
@@ -701,7 +701,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
     const hasAlternatives = alternatives.length > 0;
     const hasIgnored = ignoredProducts.length > 0;
     const canDeleteGroup = Boolean(group.listItemId) || Boolean(onLocalDeleteGroup);
-    const groupLink = group.humanId ? `/groups/${group.humanId}` : null;
+    const groupLink = group.humanId ? `/grupos/${group.humanId}` : null;
     const deleteGroupButton = canDeleteGroup ? (
         <Button
             size="sm"
@@ -796,7 +796,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
                                         </Button>
                                         <Button size="xs" variant="outline" asChild>
                                             <Link
-                                                href={`/product/${toSlug(alternative.product.name)}/${alternative.product.id}`}
+                                                href={`/productos/${toSlug(alternative.product.name)}/${alternative.product.id}`}
                                                 onClick={(event) =>
                                                     handleViewProduct(event, alternative.product)
                                                 }
@@ -909,7 +909,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
         if (event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) return;
         
         event.preventDefault();
-        const href = `/product/${toSlug(product.name)}/${product.id}`;
+        const href = `/productos/${toSlug(product.name)}/${product.id}`;
         onItemClose();
         setTimeout(() => {
             router.push(href);
@@ -1027,7 +1027,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
                         {isDeleting ? <Loader2 className="animate-spin" /> : <Trash />}
                     </Button>
                     <Button size="icon-lg" variant="outline" aria-label="Ver producto" asChild>
-                        <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct} prefetch={false}>
+                        <Link href={`/productos/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct} prefetch={false}>
                             <ArrowRightSquare />
                         </Link>
                     </Button>
@@ -1087,7 +1087,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
                     {isDeleting ? <Loader2 className="animate-spin" /> : <Trash />}
                 </Button>
                 <Button size="icon-lg" variant="outline" aria-label="Ver producto" asChild>
-                    <Link href={`/product/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct} prefetch={false}>
+                    <Link href={`/productos/${toSlug(product.name)}/${product.id}`} onClick={handleViewProduct} prefetch={false}>
                         <ArrowRightSquare />
                     </Link>
                 </Button>

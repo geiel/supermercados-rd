@@ -301,7 +301,7 @@ export default function MergeProducts({
                   ) : null}
                 </div>
                 <Link
-                  href={`/product/${toSlug(product.name1)}/${product.id1}`}
+                  href={`/productos/${toSlug(product.name1)}/${product.id1}`}
                   className="flex flex-col gap-2"
                 >
                   <div className="flex justify-center">
@@ -330,7 +330,7 @@ export default function MergeProducts({
                   ) : null}
                 </div>
                 <Link
-                  href={`/product/${toSlug(product.name2)}/${product.id2}`}
+                  href={`/productos/${toSlug(product.name2)}/${product.id2}`}
                   className="flex flex-col gap-2"
                 >
                   <div className="flex justify-center">
@@ -397,7 +397,7 @@ export default function MergeProducts({
           >
             <div className="font-semibold">{product.id}</div>
             <Link
-              href={`/product/${toSlug(product.name)}/${product.id}`}
+              href={`/productos/${toSlug(product.name)}/${product.id}`}
               className="flex flex-col gap-2"
             >
               <div className="flex justify-center">

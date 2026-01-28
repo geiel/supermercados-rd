@@ -196,7 +196,7 @@ export function CategoryBadge({
     return (
       <div className="inline-flex items-center justify-between gap-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:shadow">
         <Link
-          href={`/groups/${groupHumanNameId}`}
+          href={`/grupos/${groupHumanNameId}`}
           className="px-5 py-2.5 w-full"
           prefetch={false}
         >
@@ -222,7 +222,7 @@ export function CategoryBadge({
     return (
       <div className="inline-flex items-center justify-between gap-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:shadow">
         <Link
-          href={`/groups/${groupHumanNameId}`}
+          href={`/grupos/${groupHumanNameId}`}
           className="px-5 py-2.5 w-full"
           prefetch={false}
         >
@@ -238,7 +238,7 @@ export function CategoryBadge({
       <Drawer open={isOpen} onOpenChange={setIsOpen}>
         <div className="inline-flex items-center justify-between gap-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:shadow">
           <Link
-            href={`/groups/${groupHumanNameId}`}
+            href={`/grupos/${groupHumanNameId}`}
             className="px-5 py-2.5 w-full"
             prefetch={false}
           >
@@ -294,7 +294,7 @@ export function CategoryBadge({
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <div className="inline-flex items-center justify-between gap-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:shadow">
         <Link
-          href={`/groups/${groupHumanNameId}`}
+          href={`/grupos/${groupHumanNameId}`}
           className="px-5 py-2.5 w-full"
         >
           {groupName}

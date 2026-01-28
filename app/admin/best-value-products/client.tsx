@@ -218,7 +218,7 @@ function ProductCard({ product }: { product: BestValueProduct }) {
   return (
     <div className="rounded-lg border p-3 bg-card hover:shadow-md transition-shadow">
       <Link
-        href={`/product/${toSlug(product.productName)}/${product.productId}`}
+        href={`/productos/${toSlug(product.productName)}/${product.productId}`}
         className="flex flex-col gap-2"
         prefetch={false}
       >

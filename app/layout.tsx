@@ -86,14 +86,14 @@ const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "SupermercadosRD",
-  url: "https://www.supermercadosrd.com",
+  url: "https://supermercadosrd.com",
   description:
     "Comparador de precios de supermercados en República Dominicana",
   potentialAction: {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: "https://www.supermercadosrd.com/explore/{search_term_string}",
+      urlTemplate: "https://supermercadosrd.com/explorar/{search_term_string}",
     },
     "query-input": "required name=search_term_string",
   },
@@ -103,8 +103,8 @@ const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "SupermercadosRD",
-  url: "https://www.supermercadosrd.com",
-  logo: "https://www.supermercadosrd.com/logo.svg",
+  url: "https://supermercadosrd.com",
+  logo: "https://supermercadosrd.com/logo.svg",
   description:
     "Plataforma de comparación de precios de supermercados en República Dominicana",
 };
