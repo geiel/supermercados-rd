@@ -3,16 +3,13 @@
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart, Bar, ResponsiveContainer, Cell } from "recharts";
 import { ChevronDown, ChevronRight, Filter, X } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Drawer,
@@ -30,6 +27,7 @@ import type {
   ShopOption,
   UnitOption,
 } from "@/types/group-explorer";
+import { PriceFilterSection } from "@/components/price-filter-section";
 
 type GroupExplorerFiltersProps = {
   humanId: string;
@@ -365,7 +363,7 @@ function FilterSections({
 }) {
   return (
     <div className="space-y-6 py-4 md:pr-4">
-      <PriceFilterSection humanId={humanId} />
+      <GroupPriceFilterSection humanId={humanId} />
       <ShopsFilterSection humanId={humanId} />
       <UnitsFilterSection humanId={humanId} />
       {childGroups.length > 0 && (
@@ -413,7 +411,7 @@ function FilterFooter({
 
 // ============ Price Filter Section ============
 
-function PriceFilterSection({ humanId }: { humanId: string }) {
+function GroupPriceFilterSection({ humanId }: { humanId: string }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -422,22 +420,10 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
 
   const currentMinPrice = searchParams.get("min_price");
   const currentMaxPrice = searchParams.get("max_price");
-  const currentMinValue = currentMinPrice || "";
-  const currentMaxValue = currentMaxPrice || "";
-  const currentPriceKey = `${currentMinValue}|${currentMaxValue}`;
   const priceStatsParams = useMemo(
     () => buildFilterParams(searchParams, ["shop_ids", "units"]),
     [searchParams]
   );
-
-  const [localMin, setLocalMin] = useState(currentMinValue);
-  const [localMax, setLocalMax] = useState(currentMaxValue);
-  const [isEditingMin, setIsEditingMin] = useState(false);
-  const [isEditingMax, setIsEditingMax] = useState(false);
-  const [sliderDraft, setSliderDraft] = useState<{
-    key: string;
-    values: [number, number];
-  } | null>(null);
 
   const { data: priceStats, isLoading } = useQuery<PriceStatsResponse>({
     queryKey: ["group-price-stats", humanId, priceStatsParams],
@@ -451,23 +437,6 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
     },
     staleTime: 60000,
   });
-
-  const effectiveSliderValues =
-    sliderDraft && sliderDraft.key === currentPriceKey ? sliderDraft.values : null;
-  const hasDraftValues =
-    effectiveSliderValues !== null || isEditingMin || isEditingMax;
-  const displayMin = hasDraftValues ? localMin : currentMinValue;
-  const displayMax = hasDraftValues ? localMax : currentMaxValue;
-
-  const syncLocalFromDisplay = useCallback(() => {
-    if (effectiveSliderValues) {
-      setLocalMin(String(effectiveSliderValues[0]));
-      setLocalMax(String(effectiveSliderValues[1]));
-      return;
-    }
-    setLocalMin(currentMinValue);
-    setLocalMax(currentMaxValue);
-  }, [currentMaxValue, currentMinValue, effectiveSliderValues]);
 
   const updatePriceRange = useCallback(
     (min: number | null, max: number | null) => {
@@ -492,248 +461,22 @@ function PriceFilterSection({ humanId }: { humanId: string }) {
         router.push(href, { scroll: false });
       });
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams, startTransition]
   );
-
-  const handleSliderChange = useCallback(
-    (values: number[]) => {
-      if (values.length === 2 && priceStats) {
-        const [min, max] = values;
-        setSliderDraft({ key: currentPriceKey, values: [min, max] });
-        setLocalMin(String(min));
-        setLocalMax(String(max));
-      }
-    },
-    [currentPriceKey, priceStats]
-  );
-
-  const handleSliderCommit = useCallback(
-    (values: number[]) => {
-      if (values.length === 2 && priceStats) {
-        const [min, max] = values;
-        const actualMin = min === priceStats.min ? null : min;
-        const actualMax = max === priceStats.max ? null : max;
-        updatePriceRange(actualMin, actualMax);
-      }
-    },
-    [priceStats, updatePriceRange]
-  );
-
-  const commitInputs = useCallback(() => {
-    const min = localMin ? Number(localMin) : null;
-    const max = localMax ? Number(localMax) : null;
-    const normalizedMin =
-      min !== null && Number.isFinite(min) && min > 0 ? min : null;
-    const normalizedMax =
-      max !== null && Number.isFinite(max) && max > 0 ? max : null;
-
-    if (priceStats) {
-      setSliderDraft({
-        key: currentPriceKey,
-        values: [
-          normalizedMin ?? priceStats.min,
-          normalizedMax ?? priceStats.max,
-        ],
-      });
-    }
-
-    updatePriceRange(normalizedMin, normalizedMax);
-  }, [currentPriceKey, localMax, localMin, priceStats, updatePriceRange]);
-
-  const handleMinBlur = useCallback(() => {
-    setIsEditingMin(false);
-    commitInputs();
-  }, [commitInputs]);
-
-  const handleMaxBlur = useCallback(() => {
-    setIsEditingMax(false);
-    commitInputs();
-  }, [commitInputs]);
-
-  const handleQuickFilter = useCallback(
-    (minPrice: number | null, maxPrice: number | null) => {
-      updatePriceRange(minPrice, maxPrice);
-    },
-    [updatePriceRange]
-  );
-
-  const sliderValue = useMemo(() => {
-    if (!priceStats) return [0, 100];
-    if (effectiveSliderValues) return effectiveSliderValues;
-    const min = currentMinPrice ? Number(currentMinPrice) : priceStats.min;
-    const max = currentMaxPrice ? Number(currentMaxPrice) : priceStats.max;
-    return [min, max];
-  }, [currentMinPrice, currentMaxPrice, effectiveSliderValues, priceStats]);
-
-  const activeQuickFilter = useMemo(() => {
-    if (!priceStats) return null;
-    const min = currentMinPrice ? Number(currentMinPrice) : null;
-    const max = currentMaxPrice ? Number(currentMaxPrice) : null;
-
-    for (const qf of priceStats.quickFilters) {
-      if (qf.minPrice === min && qf.maxPrice === max) {
-        return qf.label;
-      }
-    }
-    return null;
-  }, [currentMinPrice, currentMaxPrice, priceStats]);
-
-  const hasPriceFilter = currentMinPrice || currentMaxPrice;
 
   return (
-    <FilterSection
+    <PriceFilterSection
       title="Precio"
       isExpanded={isExpanded}
       onToggle={() => setIsExpanded(!isExpanded)}
-      badge={hasPriceFilter ? 1 : 0}
-    >
-      {isLoading ? (
-        <div className="flex items-center justify-center py-4">
-          <Spinner />
-        </div>
-      ) : priceStats && priceStats.buckets.length > 0 ? (
-        <div className="space-y-4">
-          <div>
-            {/* Histogram and Slider */}
-            <PriceHistogram
-              buckets={priceStats.buckets}
-              minValue={sliderValue[0]}
-              maxValue={sliderValue[1]}
-            />
-
-            {/* Range Slider */}
-            <Slider
-              value={sliderValue}
-              min={priceStats.min}
-              max={priceStats.max}
-              step={1}
-              onValueChange={handleSliderChange}
-              onValueCommit={handleSliderCommit}
-              disabled={isPending}
-            />
-          </div>
-
-          {/* Min/Max Inputs */}
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              placeholder={String(priceStats.min)}
-              value={displayMin}
-              onFocus={() => {
-                syncLocalFromDisplay();
-                setIsEditingMin(true);
-              }}
-              onChange={(e) => {
-                setLocalMin(e.target.value);
-                setIsEditingMin(true);
-              }}
-              onBlur={handleMinBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleMinBlur();
-                }
-              }}
-              className="h-9"
-            />
-            <span className="text-muted-foreground">-</span>
-            <Input
-              type="number"
-              placeholder={String(priceStats.max)}
-              value={displayMax}
-              onFocus={() => {
-                syncLocalFromDisplay();
-                setIsEditingMax(true);
-              }}
-              onChange={(e) => {
-                setLocalMax(e.target.value);
-                setIsEditingMax(true);
-              }}
-              onBlur={handleMaxBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleMaxBlur();
-                }
-              }}
-              className="h-9"
-            />
-          </div>
-
-          {/* Quick Filters */}
-          <RadioGroup
-            value={activeQuickFilter || ""}
-            className="space-y-2"
-          >
-            {priceStats.quickFilters.map((qf) => {
-              const isActive = activeQuickFilter === qf.label;
-              return (
-                <div
-                  key={qf.label}
-                  className="flex items-center justify-between cursor-pointer"
-                  onClick={() => {
-                    // If already selected, clear the filter
-                    if (isActive) {
-                      updatePriceRange(null, null);
-                    } else {
-                      handleQuickFilter(qf.minPrice, qf.maxPrice);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem
-                      value={qf.label}
-                      disabled={isPending}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <span className="text-sm">{qf.label}</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {qf.count}
-                  </span>
-                </div>
-              );
-            })}
-          </RadioGroup>
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          No hay datos de precios disponibles
-        </p>
-      )}
-    </FilterSection>
-  );
-}
-
-function PriceHistogram({
-  buckets,
-  minValue,
-  maxValue,
-}: {
-  buckets: PriceStatsResponse["buckets"];
-  minValue: number;
-  maxValue: number;
-}) {
-  return (
-    <div className="h-16">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={buckets} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-          <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-            {buckets.map((bucket, index) => {
-              const isInRange =
-                bucket.rangeStart >= minValue && bucket.rangeEnd <= maxValue;
-              return (
-                <Cell
-                  key={index}
-                  fill={isInRange ? "hsl(var(--primary))" : "hsl(var(--muted))"}
-                  fillOpacity={isInRange ? 0.75 : 0.55}
-                />
-              );
-            })}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+      priceStats={priceStats}
+      isLoading={isLoading}
+      isPending={isPending}
+      currentMinPrice={currentMinPrice}
+      currentMaxPrice={currentMaxPrice}
+      onRangeChange={updatePriceRange}
+      allowZeroMin={false}
+    />
   );
 }
 

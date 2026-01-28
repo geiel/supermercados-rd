@@ -86,6 +86,7 @@ export type PriceStatsResponse = {
   min: number;
   max: number;
   buckets: PriceStatsBucket[];
+  scale: "linear" | "log";
   quickFilters: {
     label: string;
     minPrice: number | null;
