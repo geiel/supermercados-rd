@@ -557,7 +557,6 @@ function GroupExplorerImage({ product }: { product: GroupExplorerProduct }) {
         src="/no-product-found.jpg"
         alt="image product not found"
         fill
-        unoptimized
         sizes="220px"
         style={{
           objectFit: "contain",

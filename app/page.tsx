@@ -76,7 +76,6 @@ export default function Home() {
                       sizes="100vw"
                       className="w-[70px] h-auto"
                       alt={`Logo ${shop.name}`}
-                      unoptimized
                     />
                   </Link>
                 </Button>
