@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "website",
-      url: `/product/${url_name}/${id}`,
+      url: `/productos/${url_name}/${id}`,
       images: product.image
         ? [{ url: product.image, alt: title }]
         : undefined,
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: product.image ? [product.image] : undefined,
     },
     alternates: {
-      canonical: `/product/${url_name}/${id}`,
+      canonical: `/productos/${url_name}/${id}`,
     },
   };
 }
@@ -96,7 +96,7 @@ export default async function Page({ params }: Props) {
       : undefined,
     offers:
       prices.length > 0
-        ? {
+        ? { 
             "@type": "AggregateOffer",
             priceCurrency: "DOP",
             lowPrice: lowestPrice,

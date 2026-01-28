@@ -82,7 +82,7 @@ export function MergeProductsV2() {
             <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]">
               <div className="font-semibold">{duplicate.product.id}</div>
               <Link
-                href={`/product/${toSlug(duplicate.product.name)}/${
+                href={`/productos/${toSlug(duplicate.product.name)}/${
                   duplicate.product.id
                 }`}
                 className="flex flex-col gap-2"
@@ -114,7 +114,7 @@ export function MergeProductsV2() {
               <div className="flex w-full space-x-4">
                 {duplicate.similars.map((relatedProduct) => (
                   <Link
-                    href={`/product/${toSlug(relatedProduct.name)}/${
+                    href={`/productos/${toSlug(relatedProduct.name)}/${
                       relatedProduct.id
                     }`}
                     className="flex flex-col gap-2 pb-2"

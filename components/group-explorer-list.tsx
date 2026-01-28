@@ -518,7 +518,7 @@ function GroupExplorerCard({ product }: { product: GroupExplorerProduct }) {
         <AddToListButton productId={product.id} variant="icon" />
       </div>
       <Link
-        href={`/product/${toSlug(product.name)}/${product.id}`}
+        href={`/productos/${toSlug(product.name)}/${product.id}`}
         className="flex flex-col gap-2"
         prefetch={false}
       >

@@ -66,7 +66,7 @@ export default function Home() {
               {SUPERMARKET_DEALS.map((shop) => (
                 <Button key={shop.id} className="h-30 w-42" variant="outline" asChild>
                   <Link
-                    href={`/deals?shop_id=${shop.id}`}
+                    href={`/ofertas?shop_id=${shop.id}`}
                     aria-label={`Ver ofertas en ${shop.name}`}
                   >
                     <Image
@@ -110,7 +110,7 @@ async function TodaysDealsSection() {
           <div className="flex justify-between items-center">
             <TypographyH3>Mejores ofertas de hoy</TypographyH3>
             <Button variant="link" size="sm" asChild>
-              <Link href="/deals">Ver todas</Link>
+              <Link href="/ofertas">Ver todas</Link>
             </Button>
           </div>
           <ScrollPeek

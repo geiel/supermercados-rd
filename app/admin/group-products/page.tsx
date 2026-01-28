@@ -369,7 +369,7 @@ async function GroupProductsPage({ searchParams }: Props) {
                   )}
                 </div>
                 <Link
-                  href={`/product/${toSlug(product.name)}/${product.id}`}
+                  href={`/productos/${toSlug(product.name)}/${product.id}`}
                   className="flex flex-col gap-2"
                   prefetch={false}
                 >

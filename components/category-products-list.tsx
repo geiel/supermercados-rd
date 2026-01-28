@@ -164,7 +164,7 @@ function CategoryProductCard({ product }: { product: HomePageCategoryProduct }) 
         <AddToListButton productId={product.productId} variant="icon" />
       </div>
       <Link
-        href={`/product/${toSlug(product.name)}/${product.productId}`}
+        href={`/productos/${toSlug(product.name)}/${product.productId}`}
         className="flex flex-col gap-2"
         prefetch={false}
       >

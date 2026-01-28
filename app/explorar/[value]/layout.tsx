@@ -6,7 +6,7 @@ import { getShopsIds } from "@/lib/utils";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
-export default function ExploreLayout({ children }: LayoutProps<"/explore/[value]">) {
+export default function ExploreLayout({ children }: LayoutProps<"/explorar/[value]">) {
     return (
         <div className="container mx-auto pb-4">
             <div className="flex flex-1 flex-col gap-4">

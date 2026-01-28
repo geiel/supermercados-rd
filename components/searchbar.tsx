@@ -51,9 +51,9 @@ export function SearchBar({ open, onOpenChange, autoFocus }: SearchBarProps) {
     if (!value) return;
 
     if (groupHumanId) {
-      router.push(`/groups/${groupHumanId}`);
+      router.push(`/grupos/${groupHumanId}`);
     } else {
-      router.push(`/explore/${encodeURIComponent(value)}`);
+      router.push(`/explorar/${encodeURIComponent(value)}`);
     }
   }
 

@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { db } from "@/db";
 import { toSlug } from "@/lib/utils";
 
-const BASE_URL = "https://www.supermercadosrd.com";
+const BASE_URL = "https://supermercadosrd.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all products with prices (only products that are available)
@@ -35,13 +35,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   });
 
-  // Fetch all shops
-  const shops = await db.query.shops.findMany({
-    columns: {
-      id: true,
-    },
-  });
-
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -51,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${BASE_URL}/deals`,
+      url: `${BASE_URL}/ofertas`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
@@ -60,26 +53,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Product pages
   const productPages: MetadataRoute.Sitemap = activeProducts.map((product) => ({
-    url: `${BASE_URL}/product/${toSlug(product.name)}/${product.id}`,
+    url: `${BASE_URL}/productos/${toSlug(product.name)}/${product.id}`,
     changeFrequency: "daily" as const,
-    priority: 0.8,
+    priority: 0.7,
   }));
 
   // Group pages
   const groupPages: MetadataRoute.Sitemap = groups.map((group) => ({
-    url: `${BASE_URL}/groups/${group.humanNameId}`,
+    url: `${BASE_URL}/grupos/${group.humanNameId}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
-    priority: 0.7,
+    priority: 0.8,
   }));
 
-  // Deals by supermarket pages
-  const shopDealsPages: MetadataRoute.Sitemap = shops.map((shop) => ({
-    url: `${BASE_URL}/deals?shop_id=${shop.id}`,
-    lastModified: new Date(),
-    changeFrequency: "daily" as const,
-    priority: 0.85,
-  }));
-
-  return [...staticPages, ...shopDealsPages, ...productPages, ...groupPages];
+  return [...staticPages, ...groupPages, ...productPages];
 }

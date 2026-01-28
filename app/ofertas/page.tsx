@@ -46,7 +46,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         title,
         description,
         type: "website",
-        url: "/deals",
+        url: "/ofertas",
       },
       twitter: {
         card: "summary_large_image",
@@ -54,7 +54,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         description,
       },
       alternates: {
-        canonical: "/deals",
+        canonical: "/ofertas",
       },
     };
   }
@@ -78,7 +78,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       title,
       description,
       type: "website",
-      url: `/deals?shop_id=${shopIdValue}`,
+      url: `/ofertas?shop_id=${shopIdValue}`,
     },
     twitter: {
       card: "summary_large_image",
@@ -86,7 +86,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       description,
     },
     alternates: {
-      canonical: `/deals?shop_id=${shopIdValue}`,
+      canonical: `/ofertas?shop_id=${shopIdValue}`,
     },
   };
 }

@@ -1024,7 +1024,7 @@ function SubgroupsSection({
       if (maxPrice) params.set("max_price", maxPrice);
 
       const query = params.toString();
-      return query ? `/groups/${humanNameId}?${query}` : `/groups/${humanNameId}`;
+      return query ? `/grupos/${humanNameId}?${query}` : `/grupos/${humanNameId}`;
     },
     [searchParams]
   );
