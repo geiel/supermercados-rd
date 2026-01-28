@@ -32,6 +32,93 @@ function parseCommaSeparatedStrings(value: string | null): string[] {
 }
 
 const NUM_BUCKETS = 15;
+const LOG_RATIO_THRESHOLD = 25;
+const OUTLIER_MULTIPLIER = 1.5;
+
+function shouldUseLogBuckets(prices: number[], minPrice: number, maxPrice: number) {
+  if (prices.length < NUM_BUCKETS) return false;
+  if (minPrice <= 0 || maxPrice <= 0) return false;
+  if (maxPrice / minPrice < LOG_RATIO_THRESHOLD) return false;
+  const p95Index = Math.floor(prices.length * 0.95);
+  const p95 = prices[p95Index] ?? maxPrice;
+  return maxPrice > p95 * OUTLIER_MULTIPLIER;
+}
+
+function buildBuckets(
+  prices: number[],
+  minPrice: number,
+  maxPrice: number
+): { buckets: PriceStatsBucket[]; scale: "linear" | "log" } {
+  const buckets: PriceStatsBucket[] = [];
+  const range = maxPrice - minPrice;
+
+  if (range === 0) {
+    buckets.push({
+      rangeStart: minPrice,
+      rangeEnd: maxPrice,
+      count: prices.length,
+    });
+    return { buckets, scale: "linear" };
+  }
+
+  const useLogBuckets = shouldUseLogBuckets(prices, minPrice, maxPrice);
+
+  if (useLogBuckets) {
+    const logMin = Math.log(minPrice);
+    const logMax = Math.log(maxPrice);
+    const logBucketSize = (logMax - logMin) / NUM_BUCKETS;
+
+    for (let i = 0; i < NUM_BUCKETS; i++) {
+      const rangeStart = Math.exp(logMin + i * logBucketSize);
+      const rangeEnd =
+        i === NUM_BUCKETS - 1
+          ? maxPrice
+          : Math.exp(logMin + (i + 1) * logBucketSize);
+
+      const count = prices.filter((price) => {
+        if (i === NUM_BUCKETS - 1) {
+          return price >= rangeStart && price <= rangeEnd;
+        }
+        return price >= rangeStart && price < rangeEnd;
+      }).length;
+
+      const roundedStart = Math.round(rangeStart);
+      const roundedEnd = Math.round(rangeEnd);
+      const safeStart = Math.min(roundedStart, roundedEnd);
+      const safeEnd = Math.max(roundedStart, roundedEnd);
+
+      buckets.push({
+        rangeStart: safeStart,
+        rangeEnd: safeEnd,
+        count,
+      });
+    }
+
+    return { buckets, scale: "log" };
+  }
+
+  const bucketSize = range / NUM_BUCKETS;
+
+  for (let i = 0; i < NUM_BUCKETS; i++) {
+    const rangeStart = minPrice + i * bucketSize;
+    const rangeEnd = i === NUM_BUCKETS - 1 ? maxPrice : minPrice + (i + 1) * bucketSize;
+
+    const count = prices.filter((p) => {
+      if (i === NUM_BUCKETS - 1) {
+        return p >= rangeStart && p <= rangeEnd;
+      }
+      return p >= rangeStart && p < rangeEnd;
+    }).length;
+
+    buckets.push({
+      rangeStart: Math.round(rangeStart),
+      rangeEnd: Math.round(rangeEnd),
+      count,
+    });
+  }
+
+  return { buckets, scale: "linear" };
+}
 
 export async function GET(request: Request, { params }: RouteParams) {
   const { group_human_id } = await params;
@@ -99,6 +186,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         max: 0,
         buckets: [],
         quickFilters: [],
+        scale: "linear",
       } satisfies PriceStatsResponse);
     }
 
@@ -114,44 +202,13 @@ export async function GET(request: Request, { params }: RouteParams) {
         max: 0,
         buckets: [],
         quickFilters: [],
+        scale: "linear",
       } satisfies PriceStatsResponse);
     }
 
     const minPrice = prices[0];
     const maxPrice = prices[prices.length - 1];
-    const range = maxPrice - minPrice;
-
-    // Create buckets for histogram
-    const buckets: PriceStatsBucket[] = [];
-    
-    if (range === 0) {
-      // All products have the same price
-      buckets.push({
-        rangeStart: minPrice,
-        rangeEnd: maxPrice,
-        count: prices.length,
-      });
-    } else {
-      const bucketSize = range / NUM_BUCKETS;
-      
-      for (let i = 0; i < NUM_BUCKETS; i++) {
-        const rangeStart = minPrice + i * bucketSize;
-        const rangeEnd = i === NUM_BUCKETS - 1 ? maxPrice : minPrice + (i + 1) * bucketSize;
-        
-        const count = prices.filter((p) => {
-          if (i === NUM_BUCKETS - 1) {
-            return p >= rangeStart && p <= rangeEnd;
-          }
-          return p >= rangeStart && p < rangeEnd;
-        }).length;
-
-        buckets.push({
-          rangeStart: Math.round(rangeStart),
-          rangeEnd: Math.round(rangeEnd),
-          count,
-        });
-      }
-    }
+    const { buckets, scale } = buildBuckets(prices, minPrice, maxPrice);
 
     // Calculate quick filter ranges based on price distribution
     const quickFilters = calculateQuickFilters(prices, minPrice, maxPrice);
@@ -161,6 +218,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       max: Math.round(maxPrice),
       buckets,
       quickFilters,
+      scale,
     };
 
     return NextResponse.json(response);

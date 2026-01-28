@@ -80,6 +80,7 @@ export type DealsPriceStatsResponse = {
   min: number;
   max: number;
   buckets: DealsPriceStatsBucket[];
+  scale: "linear" | "log";
   quickFilters: {
     label: string;
     minPrice: number | null;
