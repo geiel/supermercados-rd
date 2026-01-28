@@ -76,6 +76,7 @@ export default function BrandName({
                     width={200}
                     height={200}
                     alt={product.name + product.unit}
+                    unoptimized
                   />
                 ) : null}
               </div>

@@ -482,6 +482,7 @@ async function ShopExclusive({
       sizes="100vw"
       className="w-[50px] h-auto"
       alt="logo tienda"
+      unoptimized
     />
   );
 }

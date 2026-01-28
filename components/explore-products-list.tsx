@@ -313,6 +313,7 @@ function ExploreProductCard({ product }: { product: ExploreProduct }) {
             sizes="100vw"
             className="w-[50px] h-auto"
             alt="logo tienda"
+            unoptimized
           />
         ) : null}
         <ProductPrice product={product} />

@@ -480,6 +480,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                                         height={0}
                                         className="w-[50px] h-auto"
                                         alt="Supermarket logo"
+                                        unoptimized
                                     />
                                 </div>
                                 <div className="font-bold">RD${shopTotalPrice.toFixed(2)}</div>
@@ -833,6 +834,7 @@ function ShopSelectorList({
                         height={0}
                         className="w-[60px] h-auto"
                         alt="Supermarket logo"
+                        unoptimized
                     />
                 </Toggle>
             ))}
