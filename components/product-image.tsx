@@ -79,7 +79,6 @@ function ProductImageInner(props: ImageProps) {
         setImageSrc("/no-product-found.jpg");
       }}
       alt={props.alt}
-      unoptimized
     />
   );
 }

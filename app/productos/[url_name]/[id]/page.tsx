@@ -163,7 +163,6 @@ export default async function Page({ params }: Props) {
                   />
                 ) : <Image 
                       src="/no-product-found.jpg" alt="image product not found" 
-                      unoptimized
                       fill
                       sizes="(max-width: 768px) 290px, 500px"
                       placeholder="blur"
@@ -191,7 +190,6 @@ export default async function Page({ params }: Props) {
                 height={0}
                 className="w-[50px] h-auto"
                 alt="Supermarket logo"
-                unoptimized
               />
               <ShopPrice
                 shopPrice={shopPrice}

@@ -330,7 +330,6 @@ function DealsHero() {
               priority
               sizes="(max-width: 640px) 96vw, (max-width: 1024px) 96vw, (max-width: 1280px) 720px, 820px"
               className="origin-right object-contain object-right drop-shadow-[0_25px_60px_rgba(0,0,0,0.45)] duration-300 transition-transform"
-              unoptimized
             />
           </div>
         </div>
