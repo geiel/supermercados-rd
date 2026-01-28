@@ -525,6 +525,7 @@ function DealImage({ deal }: { deal: DealItem }) {
         src="/no-product-found.jpg"
         alt="image product not found"
         fill
+        unoptimized
         sizes="220px"
         style={{
           objectFit: "contain",
