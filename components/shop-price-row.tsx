@@ -35,9 +35,9 @@ export function ShopPriceRowActions({
         "https://bravova-api.superbravo.com.do/public/articulo/get?idArticulo=",
         ""
       );
-      return `${url}/articulos/${bravoProductId}`;
+      return `${url}/articulos/${bravoProductId}?utm_source=supermercadosrd`;
     }
-    return url;
+    return url + "?utm_source=supermercadosrd";
   };
 
   const handleBuscarClick = () => {

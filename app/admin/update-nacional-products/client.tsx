@@ -46,9 +46,11 @@ const IGNORED_NOT_FOUND_KEY = "nacionalUpdater:ignoredNotFoundIds";
 function ProductAvatar({
   image,
   name,
+  productId,
 }: {
   image: string | null;
   name: string;
+  productId?: number;
 }) {
   if (!image) {
     return (
@@ -62,6 +64,7 @@ function ProductAvatar({
     <div className="relative h-20 w-20 overflow-hidden rounded-md bg-muted">
       <ProductImage
         src={image}
+        productId={productId}
         alt={name}
         fill
         sizes="80px"
@@ -341,7 +344,11 @@ export function UpdateNacionalProductsClient({
                 className="rounded-lg border border-border bg-card/40 p-4 shadow-sm"
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                  <ProductAvatar image={item.productImage} name={item.productName} />
+                  <ProductAvatar
+                    image={item.productImage}
+                    name={item.productName}
+                    productId={item.productId}
+                  />
                   <div className="flex flex-1 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-base font-semibold">

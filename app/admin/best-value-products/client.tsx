@@ -227,6 +227,7 @@ function ProductCard({ product }: { product: BestValueProduct }) {
           {product.productImage ? (
             <ProductImage
               src={product.productImage}
+              productId={product.productId}
               alt={product.productName}
               fill
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"

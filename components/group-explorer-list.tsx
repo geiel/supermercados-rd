@@ -572,6 +572,7 @@ function GroupExplorerImage({ product }: { product: GroupExplorerProduct }) {
   return (
     <ProductImage
       src={product.image}
+      productId={product.id}
       fill
       alt={product.name + " " + product.unit}
       sizes="220px"

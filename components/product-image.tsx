@@ -27,29 +27,77 @@ function getImageKey(src: string | StaticImport): string {
   return "";
 }
 
-export function ProductImage(props: ImageProps) {
+type ProductImageProps = ImageProps & {
+  productId?: number;
+};
+
+const BROKEN_IMAGE_ENDPOINT = "/api/products/broken-images";
+const PLACEHOLDER_IMAGE = "/no-product-found.jpg";
+
+function shouldReportImage(imageUrl: string) {
+  return imageUrl.length > 0 && imageUrl !== PLACEHOLDER_IMAGE;
+}
+
+export function ProductImage(props: ProductImageProps) {
   const imageKey = getImageKey(props.src);
 
   return <ProductImageInner key={imageKey} {...props} />;
 }
 
-function ProductImageInner(props: ImageProps) {
-  const [imageSrc, setImageSrc] = useState<string | StaticImport>(getImageSrc(props.src));
+function ProductImageInner({ productId, ...props }: ProductImageProps) {
+  const [imageSrc, setImageSrc] = useState<string | StaticImport>(
+    getImageSrc(props.src)
+  );
   const [loaded, setLoaded] = useState(false);
   const nacionalFailedImageStepRef = useRef(0);
+  const reportedImagesRef = useRef(new Set<string>());
+
+  const reportBrokenImage = (imageUrl: string) => {
+    if (!productId || !shouldReportImage(imageUrl)) {
+      return;
+    }
+
+    const reportKey = `${productId}:${imageUrl}`;
+    if (reportedImagesRef.current.has(reportKey)) {
+      return;
+    }
+
+    reportedImagesRef.current.add(reportKey);
+    void fetch(BROKEN_IMAGE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ productId, imageUrl }),
+      keepalive: true,
+    }).catch((error) => {
+      console.error("[product-image] Failed to report broken image", error);
+    });
+  };
 
   return (
     <Image
       {...props}
-      className={cn(`transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`, props.className)}
+      className={cn(
+        `transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`,
+        props.className
+      )}
       src={imageSrc}
       onError={() => {
-        if (typeof imageSrc === "string" && imageSrc.startsWith("https://assets-sirenago.s3-us-west-1") && imageSrc.includes("/large/")) {
+        if (
+          typeof imageSrc === "string" &&
+          imageSrc.startsWith("https://assets-sirenago.s3-us-west-1") &&
+          imageSrc.includes("/large/")
+        ) {
           setImageSrc(imageSrc.replace("/large/", "/original/"));
           return;
         }
 
-        setImageSrc("/no-product-found.jpg");
+        if (typeof imageSrc === "string") {
+          reportBrokenImage(imageSrc);
+        }
+
+        setImageSrc(PLACEHOLDER_IMAGE);
       }}
       onLoad={(e) => {
         const isNacionalPlaceholder =
@@ -76,7 +124,8 @@ function ProductImageInner(props: ImageProps) {
           return;
         }
 
-        setImageSrc("/no-product-found.jpg");
+        reportBrokenImage(imageSrc.toString());
+        setImageSrc(PLACEHOLDER_IMAGE);
       }}
       alt={props.alt}
       unoptimized

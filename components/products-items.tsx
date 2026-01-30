@@ -430,6 +430,7 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                 <ItemMedia variant="image" className="size-20">
                     <ProductImage
                         src={product.image ? product.image : "/no-product-found.jpg"}
+                        productId={product.id}
                         fill
                         alt={product.name + product.unit}
                         sizes="80px"
@@ -761,6 +762,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
                                         <div className="size-14 relative">
                                             <ProductImage
                                                 src={alternative.product.image ? alternative.product.image : "/no-product-found.jpg"}
+                                                productId={alternative.product.id}
                                                 fill
                                                 alt={alternative.product.name + alternative.product.unit}
                                                 sizes="56px"
@@ -835,6 +837,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
                                         <div className="size-14 relative">
                                             <ProductImage
                                                 src={product.image ? product.image : "/no-product-found.jpg"}
+                                                productId={product.id}
                                                 fill
                                                 alt={product.name + product.unit}
                                                 sizes="56px"
@@ -1004,6 +1007,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
                     <div className="size-40 relative">
                         <ProductImage
                             src={product.image ? product.image : "/no-product-found.jpg"}
+                            productId={product.id}
                             fill
                             alt={product.name + product.unit}
                             sizes="160px"
@@ -1042,6 +1046,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
                 <div className="size-40 relative">
                     <ProductImage
                         src={product.image ? product.image : "/no-product-found.jpg"}
+                        productId={product.id}
                         fill
                         alt={product.name + product.unit}
                         sizes="160px"

@@ -231,6 +231,7 @@ function ProductImageOrPlaceholder({
   return (
     <ProductImage
       src={product.image}
+      productId={product.productId}
       fill
       alt={product.name + product.unit}
       sizes="220px"

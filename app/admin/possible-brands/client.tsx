@@ -150,6 +150,7 @@ export function PossibleBrandsClient({
                   {product.image ? (
                     <ProductImage
                       src={product.image}
+                      productId={product.id}
                       alt={product.name}
                       fill
                       sizes="80px"

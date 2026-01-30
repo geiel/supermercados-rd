@@ -249,6 +249,7 @@ function ProductCard({
 }: {
   title: string;
   product: {
+    id?: number;
     name: string;
     unit: string;
     image: string | null;
@@ -264,6 +265,7 @@ function ProductCard({
           {product.image ? (
             <ProductImage
               src={product.image}
+              productId={product.id}
               alt={`${product.name} ${product.unit}`}
               fill
               sizes="96px"

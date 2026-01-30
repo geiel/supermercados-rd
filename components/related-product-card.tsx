@@ -43,6 +43,7 @@ export function RelatedProductCard({ product }: RelatedProductCardProps) {
           {product.image ? (
             <ProductImage
               src={product.image}
+              productId={product.id}
               fill
               alt={product.name + product.unit}
               sizes="130px"
