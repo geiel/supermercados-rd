@@ -92,6 +92,7 @@ export function MergeProductsV2() {
                     {duplicate.product.image ? (
                       <ProductImage
                         src={duplicate.product.image}
+                        productId={duplicate.product.id}
                         fill
                         alt={duplicate.product.name + duplicate.product.unit}
                         sizes="220px"
@@ -124,6 +125,7 @@ export function MergeProductsV2() {
                       {relatedProduct.image ? (
                         <ProductImage
                           src={relatedProduct.image}
+                          productId={relatedProduct.id}
                           fill
                           alt={relatedProduct.name + relatedProduct.unit}
                           sizes="220px"

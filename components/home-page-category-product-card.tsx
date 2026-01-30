@@ -29,6 +29,7 @@ export function HomePageCategoryProductCard({ product }: Props) {
           {product.image ? (
             <ProductImage
               src={product.image}
+              productId={product.productId}
               fill
               alt={product.name + product.unit}
               sizes="(min-width: 1024px) 180px, 32vw"

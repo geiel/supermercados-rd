@@ -45,6 +45,7 @@ export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
           {deal.image ? (
             <ProductImage
               src={deal.image}
+              productId={deal.productId}
               fill
               alt={deal.name + deal.unit}
               sizes="(min-width: 1024px) 180px, 32vw"

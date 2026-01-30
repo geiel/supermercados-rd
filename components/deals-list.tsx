@@ -540,6 +540,7 @@ function DealImage({ deal }: { deal: DealItem }) {
   return (
     <ProductImage
       src={deal.image}
+      productId={deal.productId}
       fill
       alt={deal.name + deal.unit}
       sizes="220px"

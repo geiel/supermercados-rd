@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { products, shops } from "./products";
 import { groups } from "./groups";
@@ -35,4 +35,12 @@ export const categorySuggestions = pgTable("category_suggestions", {
     userEmail: text(),
     notes: text(),
     createdAt: timestamp().notNull().default(sql`now()`),
+});
+
+export const productBrokenImages = pgTable("product_broken_images", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    productId: integer().notNull().references(() => products.id),
+    imageUrl: text().notNull(),
+    reportedAt: timestamp().notNull().default(sql`now()`),
+    isFixed: boolean().default(false),
 });

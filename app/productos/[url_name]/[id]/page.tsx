@@ -151,6 +151,7 @@ export default async function Page({ params }: Props) {
                 {product.image ? (
                   <ProductImage
                     src={product.image}
+                    productId={product.id}
                     fill
                     sizes="(max-width: 768px) 290px, 500px"
                     style={{
