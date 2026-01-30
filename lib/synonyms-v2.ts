@@ -505,7 +505,6 @@ const base: Array<Synonym> = [
     { synonyms: ["pantiliners", "panty liners", "protector diario", "toalla intima", "toalla diaria", "toallas intimas", "toalla sanitaria", "toallas sanitarias"], query: ["pantiliners", "panty & liners", "protector & diario", "toalla & intima", "toalla & sanitaria", "toalla & diaria"]},
     { synonyms: ["nosotras", "nosotra"], query: ["nosotra:*"] },
     { synonyms: ["adaptable", "multiestilo"], query: ["adaptable", "multiestilo"]},
-    { synonyms: ["crema facial", "crema humectante"], query: ["crema & facial", "crema & humectante"]},
     { synonyms: ["corporal", "cuerpo"], query: ["corporal", "cuerpo"]},
     { synonyms: ["hidratante", "hydro"], query: ["hidratante", "hydro"]},
     { synonyms: ["b control", "bcontrol"], query: ["b <-> control", "bcontrol"]},
@@ -611,6 +610,7 @@ const base: Array<Synonym> = [
     { synonyms: ["yodada", "iodized"], query: ["yodada", "iodized"]},
     { synonyms: ["royal canin", "royal c"], query: ["royal & canin", "royal & c"]},
     { synonyms: ["prescription diet"], query: ["prescription & diet", "pd"]},
+    { synonyms: ["facial", "rostro"], query: ["facial", "rostro"]},
 ]; 
 
 function pluralizeWord(word: string) {
