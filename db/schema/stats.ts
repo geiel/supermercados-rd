@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, numeric, pgTable, primaryKey, text, timestamp, boolean } from "drizzle-orm/pg-core";
 import { products, shops } from "./products";
 
 export const todaysDeals = pgTable("todays_deals", {
@@ -30,6 +30,7 @@ export const homePageCategories = pgTable("home_page_categories", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: text().notNull(),
     description: text(),
+    visible: boolean().notNull().default(true),
 });
 
 export const homePageCategoriesProducts = pgTable("home_page_categories_products", {
