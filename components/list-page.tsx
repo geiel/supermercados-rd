@@ -253,7 +253,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     {/* Left side: Title */}
                     <div className="flex flex-col">
-                        <h1 className="font-bold text-2xl">{displayName}</h1>
+                        <h2 className="font-bold text-2xl">{displayName}</h2>
                         <div className="text-sm text-muted-foreground">0 productos</div>
                     </div>
 
@@ -371,7 +371,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     {/* Left side: Title and stats */}
                     <div className="flex flex-col gap-1">
-                        <h1 className="font-bold text-2xl">{displayName}</h1>
+                        <h2 className="font-bold text-2xl">{displayName}</h2>
                         <div className="text-muted-foreground">
                             {stats.totalProducts} productos · <span className="font-bold text-foreground">RD${stats.totalPrice.toFixed(2)}</span>
                         </div>
