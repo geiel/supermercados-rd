@@ -42,6 +42,7 @@ export type GroupExplorerProduct = {
   possibleBrand: GroupExplorerBrand | null;
   currentPrice: string | null;
   isCheaper: boolean;
+  productDeal: { dropPercentage: string | number } | null;
 };
 
 export type GroupExplorerGroup = {

@@ -7,6 +7,7 @@ import { Unit } from "@/components/unit";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { toSlug } from "@/lib/utils";
 import type { HomePageCategoryProduct } from "@/lib/home-page-categories";
+import { OfferBadge } from "@/components/offer-badge";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
@@ -15,8 +16,19 @@ type Props = {
 };
 
 export function HomePageCategoryProductCard({ product }: Props) {
+  const dropPercentage = product.productDeal?.dropPercentage;
+  const shouldShowDeal =
+    dropPercentage !== null &&
+    dropPercentage !== undefined &&
+    Number(dropPercentage) > 0;
+
   return (
     <div className="relative flex flex-col gap-2">
+      {shouldShowDeal ? (
+        <div className="absolute top-0 left-0 z-10">
+          <OfferBadge dropPercentage={dropPercentage} />
+        </div>
+      ) : null}
       <div className="absolute top-0 right-0 z-10">
         <AddToListButton productId={product.productId} variant="icon" />
       </div>

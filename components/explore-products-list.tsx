@@ -25,6 +25,7 @@ import {
   type ExploreProduct,
   type ExploreProductsResponse,
 } from "@/types/explore";
+import { OfferBadge } from "@/components/offer-badge";
 
 const MOBILE_VISIBLE_COUNT = 14;
 
@@ -281,8 +282,19 @@ function splitForMobile(
 }
 
 function ExploreProductCard({ product }: { product: ExploreProduct }) {
+  const dropPercentage = product.productDeal?.dropPercentage;
+  const shouldShowDeal =
+    dropPercentage !== null &&
+    dropPercentage !== undefined &&
+    Number(dropPercentage) > 0;
+
   return (
     <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative">
+      {shouldShowDeal ? (
+        <div className="absolute top-2 left-2 z-10">
+          <OfferBadge dropPercentage={dropPercentage} />
+        </div>
+      ) : null}
       <div className="absolute top-2 right-2 z-10">
         <AddToListButton productId={product.id} variant="icon" />
       </div>

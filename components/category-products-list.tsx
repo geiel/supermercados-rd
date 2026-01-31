@@ -10,6 +10,7 @@ import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
 import { Spinner } from "@/components/ui/spinner";
 import { toSlug } from "@/lib/utils";
+import { OfferBadge } from "@/components/offer-badge";
 import type {
   CategoryProductsResponse,
   HomePageCategoryProduct,
@@ -157,9 +158,19 @@ export function CategoryProductsList({
 
 function CategoryProductCard({ product }: { product: HomePageCategoryProduct }) {
   const numericPrice = Number(product.currentPrice);
+  const dropPercentage = product.productDeal?.dropPercentage;
+  const shouldShowDeal =
+    dropPercentage !== null &&
+    dropPercentage !== undefined &&
+    Number(dropPercentage) > 0;
 
   return (
     <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative">
+      {shouldShowDeal ? (
+        <div className="absolute top-2 left-2 z-10">
+          <OfferBadge dropPercentage={dropPercentage} />
+        </div>
+      ) : null}
       <div className="absolute top-2 right-2 z-10">
         <AddToListButton productId={product.productId} variant="icon" />
       </div>

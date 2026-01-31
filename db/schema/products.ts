@@ -11,6 +11,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 import { groups, productsGroups } from "./groups";
+import { todaysDeals } from "./stats";
 
 export const products = pgTable(
   "products",
@@ -62,7 +63,11 @@ export const productsRelations = relations(products, ({ many, one }) => ({
     fields: [products.possibleBrandId],
     references: [productsBrands.id],
   }),
-  groupProduct: many(productsGroups)
+  groupProduct: many(productsGroups),
+  productDeal: one(todaysDeals, {
+    fields: [products.id],
+    references: [todaysDeals.productId],
+  })
 }));
 
 export const productsBrands = pgTable("products_brands", {

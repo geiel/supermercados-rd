@@ -10,6 +10,7 @@ import {
   productsBrands,
   productsGroups,
   productsShopsPrices,
+  todaysDeals,
 } from "@/db/schema";
 import type {
   GroupExplorerChildGroup,
@@ -204,6 +205,7 @@ export async function getGroupProducts({
         name: pBrand.name,
       },
       currentPrice: minCurrentPrice.as("currentPrice"),
+      dealDropPercentage: todaysDeals.dropPercentage,
     })
     .from(productsGroups)
     .innerJoin(products, eq(products.id, productsGroups.productId))
@@ -213,6 +215,7 @@ export async function getGroupProducts({
     )
     .innerJoin(productsBrands, eq(products.brandId, productsBrands.id))
     .leftJoin(pBrand, eq(products.possibleBrandId, pBrand.id))
+    .leftJoin(todaysDeals, eq(todaysDeals.productId, products.id))
     .where(productFilters)
     .groupBy(
       products.id,
@@ -225,7 +228,8 @@ export async function getGroupProducts({
       productsBrands.id,
       productsBrands.name,
       pBrand.id,
-      pBrand.name
+      pBrand.name,
+      todaysDeals.dropPercentage
     );
 
   // Add HAVING clause if price range filters are set
@@ -346,6 +350,10 @@ export async function getGroupProducts({
     possibleBrand: row.possibleBrand?.id ? row.possibleBrand : null,
     currentPrice: row.currentPrice,
     isCheaper: row.productId === group.cheaperProductId,
+    productDeal:
+      row.dealDropPercentage === null || row.dealDropPercentage === undefined
+        ? null
+        : { dropPercentage: row.dealDropPercentage },
   }));
 
   return {

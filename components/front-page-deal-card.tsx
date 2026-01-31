@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ProductImage } from "@/components/product-image";
-import { Badge } from "@/components/ui/badge";
 import { Unit } from "@/components/unit";
 import { AddToListButton } from "@/components/add-to-list-button";
-import { formatDropPercentage, toSlug } from "@/lib/utils";
+import { toSlug } from "@/lib/utils";
+import { OfferBadge } from "@/components/offer-badge";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
@@ -29,9 +29,7 @@ export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
   return (
     <div className="relative flex flex-col gap-2">
       <div className="absolute top-0 left-0 z-10">
-        <Badge variant="destructive">
-          -{formatDropPercentage(deal.dropPercentage)}%
-        </Badge>
+        <OfferBadge dropPercentage={deal.dropPercentage} />
       </div>
       <div className="absolute top-0 right-0 z-10">
         <AddToListButton productId={deal.productId} variant="icon" />

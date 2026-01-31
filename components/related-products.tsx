@@ -12,6 +12,7 @@ export function RelatedProducts({
   relatedProducts: Array<
     productsSelect & { brand: productsBrandsSelect, possibleBrand: productsBrandsSelect | null } & {
       shopCurrentPrices: productsShopsPrices[];
+      productDeal: { dropPercentage: string | number } | null;
     }
   >;
 }) {
