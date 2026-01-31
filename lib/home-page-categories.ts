@@ -40,6 +40,7 @@ export async function getHomePageCategories(
   productLimit: number
 ): Promise<HomePageCategoryWithProducts[]> {
   const categories = await db.query.homePageCategories.findMany({
+    where: (categories, { eq }) => eq(categories.visible, true),
     orderBy: (categories, { asc }) => asc(categories.id),
   });
 

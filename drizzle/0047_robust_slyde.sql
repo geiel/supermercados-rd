@@ -1,0 +1,1 @@
+ALTER TABLE "home_page_categories" ADD COLUMN "visible" boolean DEFAULT true NOT NULL;

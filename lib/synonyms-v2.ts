@@ -611,6 +611,8 @@ const base: Array<Synonym> = [
     { synonyms: ["royal canin", "royal c"], query: ["royal & canin", "royal & c"]},
     { synonyms: ["prescription diet"], query: ["prescription & diet", "pd"]},
     { synonyms: ["facial", "rostro"], query: ["facial", "rostro"]},
+    { synonyms: ["allspice", "malagueta"], query: ["allspice", "malagueta"]},
+    { synonyms: ["tarragon", "estragon"], query: ["tarragon", "estragon"]},
 ]; 
 
 function pluralizeWord(word: string) {
