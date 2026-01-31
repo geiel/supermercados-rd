@@ -17,6 +17,7 @@ export type ExploreProduct = {
   possibleBrand: ExploreBrand | null;
   currentPrice: string | null;
   shopLogo: string | null;
+  productDeal: { dropPercentage: string | number } | null;
 };
 
 export type ExploreProductsResponse = {

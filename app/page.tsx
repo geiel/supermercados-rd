@@ -89,10 +89,6 @@ export default function Home() {
       <Suspense fallback={<HomePageCategoriesSkeleton />}>
         <HomePageCategoriesSection />
       </Suspense>
-
-      {/* <Suspense fallback={<ExploreSectionSkeleton />}>
-        <ExploreSection />
-      </Suspense> */}
       </main>
     </>
   );
@@ -101,6 +97,7 @@ export default function Home() {
 async function TodaysDealsSection() {
   const todaysDeals = await db.query.todaysDeals.findMany({
     orderBy: (deals, { desc }) => [desc(deals.dateWasSet), desc(deals.rank)],
+    where: (deals, { gte }) => (gte(deals.dropPercentage, "10")),
     limit: 20
   });
 
@@ -174,45 +171,5 @@ function HomePageCategoriesSkeleton() {
       </div>
     </section>
   );
-}
-
-function ExploreSectionSkeleton() {
-  return (
-    <section>
-      <div className="space-y-4">
-        <TypographyH3>Explora</TypographyH3>
-        <ScrollPeek>
-          <div className="flex space-x-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Card key={index} className="w-80 bg-muted/60 border-none py-4">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-4 w-16" />
-                  </div>
-                </CardHeader>
-                <CardContent className="px-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: 4 }).map((_, itemIndex) => (
-                      <div
-                        key={itemIndex}
-                        className="flex flex-col gap-2 max-w-full bg-white p-2 rounded"
-                      >
-                        <div className="flex justify-center">
-                          <Skeleton className="h-[130px] w-[130px]" />
-                        </div>
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-5 w-20" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </ScrollPeek>
-      </div>
-    </section>
-  )
 }
 

@@ -11,7 +11,6 @@ import { DealsActiveFilters, DealsFilters } from "@/components/deals-filters";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -39,7 +38,8 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatDropPercentage, toSlug } from "@/lib/utils";
+import { toSlug } from "@/lib/utils";
+import { OfferBadge } from "@/components/offer-badge";
 import {
   DEALS_DEFAULT_SORT,
   DEALS_DESKTOP_PAGE_SIZE,
@@ -490,9 +490,7 @@ function DealCard({ deal }: { deal: DealItem }) {
   return (
     <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative">
       <div className="absolute top-2 left-2 z-10">
-        <Badge variant="destructive">
-          -{formatDropPercentage(deal.dropPercentage)}%
-        </Badge>
+        <OfferBadge dropPercentage={deal.dropPercentage} />
       </div>
       <div className="absolute top-2 right-2 z-10">
         <AddToListButton productId={deal.productId} variant="icon" />

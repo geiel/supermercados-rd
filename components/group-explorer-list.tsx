@@ -44,6 +44,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toSlug } from "@/lib/utils";
+import { OfferBadge } from "@/components/offer-badge";
 import {
   GROUP_EXPLORER_DEFAULT_SORT,
   GROUP_EXPLORER_DESKTOP_PAGE_SIZE,
@@ -378,7 +379,11 @@ export function GroupExplorerList({
             variant="mobile"
           />
         </div>
-        <Drawer open={isSortOpen} onOpenChange={setIsSortOpen}>
+        <Drawer
+          open={isSortOpen}
+          onOpenChange={setIsSortOpen}
+          repositionInputs={false}
+        >
             <DrawerTrigger asChild>
               <Button
                 variant="outline"
@@ -512,8 +517,19 @@ function mergeProducts(
 }
 
 function GroupExplorerCard({ product }: { product: GroupExplorerProduct }) {
+  const dropPercentage = product.productDeal?.dropPercentage;
+  const shouldShowDeal =
+    dropPercentage !== null &&
+    dropPercentage !== undefined &&
+    Number(dropPercentage) > 0;
+
   return (
     <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px] relative">
+      {shouldShowDeal ? (
+        <div className="absolute top-2 left-2 z-10">
+          <OfferBadge dropPercentage={dropPercentage} />
+        </div>
+      ) : null}
       <div className="absolute top-2 right-2 z-10">
         <AddToListButton productId={product.id} variant="icon" />
       </div>

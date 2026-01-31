@@ -25,6 +25,7 @@ type ProductWithRelations = {
   brand: { id: number; name: string };
   possibleBrand: { id: number; name: string } | null;
   shopCurrentPrices: productsShopsPrices[];
+  productDeal: { dropPercentage: string | number } | null;
 };
 
 type ExploreProductsQuery = {
@@ -106,6 +107,11 @@ async function fetchProductsByIds(ids: number[]) {
       shopCurrentPrices: true,
       brand: true,
       possibleBrand: true,
+      productDeal: {
+        columns: {
+          dropPercentage: true
+        }
+      }
     },
   });
 
@@ -133,6 +139,7 @@ function toExploreProduct(
       product.shopCurrentPrices.length === 1
         ? shopLogos.get(product.shopCurrentPrices[0].shopId) ?? null
         : null,
+    productDeal: product.productDeal ?? null,
   };
 }
 

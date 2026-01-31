@@ -177,6 +177,11 @@ export async function searchProducts(
       shopCurrentPrices: true,
       brand: true,
       possibleBrand: true,
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
     },
   });
 

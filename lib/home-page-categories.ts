@@ -9,6 +9,7 @@ import {
   products,
   productsBrands,
   productsShopsPrices,
+  todaysDeals,
 } from "@/db/schema";
 
 export type HomePageCategoryProduct = {
@@ -20,6 +21,7 @@ export type HomePageCategoryProduct = {
   possibleBrandName: string | null;
   currentPrice: string;
   amountOfShops: number;
+  productDeal: { dropPercentage: string | number } | null;
 };
 
 export type HomePageCategoryWithProducts = {
@@ -139,6 +141,7 @@ export async function getCategoryProducts({
       )`,
       currentPrice: minPrice.as("currentPrice"),
       amountOfShops: shopCount.as("amountOfShops"),
+      dealDropPercentage: todaysDeals.dropPercentage,
     })
     .from(products)
     .innerJoin(productsBrands, eq(products.brandId, productsBrands.id))
@@ -146,6 +149,7 @@ export async function getCategoryProducts({
       productsShopsPrices,
       and(eq(productsShopsPrices.productId, products.id), priceFilters)
     )
+    .leftJoin(todaysDeals, eq(todaysDeals.productId, products.id))
     .where(
       and(
         inArray(products.id, productIds),
@@ -159,7 +163,8 @@ export async function getCategoryProducts({
       products.image,
       products.possibleBrandId,
       products.rank,
-      productsBrands.name
+      productsBrands.name,
+      todaysDeals.dropPercentage
     )
     .orderBy(desc(rankValue), minPrice)
     .limit(limit)
@@ -174,6 +179,10 @@ export async function getCategoryProducts({
     possibleBrandName: row.possibleBrandName,
     currentPrice: row.currentPrice,
     amountOfShops: Number(row.amountOfShops),
+    productDeal:
+      row.dealDropPercentage === null || row.dealDropPercentage === undefined
+        ? null
+        : { dropPercentage: row.dealDropPercentage },
   }));
 
   return {

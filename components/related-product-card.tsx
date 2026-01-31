@@ -12,6 +12,7 @@ import { Unit } from "@/components/unit";
 import { ProductBrand } from "@/components/product-brand";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { toSlug } from "@/lib/utils";
+import { OfferBadge } from "@/components/offer-badge";
 
 type RelatedProductCardProps = {
   product: productsSelect & {
@@ -19,6 +20,7 @@ type RelatedProductCardProps = {
     possibleBrand: productsBrandsSelect | null;
   } & {
     shopCurrentPrices: productsShopsPrices[];
+    productDeal: { dropPercentage: string | number } | null;
   };
 };
 
@@ -28,9 +30,19 @@ export function RelatedProductCard({ product }: RelatedProductCardProps) {
       ? current
       : minSoFar
   );
+  const dropPercentage = product.productDeal?.dropPercentage;
+  const shouldShowDeal =
+    dropPercentage !== null &&
+    dropPercentage !== undefined &&
+    Number(dropPercentage) > 0;
 
   return (
     <div className="relative flex flex-col gap-2 pb-2">
+      {shouldShowDeal ? (
+        <div className="absolute top-0 left-0 z-10">
+          <OfferBadge dropPercentage={dropPercentage} />
+        </div>
+      ) : null}
       <div className="absolute top-0 right-0 z-10">
         <AddToListButton productId={product.id} variant="icon" />
       </div>
@@ -39,7 +51,7 @@ export function RelatedProductCard({ product }: RelatedProductCardProps) {
         className="flex flex-col gap-2"
         prefetch={false}
       >
-        <div className="h-[130px] w-[130px] relative">
+        <div className="h-[130px] w-[130px] relative mx-auto">
           {product.image ? (
             <ProductImage
               src={product.image}
