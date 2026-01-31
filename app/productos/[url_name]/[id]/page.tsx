@@ -7,11 +7,16 @@ import { ProductFeedbackSection } from "@/components/product-feedback-section";
 import { ProductImage } from "@/components/product-image";
 import { RelatedProducts } from "@/components/related-products";
 import { ShopPriceRowActions } from "@/components/shop-price-row";
+import { ScrollToSection } from "@/components/scroll-to-section";
 import { Unit } from "@/components/unit";
 import { db } from "@/db";
 import { searchProducts } from "@/lib/search-query";
 import { sanitizeForTsQuery } from "@/lib/utils";
-import { MessageCircleWarning } from "lucide-react";
+import {
+  ChartNoAxesColumnDecreasing,
+  MessageCircleWarning,
+  TrendingDown,
+} from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
 import { cacheTag, cacheLife } from "next/cache";
@@ -77,6 +82,8 @@ export default async function Page({ params }: Props) {
   const shops = await getShops();
 
   const groups = product.groupProduct.map((gp) => gp.group);
+
+  const badgeType = getPriceBadgeType(product);
 
   // Calculate price range for JSON-LD
   const prices = product.shopCurrentPrices
@@ -177,6 +184,25 @@ export default async function Page({ params }: Props) {
       </section>
       <div className="flex flex-col gap-10">
         <section className="flex flex-col">
+          {badgeType ? (
+            <ScrollToSection
+              targetId="historial-precios"
+              className="mb-4 inline-flex w-fit cursor-pointer items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-left text-sm shadow-xs transition-all hover:border-gray-300 hover:shadow-sm hover:opacity-90"
+            >
+              <span className="flex shrink-0 text-purple-600 [&>svg]:size-6">
+                {badgeType.type === "all-time-low" ? (
+                  <TrendingDown strokeWidth={2} />
+                ) : (
+                  <ChartNoAxesColumnDecreasing strokeWidth={2} />
+                )}
+              </span>
+              <span className="font-medium text-foreground">
+                {badgeType.type === "all-time-low"
+                  ? "Buen momento para comprar! Precio más bajo registrado"
+                  : `Buen momento para comprar! Precios estan RD$${formatPriceDelta(badgeType.amount)} más barato de lo normal`}
+              </span>
+            </ScrollToSection>
+          ) : null}
           <div className="font-bold text-2xl">Donde comprar</div>
           {product.shopCurrentPrices
             .filter((shopPrice) => shopPrice.currentPrice !== null)
@@ -223,7 +249,10 @@ export default async function Page({ params }: Props) {
           <RelatedProducts relatedProducts={relatedProducts.products} />
         </section>
 
-        <section className="flex flex-col gap-2">
+        <section
+          id="historial-precios"
+          className="flex flex-col gap-2 scroll-mt-4"
+        >
           <div className="font-bold text-2xl">Historial de precios</div>
           <PricesChart
             priceHistory={product.pricesHistory}
@@ -238,6 +267,218 @@ export default async function Page({ params }: Props) {
       </div>
     </>
   );
+}
+
+type PriceBadge =
+  | { type: "all-time-low" }
+  | { type: "below-3-month-avg"; amount: number }
+  | null;
+
+type PricePoint = {
+  date: Date;
+  price: number;
+};
+
+type VisibilityPoint = {
+  date: Date;
+  visible: boolean;
+};
+
+const toValidPrice = (value: string | null | undefined) => {
+  const numeric = value == null ? NaN : Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+  return numeric;
+};
+
+const formatPriceDelta = (value: number) => {
+  return value.toLocaleString("es-DO", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+};
+
+function getPriceBadgeType(product: {
+  shopCurrentPrices: Array<{
+    shopId: number;
+    currentPrice: string | null;
+    updateAt?: Date | null;
+  }>;
+  pricesHistory: Array<{ shopId: number; price: string; createdAt: Date }>;
+  visibilityHistory: Array<{
+    shopId: number;
+    visibility: "visible" | "hidden";
+    createdAt: Date;
+  }>;
+}): PriceBadge {
+  const priceHistories = new Map<number, PricePoint[]>();
+
+  for (const entry of product.pricesHistory) {
+    const price = toValidPrice(entry.price);
+    if (price == null) continue;
+    const list = priceHistories.get(entry.shopId) ?? [];
+    list.push({ date: new Date(entry.createdAt), price });
+    priceHistories.set(entry.shopId, list);
+  }
+
+  for (const entry of product.shopCurrentPrices) {
+    const price = toValidPrice(entry.currentPrice);
+    if (price == null) continue;
+    const list = priceHistories.get(entry.shopId) ?? [];
+    list.push({
+      date: entry.updateAt ? new Date(entry.updateAt) : new Date(),
+      price,
+    });
+    priceHistories.set(entry.shopId, list);
+  }
+
+  if (priceHistories.size === 0) return null;
+
+  for (const [shopId, list] of priceHistories) {
+    list.sort((a, b) => a.date.getTime() - b.date.getTime());
+    const deduped: PricePoint[] = [];
+    for (const item of list) {
+      const last = deduped[deduped.length - 1];
+      if (!last || last.date.getTime() !== item.date.getTime()) {
+        deduped.push(item);
+      } else {
+        deduped[deduped.length - 1] = item;
+      }
+    }
+    priceHistories.set(shopId, deduped);
+  }
+
+  const visibilityHistories = new Map<number, VisibilityPoint[]>();
+  for (const entry of product.visibilityHistory) {
+    const list = visibilityHistories.get(entry.shopId) ?? [];
+    list.push({
+      date: new Date(entry.createdAt),
+      visible: entry.visibility === "visible",
+    });
+    visibilityHistories.set(entry.shopId, list);
+  }
+
+  for (const [shopId, list] of visibilityHistories) {
+    list.sort((a, b) => a.date.getTime() - b.date.getTime());
+    const deduped: VisibilityPoint[] = [];
+    for (const item of list) {
+      const last = deduped[deduped.length - 1];
+      if (!last || last.date.getTime() !== item.date.getTime()) {
+        deduped.push(item);
+      } else {
+        deduped[deduped.length - 1] = item;
+      }
+    }
+    visibilityHistories.set(shopId, deduped);
+  }
+
+  const shopIds = new Set<number>();
+  priceHistories.forEach((_, shopId) => shopIds.add(shopId));
+  visibilityHistories.forEach((_, shopId) => shopIds.add(shopId));
+
+  const shopIdList = Array.from(shopIds);
+  const priceHistoriesByShop = shopIdList.map(
+    (shopId) => priceHistories.get(shopId) ?? []
+  );
+  const visibilityHistoriesByShop = shopIdList.map(
+    (shopId) => visibilityHistories.get(shopId) ?? []
+  );
+
+  const priceIndices = priceHistoriesByShop.map(() => 0);
+  const visibilityIndices = visibilityHistoriesByShop.map(() => 0);
+  const lastPrices = priceHistoriesByShop.map(() => null as number | null);
+  const visibilityStates = visibilityHistoriesByShop.map(() => true);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const threeMonthsAgo = new Date(today);
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+  const dailyCheapest: number[] = [];
+  let currentCheapest: number | null = null;
+
+  for (
+    const day = new Date(threeMonthsAgo);
+    day.getTime() <= today.getTime();
+    day.setDate(day.getDate() + 1)
+  ) {
+    const dayEnd = new Date(day);
+    dayEnd.setHours(23, 59, 59, 999);
+    let cheapest: number | null = null;
+
+    for (let index = 0; index < shopIdList.length; index += 1) {
+      const history = priceHistoriesByShop[index];
+      while (
+        priceIndices[index] < history.length &&
+        history[priceIndices[index]].date.getTime() <= dayEnd.getTime()
+      ) {
+        lastPrices[index] = history[priceIndices[index]].price;
+        priceIndices[index] += 1;
+      }
+
+      const visibilityHistory = visibilityHistoriesByShop[index];
+      while (
+        visibilityIndices[index] < visibilityHistory.length &&
+        visibilityHistory[visibilityIndices[index]].date.getTime() <=
+          dayEnd.getTime()
+      ) {
+        visibilityStates[index] = visibilityHistory[visibilityIndices[index]].visible;
+        visibilityIndices[index] += 1;
+      }
+
+      const price = lastPrices[index];
+      if (price == null || !visibilityStates[index]) continue;
+
+      if (cheapest === null || price < cheapest) {
+        cheapest = price;
+      }
+    }
+
+    if (cheapest != null) {
+      dailyCheapest.push(cheapest);
+      currentCheapest = cheapest;
+    }
+  }
+
+  if (currentCheapest == null) return null;
+
+  const droppedInLast3Months = dailyCheapest.some(
+    (price) => price > currentCheapest
+  );
+
+  const historicalPrices = product.pricesHistory
+    .map((h) => toValidPrice(h.price))
+    .filter((p): p is number => p != null);
+  if (historicalPrices.length > 0) {
+    const allTimeLowPrice = Math.min(...historicalPrices);
+    if (droppedInLast3Months && currentCheapest <= allTimeLowPrice) {
+      return { type: "all-time-low" };
+    }
+  }
+
+  if (dailyCheapest.length === 0) return null;
+  const avgLast3Months =
+    dailyCheapest.reduce((a, b) => a + b, 0) / dailyCheapest.length;
+  if (currentCheapest < avgLast3Months) {
+    const amount = avgLast3Months - currentCheapest;
+    const roundedAmount = Math.round(amount * 100) / 100;
+    if (roundedAmount <= 0) return null;
+
+    if (currentCheapest < 50 && roundedAmount < 3) {
+      return null;
+    }
+
+    if (currentCheapest >= 50 && currentCheapest <= 150 && roundedAmount < 5) {
+      return null;
+    }
+
+    if (currentCheapest > 150 && roundedAmount < 10) {
+      return null;
+    }
+
+    return { type: "below-3-month-avg", amount: roundedAmount };
+  }
+
+  return null;
 }
 
 function ShopPrice({
