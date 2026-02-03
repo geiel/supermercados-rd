@@ -5,10 +5,13 @@ import { CategoryBadge } from "./category-badge";
 import { TypographyH3 } from "./typography-h3";
 import { Button } from "./ui/button";
 import { SuggestCategoryDrawer } from "./suggest-category-drawer";
+import type { ExploreGroupResult } from "@/types/explore";
 
-type GroupResult = { name: string; humanId: string; groupId: number; isComparable: boolean };
-
-export function CategorySearch({ groupResults }: { groupResults: Array<GroupResult> }) {
+export function CategorySearch({
+  groupResults,
+}: {
+  groupResults: ExploreGroupResult[];
+}) {
     const [showAllMobile, setShowAllMobile] = useState(false);
     const mobileGroups = showAllMobile ? groupResults : groupResults.slice(0, 4);
 

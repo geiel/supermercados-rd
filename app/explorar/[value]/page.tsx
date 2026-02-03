@@ -8,7 +8,6 @@ import { TypographyH3 } from "@/components/typography-h3";
 import { getExploreProducts } from "@/lib/explore-products";
 import { getUser } from "@/lib/supabase";
 import { getShopsIds } from "@/lib/utils";
-import { searchGroups } from "@/lib/search-categories";
 import {
   normalizeUnitFiltersForSearch,
   parseUnitFilterParam,
@@ -45,19 +44,16 @@ export default async function Page({ params, searchParams }: Props) {
 
   const rawSearchValue = decodeURIComponent(value).trim();
 
-  const [{ products, prefetch, total, nextOffset }, groupResults] =
-    await Promise.all([
-      getExploreProducts({
-        value: rawSearchValue,
-        offset: 0,
-        prefetchIds: [],
-        shopIds: shopsIds,
-        includeHiddenProducts: canSeeHiddenProducts,
-        onlyShopProducts: only_shop_products === "true",
-        unitFilters,
-      }),
-      searchGroups(rawSearchValue),
-    ]);
+  const { products, prefetch, total, nextOffset, groupResults } =
+    await getExploreProducts({
+      value: rawSearchValue,
+      offset: 0,
+      prefetchIds: [],
+      shopIds: shopsIds,
+      includeHiddenProducts: canSeeHiddenProducts,
+      onlyShopProducts: only_shop_products === "true",
+      unitFilters,
+    });
 
   return (
     <>
@@ -72,6 +68,7 @@ export default async function Page({ params, searchParams }: Props) {
       <ExploreProductsList
         initialProducts={products}
         initialPrefetch={prefetch}
+        initialGroupResults={groupResults}
         total={total}
         initialOffset={nextOffset}
         query={{

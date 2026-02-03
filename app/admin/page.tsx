@@ -29,6 +29,10 @@ async function AdminPage() {
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
           <AdminNavLink href="/admin/groups" label="Administrar grupos" />
           <AdminNavLink
+            href="/admin/categories"
+            label="Categorías de grupos"
+          />
+          <AdminNavLink
             href="/admin/group-products"
             label="Asignar productos a grupos"
           />

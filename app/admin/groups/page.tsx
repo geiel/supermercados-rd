@@ -7,6 +7,8 @@ import { Suspense } from "react";
 import { and, eq, inArray } from "drizzle-orm";
 import { GroupsManager } from "./client";
 import { TypographyH3 } from "@/components/typography-h3";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 async function createGroup(formData: FormData) {
   "use server";
@@ -344,7 +346,12 @@ async function GroupsPage() {
   return (
     <div className="container mx-auto pb-4 pt-4">
       <div className="flex flex-1 flex-col gap-4">
-        <TypographyH3>Administrar Grupos</TypographyH3>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <TypographyH3>Administrar Grupos</TypographyH3>
+          <Button asChild variant="outline">
+            <Link href="/admin/categories">Ir a categorías</Link>
+          </Button>
+        </div>
         <GroupsManager
           groups={groups}
           createGroup={createGroup}
@@ -360,7 +367,12 @@ function GroupsFallback() {
   return (
     <div className="container mx-auto pb-4 pt-4">
       <div className="flex flex-1 flex-col gap-4">
-        <TypographyH3>Administrar Grupos</TypographyH3>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <TypographyH3>Administrar Grupos</TypographyH3>
+          <Button asChild variant="outline">
+            <Link href="/admin/categories">Ir a categorías</Link>
+          </Button>
+        </div>
         <div className="text-sm text-muted-foreground">Cargando...</div>
       </div>
     </div>

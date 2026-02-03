@@ -41,7 +41,11 @@ export function GroupProductsToolbar({
     setGroupId(initialGroupId ? String(initialGroupId) : undefined);
   }, [initialGroupId]);
 
-  function updateParams(nextValue?: string, nextGroupId?: string) {
+  function updateParams(
+    nextValue?: string,
+    nextGroupId?: string,
+    options?: { resetPage?: boolean }
+  ) {
     const params = new URLSearchParams(searchParams.toString());
 
     if (typeof nextValue !== "undefined") {
@@ -61,14 +65,16 @@ export function GroupProductsToolbar({
       }
     }
 
-    params.delete("page");
+    if (options?.resetPage) {
+      params.delete("page");
+    }
 
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   }
 
   function handleSearch() {
-    updateParams(value, groupId);
+    updateParams(value, groupId, { resetPage: true });
   }
 
   const groupOptions = groups.map((group) => ({
