@@ -9,6 +9,7 @@ import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
 import { sanitizeForTsQuery } from "@/lib/utils";
+import { getExploreParentGroups } from "@/lib/explore-groups";
 import {
   EXPLORE_PREFETCH_COUNT,
   EXPLORE_SYNC_COUNT,
@@ -208,7 +209,6 @@ export async function getExploreProducts({
   }
 
   const productIds = displayProducts.map((product) => product.id);
-  const lowestPrices = await fetchLowestPrices(productIds, includeHiddenProducts);
 
   const shops = await db.query.shops.findMany({
     columns: {
@@ -218,6 +218,13 @@ export async function getExploreProducts({
   });
   const shopLogos = new Map(shops.map((shop) => [shop.id, shop.logo]));
 
+  const nextOffset = offset + productsAndTotal.products.length;
+
+  const [lowestPrices, groupResults] = await Promise.all([
+    fetchLowestPrices(productIds, includeHiddenProducts),
+    getExploreParentGroups(productIds, 10),
+  ]);
+
   const products = displayProducts.map((product) =>
     toExploreProduct(product, shopLogos, lowestPrices.get(product.id) ?? null)
   );
@@ -226,7 +233,5 @@ export async function getExploreProducts({
     toExploreProduct(product, shopLogos, null)
   );
 
-  const nextOffset = offset + productsAndTotal.products.length;
-
-  return { products, prefetch, total, nextOffset };
+  return { products, prefetch, total, nextOffset, groupResults };
 }

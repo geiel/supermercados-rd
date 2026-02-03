@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import {
+  productBrokenImages,
   products,
   productsBrands,
   productsGroups,
@@ -84,6 +85,7 @@ export async function adminMergeProduct(
 
   await db.delete(todaysDeals).where(eq(todaysDeals.productId, childProductId));
   await db.delete(productsGroups).where(eq(productsGroups.productId, childProductId));
+  await db.delete(productBrokenImages).where(eq(productBrokenImages.productId, childProductId));
   await db.delete(products).where(eq(products.id, childProductId));
 }
 

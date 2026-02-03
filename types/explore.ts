@@ -7,6 +7,13 @@ export type ExploreBrand = {
   name: string;
 };
 
+export type ExploreGroupResult = {
+  name: string;
+  humanId: string;
+  groupId: number;
+  isComparable: boolean;
+};
+
 export type ExploreProduct = {
   id: number;
   name: string;
@@ -25,4 +32,5 @@ export type ExploreProductsResponse = {
   prefetch: ExploreProduct[];
   total: number;
   nextOffset: number;
+  groupResults: ExploreGroupResult[];
 };

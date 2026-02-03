@@ -23,6 +23,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   });
 
+  console.log(`Sitemap: Found ${products.length} products.`);
+
   // Filter products that have at least one active price
   const activeProducts = products.filter(
     (p) => p.shopCurrentPrices.length > 0

@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toSlug } from "@/lib/utils";
 import {
   type ExploreProduct,
+  type ExploreGroupResult,
   type ExploreProductsResponse,
 } from "@/types/explore";
 import { OfferBadge } from "@/components/offer-badge";
@@ -32,6 +33,7 @@ const MOBILE_VISIBLE_COUNT = 14;
 type ExploreProductsListProps = {
   initialProducts: ExploreProduct[];
   initialPrefetch: ExploreProduct[];
+  initialGroupResults: ExploreGroupResult[];
   total: number;
   initialOffset: number;
   query: {
@@ -50,6 +52,7 @@ type ExplorePageParam = {
 export function ExploreProductsList({
   initialProducts,
   initialPrefetch,
+  initialGroupResults,
   total,
   initialOffset,
   query,
@@ -80,10 +83,18 @@ export function ExploreProductsList({
     return {
       products: visible,
       prefetch,
+      groupResults: initialGroupResults,
       total,
       nextOffset: initialOffset,
     };
-  }, [initialOffset, initialPrefetch, initialProducts, isMobile, total]);
+  }, [
+    initialGroupResults,
+    initialOffset,
+    initialPrefetch,
+    initialProducts,
+    isMobile,
+    total,
+  ]);
 
   const {
     data,
