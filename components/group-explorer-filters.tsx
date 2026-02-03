@@ -582,6 +582,7 @@ function ShopsFilterSection({ humanId }: { humanId: string }) {
                   <Checkbox
                     checked={isSelected}
                     disabled={isPending || isDisabled}
+                    onCheckedChange={(value) => toggleShop(shop.id, value === true)}
                     onClick={(e) => e.stopPropagation()}
                   />
                   <span className="text-sm">{shop.name}</span>
@@ -710,6 +711,7 @@ function UnitsFilterSection({ humanId }: { humanId: string }) {
                   <Checkbox
                     checked={isSelected}
                     disabled={isPending || isDisabled}
+                    onCheckedChange={(value) => toggleUnit(unit.value, value === true)}
                     onClick={(e) => e.stopPropagation()}
                   />
                   <span className="text-sm">{unit.label}</span>

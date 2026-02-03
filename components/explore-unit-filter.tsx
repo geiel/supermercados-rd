@@ -140,6 +140,7 @@ export function ExploreUnitFilter() {
                     <Checkbox
                       checked={isChecked}
                       disabled={isPending}
+                      onCheckedChange={(value) => handleToggle(option.value, value)}
                       onClick={(e) => e.stopPropagation()}
                     />
                     <span className="text-sm font-medium leading-none flex-1 truncate">

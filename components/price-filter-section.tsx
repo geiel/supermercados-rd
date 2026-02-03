@@ -365,26 +365,47 @@ export function PriceFilterSection({
                 />
               </div>
 
-              <RadioGroup value={activeQuickFilter || ""} className="space-y-2">
+              <RadioGroup
+                value={activeQuickFilter || ""}
+                onValueChange={(value) => {
+                  const selected = priceStats?.quickFilters.find(
+                    (qf) => qf.label === value
+                  );
+                  if (!selected) {
+                    return;
+                  }
+                  handleQuickFilter(selected.minPrice, selected.maxPrice);
+                }}
+                className="space-y-2"
+              >
                 {priceStats.quickFilters.map((qf) => {
                   const isActive = activeQuickFilter === qf.label;
+                  const handleToggle = () => {
+                    if (isActive) {
+                      onRangeChange(null, null);
+                    } else {
+                      handleQuickFilter(qf.minPrice, qf.maxPrice);
+                    }
+                  };
                   return (
                     <div
                       key={qf.label}
                       className="flex items-center justify-between cursor-pointer"
                       onClick={() => {
-                        if (isActive) {
-                          onRangeChange(null, null);
-                        } else {
-                          handleQuickFilter(qf.minPrice, qf.maxPrice);
-                        }
+                        handleToggle();
                       }}
                     >
                       <div className="flex items-center gap-2">
                         <RadioGroupItem
                           value={qf.label}
                           disabled={isPending}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (isActive) {
+                              event.preventDefault();
+                              handleToggle();
+                            }
+                          }}
                         />
                         <span className="text-sm">{qf.label}</span>
                       </div>
