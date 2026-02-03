@@ -124,6 +124,7 @@ export function ExploreShopFilterClient({
                     <Checkbox
                       checked={isChecked}
                       disabled={isPending}
+                      onCheckedChange={(value) => handleCheckedChange(value, shop.id)}
                       onClick={(e) => e.stopPropagation()}
                     />
                     <span className="text-sm font-medium leading-none flex-1">

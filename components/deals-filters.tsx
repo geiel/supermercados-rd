@@ -437,10 +437,26 @@ function DiscountFilterSection() {
           <Spinner />
         </div>
       ) : discountOptions.length > 0 ? (
-        <RadioGroup value={currentMinDrop ? String(currentMinDrop) : ""} className="space-y-2">
+        <RadioGroup
+          value={currentMinDrop ? String(currentMinDrop) : ""}
+          onValueChange={(value) => {
+            const parsed = Number(value);
+            if (!Number.isNaN(parsed)) {
+              updateDiscount(parsed);
+            }
+          }}
+          className="space-y-2"
+        >
           {discountOptions.map((option) => {
             const isSelected = currentMinDrop === option.value;
             const isDisabled = option.count === 0 && !isSelected;
+            const handleToggle = () => {
+              if (isSelected) {
+                updateDiscount(null);
+              } else {
+                updateDiscount(option.value);
+              }
+            };
 
             return (
               <div
@@ -453,11 +469,7 @@ function DiscountFilterSection() {
                   if (isDisabled) {
                     return;
                   }
-                  if (isSelected) {
-                    updateDiscount(null);
-                  } else {
-                    updateDiscount(option.value);
-                  }
+                  handleToggle();
                 }}
                 aria-disabled={isDisabled}
               >
@@ -465,7 +477,13 @@ function DiscountFilterSection() {
                   <RadioGroupItem
                     value={String(option.value)}
                     disabled={isPending || isDisabled}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (isSelected) {
+                        event.preventDefault();
+                        handleToggle();
+                      }
+                    }}
                   />
                   <span className="text-sm">{option.label}</span>
                 </div>
@@ -694,6 +712,9 @@ function CategoryFilterSection() {
                     <Checkbox
                       checked={isSelected}
                       disabled={isPending || isDisabled}
+                      onCheckedChange={(value) =>
+                        toggleGroup(category.id, value === true)
+                      }
                       onClick={(e) => e.stopPropagation()}
                     />
                     <span className="text-sm">{category.name}</span>
@@ -829,6 +850,7 @@ function ShopsFilterSection() {
                   <Checkbox
                     checked={isSelected}
                     disabled={isPending || isDisabled}
+                    onCheckedChange={(value) => toggleShop(shop.id, value === true)}
                     onClick={(e) => e.stopPropagation()}
                   />
                   <span className="text-sm">{shop.name}</span>
