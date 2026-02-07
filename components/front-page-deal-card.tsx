@@ -6,6 +6,7 @@ import { Unit } from "@/components/unit";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { toSlug } from "@/lib/utils";
 import { OfferBadge } from "@/components/offer-badge";
+import { PricePerUnit } from "@/components/price-per-unit";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
@@ -20,11 +21,15 @@ type FrontPageDealCardProps = {
     brandName: string;
     possibleBrandName: string | null;
     amountOfShops: string;
+    product: {
+      categoryId: number;
+    } | null;
   };
 };
 
 export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
   const shopCount = Number(deal.amountOfShops);
+  const numericPrice = Number(deal.priceToday);
   
   return (
     <div className="relative flex flex-col gap-2">
@@ -62,8 +67,18 @@ export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
             <BrandName name={deal.brandName} possibleName={deal.possibleBrandName} />
             <span className="line-clamp-2">{deal.name}</span>
           </div>
-          <div className="font-bold text-lg">RD${deal.priceToday}</div>
-          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+          <div>
+            <div className="font-bold text-lg">RD${deal.priceToday}</div>
+            {Number.isFinite(numericPrice) && deal.product ? (
+              <PricePerUnit
+                unit={deal.unit}
+                price={numericPrice}
+                categoryId={deal.product.categoryId}
+                productName={deal.name}
+              />
+            ) : null}
+          </div>
+          <div className="mt-2 flex items-center gap-1.5 text-muted-foreground text-sm">
             <span className="inline-flex items-center justify-center size-5 rounded-full border text-xs font-medium">
               {shopCount}
             </span>

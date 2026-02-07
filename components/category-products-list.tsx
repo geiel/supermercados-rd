@@ -198,7 +198,7 @@ function CategoryProductCard({ product }: { product: HomePageCategoryProduct }) 
             <PricePerUnit
               unit={product.unit}
               price={numericPrice}
-              categoryId={0}
+              categoryId={product.categoryId}
               productName={product.name}
             />
           ) : null}

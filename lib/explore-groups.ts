@@ -1,21 +1,30 @@
 import "server-only";
 
 import { db } from "@/db";
-import { groups, productsGroups } from "@/db/schema";
+import { groups, products, productsGroups, productsShopsPrices } from "@/db/schema";
 import type { ExploreGroupResult } from "@/types/explore";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 type ParentGroupRow = {
   productId: number;
-  groupId: number;
-  groupName: string;
-  groupHumanId: string;
-  isComparable: boolean;
+  ownGroupId: number;
+  ownGroupName: string;
+  ownGroupHumanId: string;
+  ownIsComparable: boolean;
+  ownImageUrl: string | null;
+  parentGroupId: number | null;
+  parentGroupName: string | null;
+  parentGroupHumanId: string | null;
+  parentIsComparable: boolean | null;
+  parentImageUrl: string | null;
 };
 
 type GroupAggregate = {
-  row: ParentGroupRow;
+  row: Omit<ExploreGroupResult, "name" | "humanId"> & {
+    groupName: string;
+    groupHumanId: string;
+  };
   count: number;
   firstIndex: number;
 };
@@ -31,17 +40,61 @@ export async function getExploreParentGroups(
   const rows = await db
     .select({
       productId: productsGroups.productId,
-      groupId: sql<number>`COALESCE(${parentGroup.id}, ${groups.id})`,
-      groupName: sql<string>`COALESCE(${parentGroup.name}, ${groups.name})`,
-      groupHumanId: sql<string>`COALESCE(${parentGroup.humanNameId}, ${groups.humanNameId})`,
-      isComparable: sql<boolean>`COALESCE(${parentGroup.isComparable}, ${groups.isComparable})`,
+      ownGroupId: groups.id,
+      ownGroupName: groups.name,
+      ownGroupHumanId: groups.humanNameId,
+      ownIsComparable: groups.isComparable,
+      ownImageUrl: groups.imageUrl,
+      parentGroupId: parentGroup.id,
+      parentGroupName: parentGroup.name,
+      parentGroupHumanId: parentGroup.humanNameId,
+      parentIsComparable: parentGroup.isComparable,
+      parentImageUrl: parentGroup.imageUrl,
     })
     .from(productsGroups)
     .innerJoin(groups, eq(groups.id, productsGroups.groupId))
     .leftJoin(parentGroup, eq(groups.parentGroupId, parentGroup.id))
     .where(inArray(productsGroups.productId, productIds));
 
-  const byProduct = new Map<number, Map<number, ParentGroupRow>>();
+  const candidateGroupIds = Array.from(
+    new Set(
+      rows.flatMap((row) =>
+        row.parentGroupId ? [row.ownGroupId, row.parentGroupId] : [row.ownGroupId]
+      )
+    )
+  );
+
+  const visibleGroupRows =
+    candidateGroupIds.length > 0
+      ? await db
+          .select({
+            groupId: productsGroups.groupId,
+          })
+          .from(productsGroups)
+          .innerJoin(products, eq(products.id, productsGroups.productId))
+          .innerJoin(
+            productsShopsPrices,
+            and(
+              eq(productsShopsPrices.productId, products.id),
+              isNotNull(productsShopsPrices.currentPrice),
+              or(
+                isNull(productsShopsPrices.hidden),
+                eq(productsShopsPrices.hidden, false)
+              )
+            )
+          )
+          .where(
+            and(
+              inArray(productsGroups.groupId, candidateGroupIds),
+              or(isNull(products.deleted), eq(products.deleted, false))
+            )
+          )
+          .groupBy(productsGroups.groupId)
+      : [];
+
+  const visibleGroupIds = new Set(visibleGroupRows.map((row) => row.groupId));
+
+  const byProduct = new Map<number, Map<number, GroupAggregate["row"]>>();
 
   for (const row of rows) {
     let groupMap = byProduct.get(row.productId);
@@ -50,8 +103,26 @@ export async function getExploreParentGroups(
       byProduct.set(row.productId, groupMap);
     }
 
-    if (!groupMap.has(row.groupId)) {
-      groupMap.set(row.groupId, row);
+    const useParent =
+      row.parentGroupId !== null && visibleGroupIds.has(row.parentGroupId);
+    const targetGroupId = useParent ? row.parentGroupId! : row.ownGroupId;
+
+    if (!visibleGroupIds.has(targetGroupId)) {
+      continue;
+    }
+
+    if (!groupMap.has(targetGroupId)) {
+      groupMap.set(targetGroupId, {
+        groupId: targetGroupId,
+        groupName: useParent ? row.parentGroupName ?? row.ownGroupName : row.ownGroupName,
+        groupHumanId: useParent
+          ? row.parentGroupHumanId ?? row.ownGroupHumanId
+          : row.ownGroupHumanId,
+        isComparable: useParent
+          ? row.parentIsComparable ?? row.ownIsComparable
+          : row.ownIsComparable,
+        imageUrl: useParent ? row.parentImageUrl ?? row.ownImageUrl : row.ownImageUrl,
+      });
     }
   }
 
@@ -88,5 +159,6 @@ export async function getExploreParentGroups(
     humanId: row.groupHumanId,
     groupId: row.groupId,
     isComparable: row.isComparable,
+    imageUrl: row.imageUrl,
   }));
 }

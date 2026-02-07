@@ -1,5 +1,6 @@
 import { AddGroupToListButton } from "@/components/add-group-to-list-button";
 import { CategoryBadge } from "@/components/category-badge";
+import { GroupBreadcrumbs } from "@/components/group-breadcrumbs";
 import { GroupExplorerFilters } from "@/components/group-explorer-filters";
 import { GroupExplorerList } from "@/components/group-explorer-list";
 import { TypographyH3 } from "@/components/typography-h3";
@@ -11,6 +12,7 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty";
 import ScrollPeek from "@/components/ui/scroll-peek";
+import { getGroupBreadcrumbsForGroup } from "@/lib/group-breadcrumbs";
 import { getGroupProducts } from "@/lib/group-products";
 import { GROUP_EXPLORER_DESKTOP_PAGE_SIZE, type GroupExplorerFilters as Filters } from "@/types/group-explorer";
 import { PackageSearch } from "lucide-react";
@@ -84,8 +86,14 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
         );
     }
 
+    const breadcrumbs = await getGroupBreadcrumbsForGroup(result.group.id);
+
     return (
         <div className="container mx-auto px-2 pb-2 space-y-4">
+            <GroupBreadcrumbs
+                paths={breadcrumbs.length > 0 ? [breadcrumbs] : []}
+                compactMobileMode="parent"
+            />
             <div className="flex gap-2 items-center justify-between">
                 <div className="flex items-baseline gap-2">
                     <TypographyH3>{result.group.name}</TypographyH3>
@@ -112,6 +120,8 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
                                     groupName={child.name}
                                     groupHumanNameId={child.humanNameId}
                                     isComparable={child.isComparable}
+                                    groupImageUrl={child.imageUrl}
+                                    addLabel="Lista"
                                 />
                             ))}
                         </div>
@@ -127,13 +137,14 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
                 />
                 {/* Main Content */}
                 <div className="flex-1 min-w-0">
-                    <GroupExplorerList
-                        humanId={humanId}
-                        initialProducts={result.products}
-                        total={result.total}
-                        initialOffset={result.nextOffset}
-                        childGroups={result.childGroups}
-                    />
+                <GroupExplorerList
+                    humanId={humanId}
+                    initialProducts={result.products}
+                    total={result.total}
+                    initialOffset={result.nextOffset}
+                    childGroups={result.childGroups}
+                    isComparable={result.group.isComparable}
+                />
                 </div>
             </div>
         </div>

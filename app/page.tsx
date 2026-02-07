@@ -1,4 +1,5 @@
 import { FrontPageDealCard } from "@/components/front-page-deal-card";
+import { GroupCategoriesStrip } from "@/components/group-categories-strip";
 import { HomePageCategoriesSection } from "@/components/home-page-categories-section";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -35,23 +36,30 @@ export default function Home() {
   return (
     <>
       <main className="container mx-auto p-2 space-y-10">
-      <section className="p-6 rounded-3xl flex flex-col items-center gap-6 md:py-10 lg:px-40 lg:py-20" style={{ background: 'radial-gradient(120% 120% at 50% 0%, #4A2169 0%, #3A1857 60%, #2E1248 100%)' }}>
         <div>
-          <h1 className="scroll-m-20 text-center text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance text-white">
-            <span className="block">Busca, compara y ahorra</span>
-            <span className="block">Encuentra el supermercado más barato hoy</span>
-          </h1>
-          
-          <p className="leading-7 [&:not(:first-child)]:mt-4 text-center text-white">
-            Compara precios en República Dominicana y decide dónde comprar antes de salir de casa
-          </p>
+          <section className="p-5 rounded-3xl flex flex-col items-center gap-5 md:py-8 lg:px-40 lg:py-14" style={{ background: 'radial-gradient(120% 120% at 50% 0%, #4A2169 0%, #3A1857 60%, #2E1248 100%)' }}>
+            <div>
+              <h1 className="scroll-m-20 text-center text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance text-white">
+                <span className="block">Busca, compara y ahorra</span>
+                <span className="block">Encuentra el supermercado más barato hoy</span>
+              </h1>
+              
+              <p className="leading-7 [&:not(:first-child)]:mt-4 text-center text-white">
+                Compara precios en República Dominicana y decide dónde comprar antes de salir de casa
+              </p>
+            </div>
+            <div className="w-full md:w-[60%]">
+              <Suspense fallback={<SearchBarSkeleton />}>
+                <SearchBar />
+              </Suspense>
+            </div>
+          </section>
+          <div className="pt-3">
+            <Suspense fallback={null}>
+              <GroupCategoriesStrip />
+            </Suspense>
+          </div>
         </div>
-        <div className="w-full md:w-[60%]">
-          <Suspense fallback={<SearchBarSkeleton />}>
-            <SearchBar />
-          </Suspense>
-        </div>
-      </section>
 
       <Suspense fallback={<TodaysDealsSkeleton />}>
         <TodaysDealsSection />
@@ -86,7 +94,7 @@ export default function Home() {
         </div>
       </section>
 
-      <Suspense fallback={<HomePageCategoriesSkeleton />}>
+      <Suspense fallback={null}>
         <HomePageCategoriesSection />
       </Suspense>
       </main>
@@ -98,7 +106,14 @@ async function TodaysDealsSection() {
   const todaysDeals = await db.query.todaysDeals.findMany({
     orderBy: (deals, { desc }) => [desc(deals.dateWasSet), desc(deals.rank)],
     where: (deals, { gte }) => (gte(deals.dropPercentage, "10")),
-    limit: 20
+    limit: 20,
+    with: {
+      product: {
+        columns: {
+          categoryId: true,
+        },
+      },
+    },
   });
 
   return (
@@ -144,32 +159,3 @@ function TodaysDealsSkeleton() {
     </section>
   )
 }
-
-function HomePageCategoriesSkeleton() {
-  return (
-    <section>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-        <ScrollPeek
-          itemWidth="min(max(35vw, 110px), 218px)"
-          itemWidthMd="224px"
-        >
-          <div className="flex space-x-2 p-2">
-            {Array.from({ length: 10 }).map((_, index) => (
-              <div key={index} className="flex flex-col gap-2">
-                <Skeleton className="w-[180px] aspect-square" />
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-5 w-20" />
-              </div>
-            ))}
-          </div>
-        </ScrollPeek>
-      </div>
-    </section>
-  );
-}
-

@@ -51,6 +51,7 @@ export type GroupExplorerGroup = {
   humanId: string;
   cheaperProductId: number | null;
   isComparable: boolean;
+  imageUrl: string | null;
 };
 
 export type GroupExplorerChildGroup = {
@@ -58,6 +59,7 @@ export type GroupExplorerChildGroup = {
   name: string;
   humanNameId: string;
   isComparable: boolean;
+  imageUrl: string | null;
 };
 
 export type GroupExplorerResponse = {

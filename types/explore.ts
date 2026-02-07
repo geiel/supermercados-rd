@@ -12,6 +12,7 @@ export type ExploreGroupResult = {
   humanId: string;
   groupId: number;
   isComparable: boolean;
+  imageUrl: string | null;
 };
 
 export type ExploreProduct = {

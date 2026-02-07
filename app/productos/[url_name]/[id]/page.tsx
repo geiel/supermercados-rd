@@ -1,5 +1,4 @@
 import { AddToListButton } from "@/components/add-to-list-button";
-import { CategoryBadge } from "@/components/category-badge";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductBrand } from "@/components/product-brand";
@@ -9,7 +8,9 @@ import { RelatedProducts } from "@/components/related-products";
 import { ShopPriceRowActions } from "@/components/shop-price-row";
 import { ScrollToSection } from "@/components/scroll-to-section";
 import { Unit } from "@/components/unit";
+import { GroupBreadcrumbs } from "@/components/group-breadcrumbs";
 import { db } from "@/db";
+import { getGroupBreadcrumbPaths } from "@/lib/group-breadcrumbs";
 import { searchProducts } from "@/lib/search-query";
 import { sanitizeForTsQuery } from "@/lib/utils";
 import {
@@ -82,6 +83,9 @@ export default async function Page({ params }: Props) {
   const shops = await getShops();
 
   const groups = product.groupProduct.map((gp) => gp.group);
+  const groupBreadcrumbs = await getGroupBreadcrumbPaths(
+    groups.map((group) => group.id)
+  );
 
   const badgeType = getPriceBadgeType(product);
 
@@ -125,25 +129,7 @@ export default async function Page({ params }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
-          {groups.length > 0 ? (
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:flex-wrap">
-              <span className="text-sm text-muted-foreground">
-                {groups.length === 1 ? "Categoría" : "Categorías"}
-              </span>
-              <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:gap-2">
-                {groups.map((group) => (
-                  <CategoryBadge
-                    key={group.id}
-                    groupId={group.id}
-                    groupName={group.name}
-                    groupHumanNameId={group.humanNameId}
-                    isComparable={group.isComparable}
-                    showLabel
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
+          <GroupBreadcrumbs paths={groupBreadcrumbs} compactMobileMode="last" />
           <div>
             <ProductBrand brand={product.brand} possibleBrand={product.possibleBrand} type="product" />
             <div className="flex items-center gap-2">

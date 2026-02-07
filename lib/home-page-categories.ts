@@ -14,6 +14,7 @@ import {
 
 export type HomePageCategoryProduct = {
   productId: number;
+  categoryId: number;
   name: string;
   unit: string;
   image: string | null;
@@ -131,6 +132,7 @@ export async function getCategoryProducts({
   const productRows = await db
     .select({
       productId: products.id,
+      categoryId: products.categoryId,
       name: products.name,
       unit: products.unit,
       image: products.image,
@@ -172,6 +174,7 @@ export async function getCategoryProducts({
 
   const categoryProducts: HomePageCategoryProduct[] = productRows.map((row) => ({
     productId: row.productId,
+    categoryId: row.categoryId,
     name: row.name,
     unit: row.unit,
     image: row.image,
