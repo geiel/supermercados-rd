@@ -32,6 +32,7 @@ export function CategorySearch({
               groupName={group.name}
               groupHumanNameId={group.humanId}
               isComparable={group.isComparable}
+              groupImageUrl={group.imageUrl}
             />
           ))}
           <SuggestCategoryDrawer>
@@ -48,6 +49,7 @@ export function CategorySearch({
               groupName={group.name}
               groupHumanNameId={group.humanId}
               isComparable={group.isComparable}
+              groupImageUrl={group.imageUrl}
             />
           ))}
           {!showAllMobile && groupResults.length > 4 ? (

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { Layers, Plus } from "lucide-react";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { Copy, Layers, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -69,9 +69,23 @@ export function CategoriesManager({
   const [isPending, startTransition] = useTransition();
   const [leftSearch, setLeftSearch] = useState("");
   const [rightSearch, setRightSearch] = useState("");
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
+    "idle"
+  );
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
+    [categories]
+  );
+
+  const groupById = useMemo(
+    () => new Map(groups.map((group) => [group.id, group])),
+    [groups]
+  );
+
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.name])),
     [categories]
   );
 
@@ -90,6 +104,29 @@ export function CategoriesManager({
     return map;
   }, [categoryGroups]);
 
+  const categoryNamesByGroupId = useMemo(() => {
+    const namesByGroup = new Map<number, Set<string>>();
+
+    for (const entry of categoryGroups) {
+      const categoryName = categoryNameById.get(entry.categoryId);
+      if (!categoryName) continue;
+
+      const existing = namesByGroup.get(entry.groupId);
+      if (existing) {
+        existing.add(categoryName);
+      } else {
+        namesByGroup.set(entry.groupId, new Set([categoryName]));
+      }
+    }
+
+    const result = new Map<number, string[]>();
+    for (const [groupId, names] of namesByGroup) {
+      result.set(groupId, Array.from(names).sort((a, b) => a.localeCompare(b)));
+    }
+
+    return result;
+  }, [categoryGroups, categoryNameById]);
+
   const groupCountByCategory = useMemo(() => {
     const counts = new Map<number, number>();
 
@@ -103,6 +140,7 @@ export function CategoriesManager({
   const selectedCategory = selectedCategoryId
     ? categoryById.get(selectedCategoryId) ?? null
     : null;
+  const selectedCategoryName = selectedCategory?.name ?? null;
 
   const selectedGroupIds = selectedCategoryId
     ? groupIdsByCategory.get(selectedCategoryId) ?? new Set<number>()
@@ -119,6 +157,50 @@ export function CategoriesManager({
         group.name.toLowerCase().includes(rightSearch.toLowerCase())
       )
     : groups;
+
+  const exportPayload = useMemo(() => {
+    const assignedGroupIds = new Set<number>();
+
+    const categoriesExport = categories.map((category) => {
+      const groupIds = groupIdsByCategory.get(category.id) ?? new Set<number>();
+      const groupsForCategory = Array.from(groupIds)
+        .map((groupId) => groupById.get(groupId))
+        .filter((group): group is Group => Boolean(group))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const group of groupsForCategory) {
+        assignedGroupIds.add(group.id);
+      }
+
+      return {
+        id: category.id,
+        name: category.name,
+        humanNameId: category.humanNameId,
+        icon: category.icon,
+        groups: groupsForCategory.map((group) => ({
+          id: group.id,
+          name: group.name,
+        })),
+      };
+    });
+
+    const uncategorizedGroups = groups
+      .filter((group) => !assignedGroupIds.has(group.id))
+      .map((group) => ({
+        id: group.id,
+        name: group.name,
+      }));
+
+    return {
+      categories: categoriesExport,
+      uncategorizedGroups,
+    };
+  }, [categories, groupById, groupIdsByCategory, groups]);
+
+  const exportJson = useMemo(
+    () => JSON.stringify(exportPayload, null, 2),
+    [exportPayload]
+  );
 
   async function handleCreateCategory(formData: FormData) {
     setError(null);
@@ -145,9 +227,36 @@ export function CategoriesManager({
     });
   }
 
+  async function handleCopyJson() {
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = null;
+    }
+
+    try {
+      await navigator.clipboard.writeText(exportJson);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("error");
+    }
+
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopyStatus("idle");
+      copyTimeoutRef.current = null;
+    }, 2000);
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <Button variant="outline" onClick={handleCopyJson}>
+          <Copy className="h-4 w-4 mr-2" />
+          {copyStatus === "copied"
+            ? "Copiado"
+            : copyStatus === "error"
+              ? "Error al copiar"
+              : "Copiar JSON"}
+        </Button>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -271,6 +380,13 @@ export function CategoriesManager({
                 ) : (
                   rightFilteredGroups.map((group) => {
                     const isAssigned = selectedGroupIds.has(group.id);
+                    const groupCategoryNames =
+                      categoryNamesByGroupId.get(group.id) ?? [];
+                    const otherCategoryNames = selectedCategoryName
+                      ? groupCategoryNames.filter(
+                          (name) => name !== selectedCategoryName
+                        )
+                      : groupCategoryNames;
 
                     return (
                       <div
@@ -299,6 +415,13 @@ export function CategoriesManager({
                           className="flex-1 min-w-0 cursor-pointer"
                         >
                           <span className="font-medium">{group.name}</span>
+                          {otherCategoryNames.length > 0 && !isAssigned && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {otherCategoryNames.length === 1
+                                ? `(categoría actual: ${otherCategoryNames[0]})`
+                                : `(categorías actuales: ${otherCategoryNames.join(", ")})`}
+                            </span>
+                          )}
                         </Label>
                       </div>
                     );

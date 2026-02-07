@@ -23,6 +23,7 @@ const nextConfig: NextConfig = {
       new URL("https://img.plazalama.com.do/**"),
       new URL("https://d31f1ehqijlcua.cloudfront.net/**"),
       new URL("https://ixfslclarqzcptjjuodm.supabase.co/storage/**"),
+      new URL("https://t7bjp1cpifoghpav.public.blob.vercel-storage.com/**"),
       {
         hostname: "bravova-resources.superbravo.com.do",
       },

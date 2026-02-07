@@ -1,5 +1,10 @@
 import { db } from "@/db";
-import { groups as groupsTable, productsGroups } from "@/db/schema";
+import {
+  categoriesGroups,
+  groups as groupsTable,
+  productsGroups,
+  searchPhases,
+} from "@/db/schema";
 import { validateAdminUser } from "@/lib/authentication";
 import { toSlug } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
@@ -300,6 +305,21 @@ async function deleteGroup(formData: FormData) {
     .update(groupsTable)
     .set({ parentGroupId: null })
     .where(eq(groupsTable.parentGroupId, groupId));
+
+  // Detach search phrases
+  await db
+    .update(searchPhases)
+    .set({ groupId: null })
+    .where(eq(searchPhases.groupId, groupId));
+
+  // Remove group associations
+  await db
+    .delete(categoriesGroups)
+    .where(eq(categoriesGroups.groupId, groupId));
+
+  await db
+    .delete(productsGroups)
+    .where(eq(productsGroups.groupId, groupId));
 
   await db.delete(groupsTable).where(eq(groupsTable.id, groupId));
 

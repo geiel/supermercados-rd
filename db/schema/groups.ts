@@ -36,6 +36,7 @@ export const categories = pgTable("categories", {
     name: text().notNull(),
     humanNameId: text().unique().notNull(),
     icon: text(),
+    shortName: text(),
 });
 
 export const categoriesGroups = pgTable("categories_groups", {

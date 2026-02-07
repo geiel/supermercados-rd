@@ -8,6 +8,7 @@ import { AddToListButton } from "@/components/add-to-list-button";
 import { toSlug } from "@/lib/utils";
 import type { HomePageCategoryProduct } from "@/lib/home-page-categories";
 import { OfferBadge } from "@/components/offer-badge";
+import { PricePerUnit } from "@/components/price-per-unit";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
@@ -17,6 +18,7 @@ type Props = {
 
 export function HomePageCategoryProductCard({ product }: Props) {
   const dropPercentage = product.productDeal?.dropPercentage;
+  const numericPrice = Number(product.currentPrice);
   const shouldShowDeal =
     dropPercentage !== null &&
     dropPercentage !== undefined &&
@@ -63,8 +65,18 @@ export function HomePageCategoryProductCard({ product }: Props) {
             />
             <span className="line-clamp-2">{product.name}</span>
           </div>
-          <div className="font-bold text-lg">RD${product.currentPrice}</div>
-          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+          <div>
+            <div className="font-bold text-lg">RD${product.currentPrice}</div>
+            {Number.isFinite(numericPrice) ? (
+              <PricePerUnit
+                unit={product.unit}
+                price={numericPrice}
+                categoryId={product.categoryId}
+                productName={product.name}
+              />
+            ) : null}
+          </div>
+          <div className="mt-2 flex items-center gap-1.5 text-muted-foreground text-sm">
             <span className="inline-flex items-center justify-center size-5 rounded-full border text-xs font-medium">
               {product.amountOfShops}
             </span>

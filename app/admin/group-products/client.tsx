@@ -16,6 +16,7 @@ type GroupProductsToolbarProps = {
   groups: GroupOption[];
   initialValue: string;
   initialGroupId?: number;
+  initialMultiTree?: boolean;
   createGroup: (formData: FormData) => void;
 };
 
@@ -23,6 +24,7 @@ export function GroupProductsToolbar({
   groups,
   initialValue,
   initialGroupId,
+  initialMultiTree,
   createGroup,
 }: GroupProductsToolbarProps) {
   const router = useRouter();
@@ -31,6 +33,9 @@ export function GroupProductsToolbar({
   const [value, setValue] = useState(initialValue);
   const [groupId, setGroupId] = useState<string | undefined>(
     initialGroupId ? String(initialGroupId) : undefined
+  );
+  const [multiTreeOnly, setMultiTreeOnly] = useState(
+    initialMultiTree ?? false
   );
 
   useEffect(() => {
@@ -41,11 +46,21 @@ export function GroupProductsToolbar({
     setGroupId(initialGroupId ? String(initialGroupId) : undefined);
   }, [initialGroupId]);
 
-  function updateParams(
-    nextValue?: string,
-    nextGroupId?: string,
-    options?: { resetPage?: boolean }
-  ) {
+  useEffect(() => {
+    setMultiTreeOnly(initialMultiTree ?? false);
+  }, [initialMultiTree]);
+
+  function updateParams({
+    value: nextValue,
+    groupId: nextGroupId,
+    multiTree: nextMultiTree,
+    resetPage,
+  }: {
+    value?: string;
+    groupId?: string;
+    multiTree?: boolean;
+    resetPage?: boolean;
+  }) {
     const params = new URLSearchParams(searchParams.toString());
 
     if (typeof nextValue !== "undefined") {
@@ -65,7 +80,15 @@ export function GroupProductsToolbar({
       }
     }
 
-    if (options?.resetPage) {
+    if (typeof nextMultiTree !== "undefined") {
+      if (nextMultiTree) {
+        params.set("multi_tree", "1");
+      } else {
+        params.delete("multi_tree");
+      }
+    }
+
+    if (resetPage) {
       params.delete("page");
     }
 
@@ -74,7 +97,23 @@ export function GroupProductsToolbar({
   }
 
   function handleSearch() {
-    updateParams(value, groupId, { resetPage: true });
+    updateParams({
+      value,
+      groupId,
+      multiTree: multiTreeOnly,
+      resetPage: true,
+    });
+  }
+
+  function handleMultiTreeToggle() {
+    const nextValue = !multiTreeOnly;
+    setMultiTreeOnly(nextValue);
+    updateParams({
+      value,
+      groupId,
+      multiTree: nextValue,
+      resetPage: true,
+    });
   }
 
   const groupOptions = groups.map((group) => ({
@@ -108,9 +147,21 @@ export function GroupProductsToolbar({
             contentClassName="w-[--radix-popover-trigger-width]"
             onValueChange={(option) => {
               setGroupId(option.value);
-              updateParams(undefined, option.value);
+              updateParams({ groupId: option.value });
             }}
           />
+        </div>
+        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+          <Button
+            type="button"
+            variant={multiTreeOnly ? "secondary" : "outline"}
+            className="w-full md:w-auto"
+            onClick={handleMultiTreeToggle}
+          >
+            {multiTreeOnly
+              ? "Quitar filtro multi-categor\u00eda"
+              : "Buscar multi-categor\u00eda"}
+          </Button>
         </div>
       </div>
       <form

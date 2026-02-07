@@ -63,6 +63,7 @@ type GroupExplorerListProps = {
   total: number;
   initialOffset: number;
   childGroups: GroupExplorerChildGroup[];
+  isComparable: boolean;
 };
 
 export function GroupExplorerList({
@@ -71,6 +72,7 @@ export function GroupExplorerList({
   total,
   initialOffset,
   childGroups,
+  isComparable,
 }: GroupExplorerListProps) {
   const [products, setProducts] = useState<GroupExplorerProduct[]>(
     initialProducts
@@ -108,13 +110,21 @@ export function GroupExplorerList({
   const pageSize = isMobile
     ? GROUP_EXPLORER_MOBILE_PAGE_SIZE
     : GROUP_EXPLORER_DESKTOP_PAGE_SIZE;
+  const sortOptions = useMemo(
+    () =>
+      isComparable
+        ? GROUP_EXPLORER_SORT_OPTIONS
+        : GROUP_EXPLORER_SORT_OPTIONS.filter(
+            (option) => option.value !== "best_value"
+          ),
+    [isComparable]
+  );
+
   const sortLabel = useMemo(() => {
-    const match = GROUP_EXPLORER_SORT_OPTIONS.find(
-      (option) => option.value === sort
-    );
+    const match = sortOptions.find((option) => option.value === sort);
 
     return match ? match.label : "Ordenar";
-  }, [sort]);
+  }, [sort, sortOptions]);
 
   useEffect(() => {
     setHasMounted(true);
@@ -277,6 +287,12 @@ export function GroupExplorerList({
     [loadPageWithFilters, pageSize]
   );
 
+  useEffect(() => {
+    if (isComparable || sort !== "best_value") return;
+    setSort(GROUP_EXPLORER_DEFAULT_SORT);
+    void loadFirstPage(GROUP_EXPLORER_DEFAULT_SORT);
+  }, [isComparable, loadFirstPage, sort]);
+
   // Trigger reload when loadFirstPage updates and we have pending filter changes
   useEffect(() => {
     if (shouldReloadForFiltersRef.current) {
@@ -408,7 +424,7 @@ export function GroupExplorerList({
               </DrawerHeader>
               <div className="px-4 pb-4">
                 <RadioGroup value={sort} onValueChange={handleSelectChange}>
-                  {GROUP_EXPLORER_SORT_OPTIONS.map((option) => (
+                  {sortOptions.map((option) => (
                     <div
                       key={option.value}
                       className="flex items-center space-x-3 py-2 cursor-pointer"
@@ -449,7 +465,7 @@ export function GroupExplorerList({
             <SelectValue placeholder="Ordenar" />
           </SelectTrigger>
           <SelectContent align="end">
-            {GROUP_EXPLORER_SORT_OPTIONS.map((option) => (
+            {sortOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

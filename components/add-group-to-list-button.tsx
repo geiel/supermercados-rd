@@ -159,7 +159,7 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
   ) : (
     <>
       {isInAnyList ? <Check className="size-4" /> : <Plus className="size-4" />}
-      Comparar
+      Lista
     </>
   );
 

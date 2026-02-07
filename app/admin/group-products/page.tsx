@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import {
   groups as groupsTable,
+  products as productsTable,
   productsGroups,
   productsSelect,
   productsShopsPrices,
@@ -11,7 +12,7 @@ import { getShopsIds, sanitizeForTsQuery, toSlug } from "@/lib/utils";
 import { BottomPagination } from "@/components/bottom-pagination";
 import { ProductImage } from "@/components/product-image";
 import { searchProducts } from "@/lib/search-query";
-import { PricePerUnit } from "@/components/price-per-unit";
+import { expandUnitFilter } from "@/lib/unit-utils";
 import { Unit } from "@/components/unit";
 import { getUser } from "@/lib/supabase";
 import {
@@ -23,8 +24,14 @@ import { validateAdminUser } from "@/lib/authentication";
 import { GroupProductsToolbar } from "./client";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Badge } from "@/components/ui/badge";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { GroupProductActionButton } from "./group-product-action-button";
@@ -37,6 +44,7 @@ type Props = {
     only_shop_products: string | undefined;
     unit_filter: string | undefined;
     groupId: string | undefined;
+    multi_tree: string | undefined;
   }>;
 };
 
@@ -57,6 +65,235 @@ function getOffset(page: string | undefined): number {
   return (Number(page) - 1) * 15;
 }
 
+function normalizeUnitFiltersForQuery(units: string[]): string[] {
+  return Array.from(
+    new Set(
+      units.flatMap((unit) => {
+        const expanded = expandUnitFilter(unit);
+
+        return expanded.flatMap((variant) => {
+          const match = variant.match(/^1\s+(.+)$/);
+          if (match) {
+            const baseUnit = match[1].trim();
+            return baseUnit ? [variant, baseUnit] : [variant];
+          }
+          return [variant];
+        });
+      })
+    )
+  );
+}
+
+async function getMultiTreeProducts({
+  limit,
+  offset,
+  shopIds,
+  includeHiddenProducts,
+  onlySupermarketProducts,
+  unitsFilter,
+}: {
+  limit: number;
+  offset: number;
+  shopIds?: number[];
+  includeHiddenProducts: boolean;
+  onlySupermarketProducts: boolean;
+  unitsFilter: string[];
+}) {
+  const normalizedUnitsFilter = normalizeUnitFiltersForQuery(unitsFilter);
+  const hasUnitFilter = normalizedUnitsFilter.length > 0;
+  const unitsArray = hasUnitFilter
+    ? sql`ARRAY[${sql.join(
+        normalizedUnitsFilter.map((unit) => sql`${unit}`),
+        sql`, `
+      )}]`
+    : null;
+
+  const supermarketBrandIds = [28, 54, 9, 77, 80, 69, 19, 30, 2527];
+  const supermarketNameKeywords = [
+    "bravo",
+    "lider",
+    "wala",
+    "selection",
+    "gold",
+    "zerca",
+    "mubravo",
+  ];
+  const keywordConditions = supermarketNameKeywords.map((keyword) =>
+    sql`unaccent(${productsTable.name}) ~* ('\\y' || ${keyword} || '\\y')`
+  );
+
+  const shopFilter =
+    shopIds && shopIds.length > 0
+      ? sql`AND ${productsShopsPrices.shopId} IN (${sql.join(
+          shopIds,
+          sql`,`
+        )})`
+      : sql``;
+
+  const hiddenFilter = includeHiddenProducts
+    ? sql``
+    : sql`AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)`;
+
+  const unitFilter = hasUnitFilter && unitsArray
+    ? sql`AND ${productsTable.unit} = ANY(${unitsArray})`
+    : sql``;
+
+  const supermarketFilter = onlySupermarketProducts
+    ? sql`
+        AND ${productsTable.brandId} IN (${sql.join(
+          supermarketBrandIds,
+          sql`,`
+        )})
+        AND (${sql.join(keywordConditions, sql` OR `)})
+      `
+    : sql``;
+
+  const query = sql`
+    WITH RECURSIVE group_roots AS (
+      SELECT ${groupsTable.id} AS id,
+        ${groupsTable.parentGroupId} AS parent_id,
+        ${groupsTable.id} AS root_id
+      FROM ${groupsTable}
+      WHERE ${groupsTable.parentGroupId} IS NULL
+      UNION ALL
+      SELECT ${groupsTable.id} AS id,
+        ${groupsTable.parentGroupId} AS parent_id,
+        gr.root_id
+      FROM ${groupsTable}
+      JOIN group_roots gr ON ${groupsTable.parentGroupId} = gr.id
+    ),
+    product_roots AS (
+      SELECT ${productsGroups.productId} AS product_id,
+        gr.root_id
+      FROM ${productsGroups}
+      JOIN group_roots gr ON ${productsGroups.groupId} = gr.id
+      GROUP BY ${productsGroups.productId}, gr.root_id
+    ),
+    multi_tree AS (
+      SELECT product_id
+      FROM product_roots
+      GROUP BY product_id
+      HAVING COUNT(*) >= 2
+    )
+    SELECT ${productsTable.id} AS id, COUNT(*) OVER() AS total_count
+    FROM ${productsTable}
+    JOIN multi_tree mt ON mt.product_id = ${productsTable.id}
+    WHERE ${productsTable.deleted} IS NOT TRUE
+      ${unitFilter}
+      ${supermarketFilter}
+      AND EXISTS (
+        SELECT 1
+        FROM ${productsShopsPrices}
+        WHERE ${productsShopsPrices.productId} = ${productsTable.id}
+        ${shopFilter}
+        ${hiddenFilter}
+      )
+    ORDER BY ${productsTable.id} ASC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `;
+
+  const rows = await db.execute<{ id: number; total_count: string }>(query);
+  if (rows.length === 0) {
+    return { products: [], total: 0 };
+  }
+
+  const productsResponse = await db.query.products.findMany({
+    where: (products, { inArray }) =>
+      inArray(
+        products.id,
+        rows.map((row) => row.id)
+      ),
+    with: {
+      shopCurrentPrices: true,
+      brand: true,
+      possibleBrand: true,
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const byId = new Map(productsResponse.map((product) => [product.id, product]));
+  const orderedProducts = rows.map((row) => byId.get(row.id)!);
+
+  return {
+    products: orderedProducts,
+    total: Number(rows[0].total_count),
+  };
+}
+
+async function getAncestorGroupIds(groupId: number): Promise<number[]> {
+  const allGroups = await db.query.groups.findMany({
+    columns: { id: true, parentGroupId: true },
+  });
+
+  const groupById = new Map(allGroups.map((group) => [group.id, group]));
+  const ancestors: number[] = [];
+  const visited = new Set<number>();
+  let currentId: number | null = groupId;
+
+  while (currentId !== null && !visited.has(currentId)) {
+    visited.add(currentId);
+    const group = groupById.get(currentId);
+
+    if (group && group.parentGroupId !== null) {
+      ancestors.push(group.parentGroupId);
+      currentId = group.parentGroupId;
+    } else {
+      break;
+    }
+  }
+
+  return ancestors;
+}
+
+async function getDescendantGroupIds(groupId: number): Promise<number[]> {
+  const allGroups = await db.query.groups.findMany({
+    columns: { id: true, parentGroupId: true },
+  });
+
+  const childrenByParentId = new Map<number, number[]>();
+  for (const group of allGroups) {
+    if (group.parentGroupId === null) {
+      continue;
+    }
+
+    const children = childrenByParentId.get(group.parentGroupId);
+    if (children) {
+      children.push(group.id);
+    } else {
+      childrenByParentId.set(group.parentGroupId, [group.id]);
+    }
+  }
+
+  const descendants: number[] = [];
+  const visited = new Set<number>([groupId]);
+  const toProcess = [groupId];
+
+  while (toProcess.length > 0) {
+    const currentId = toProcess.pop();
+    if (currentId === undefined) {
+      continue;
+    }
+
+    const children = childrenByParentId.get(currentId) ?? [];
+    for (const childId of children) {
+      if (visited.has(childId)) {
+        continue;
+      }
+
+      visited.add(childId);
+      descendants.push(childId);
+      toProcess.push(childId);
+    }
+  }
+
+  return descendants;
+}
+
 async function addProductToGroup(formData: FormData) {
   "use server";
 
@@ -73,9 +310,12 @@ async function addProductToGroup(formData: FormData) {
     return;
   }
 
+  const ancestorIds = await getAncestorGroupIds(groupId);
+  const groupIdsToInsert = [groupId, ...ancestorIds];
+
   const inserted = await db
     .insert(productsGroups)
-    .values({ productId, groupId })
+    .values(groupIdsToInsert.map((id) => ({ productId, groupId: id })))
     .onConflictDoNothing()
     .returning({ productId: productsGroups.productId });
 
@@ -156,12 +396,15 @@ async function removeProductFromGroup(formData: FormData) {
     return;
   }
 
+  const descendantIds = await getDescendantGroupIds(groupId);
+  const groupIdsToRemove = [groupId, ...descendantIds];
+
   const deleted = await db
     .delete(productsGroups)
     .where(
       and(
         eq(productsGroups.productId, productId),
-        eq(productsGroups.groupId, groupId)
+        inArray(productsGroups.groupId, groupIdsToRemove)
       )
     )
     .returning({ productId: productsGroups.productId });
@@ -182,7 +425,15 @@ export default function Page({ searchParams }: Props) {
 async function GroupProductsPage({ searchParams }: Props) {
   await validateAdminUser();
 
-  const { value, page, shop_ids, only_shop_products, unit_filter, groupId } =
+  const {
+    value,
+    page,
+    shop_ids,
+    only_shop_products,
+    unit_filter,
+    groupId,
+    multi_tree,
+  } =
     await searchParams;
 
   const groups = await db.query.groups.findMany({
@@ -205,38 +456,60 @@ async function GroupProductsPage({ searchParams }: Props) {
   const unitFilters = normalizeUnitFiltersForSearch(
     parseUnitFilterParam(unit_filter)
   );
+  const multiTreeOnly = multi_tree === "1" || multi_tree === "true";
+
+  const onlySupermarketProducts = only_shop_products ? true : false;
+  let productsAndTotal: {
+    products: productsSelect[];
+    total: number;
+  };
 
   if (!trimmedValue) {
-    return (
-      <div className="container mx-auto pb-4 pt-4">
-        
-
-        <div className="flex flex-1 flex-col gap-4">
-          <TypographyH3>Asignar productos a grupo</TypographyH3>
-          <GroupProductsToolbar
-            groups={groups}
-            createGroup={createGroup}
-            initialValue={searchValue}
-            initialGroupId={resolvedGroupId}
-          />
-          <div className="text-sm text-muted-foreground">
-            Busca un producto para empezar.
+    if (!multiTreeOnly) {
+      return (
+        <div className="container mx-auto pb-4 pt-4">
+          <div className="flex flex-1 flex-col gap-4">
+            <TypographyH3>Asignar productos a grupo</TypographyH3>
+            <GroupProductsToolbar
+              groups={groups}
+              createGroup={createGroup}
+              initialValue={searchValue}
+              initialGroupId={resolvedGroupId}
+              initialMultiTree={multiTreeOnly}
+            />
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>Busca un producto</EmptyTitle>
+                <EmptyDescription>
+                  Escribe un nombre para empezar.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           </div>
         </div>
-      </div>
+      );
+    }
+
+    productsAndTotal = await getMultiTreeProducts({
+      limit: 15,
+      offset: getOffset(page),
+      shopIds: shopsIds,
+      includeHiddenProducts: canSeeHiddenProducts,
+      onlySupermarketProducts,
+      unitsFilter: unitFilters,
+    });
+  } else {
+    productsAndTotal = await searchProducts(
+      sanitizeForTsQuery(trimmedValue),
+      15,
+      getOffset(page),
+      true,
+      shopsIds,
+      canSeeHiddenProducts,
+      onlySupermarketProducts,
+      unitFilters
     );
   }
-
-  const productsAndTotal = await searchProducts(
-    sanitizeForTsQuery(trimmedValue),
-    15,
-    getOffset(page),
-    true,
-    shopsIds,
-    canSeeHiddenProducts,
-    only_shop_products ? true : false,
-    unitFilters
-  );
 
   const filteredProducts = productsAndTotal.products.filter((product) => {
     if (product.shopCurrentPrices.length === 0) {
@@ -247,6 +520,15 @@ async function GroupProductsPage({ searchParams }: Props) {
   });
 
   if (filteredProducts.length === 0) {
+    const emptyTitle = multiTreeOnly
+      ? "No hay productos con m\u00faltiples categor\u00edas"
+      : "Productos no encontrados";
+    const emptyDescription = multiTreeOnly
+      ? trimmedValue
+        ? "No hay productos con m\u00faltiples categor\u00edas para esta b\u00fasqueda."
+        : "No hay productos con m\u00faltiples categor\u00edas."
+      : "No hay resultados para esta b\u00fasqueda.";
+
     return (
       <div className="container mx-auto pb-4 pt-4">
         <div className="flex flex-1 flex-col gap-4">
@@ -256,15 +538,21 @@ async function GroupProductsPage({ searchParams }: Props) {
             createGroup={createGroup}
             initialValue={searchValue}
             initialGroupId={resolvedGroupId}
+            initialMultiTree={multiTreeOnly}
           />
-          <div>Productos no encontrados.</div>
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>{emptyTitle}</EmptyTitle>
+              <EmptyDescription>{emptyDescription}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         </div>
       </div>
     );
   }
 
   const filteredProductIds = filteredProducts.map((product) => product.id);
-  const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
+  const groupById = new Map(groups.map((group) => [group.id, group]));
   const productGroupEntries =
     filteredProductIds.length > 0
       ? await db.query.productsGroups.findMany({
@@ -282,12 +570,49 @@ async function GroupProductsPage({ searchParams }: Props) {
     { id: number; name: string }[]
   >();
   const groupProductIds = new Set<number>();
+  const treeIdsByProductId = new Map<number, Set<number>>();
+  const rootByGroupId = new Map<number, number>();
+
+  const resolveRootGroupId = (groupId: number) => {
+    const cached = rootByGroupId.get(groupId);
+    if (cached) {
+      return cached;
+    }
+
+    let currentId: number | null | undefined = groupId;
+    const visited = new Set<number>();
+
+    while (currentId !== null && currentId !== undefined) {
+      if (visited.has(currentId)) {
+        break;
+      }
+
+      visited.add(currentId);
+      const group = groupById.get(currentId);
+
+      if (!group || group.parentGroupId == null) {
+        break;
+      }
+
+      currentId = group.parentGroupId;
+    }
+
+    const resolvedId =
+      currentId !== null && currentId !== undefined && groupById.has(currentId)
+        ? currentId
+        : groupId;
+    for (const visitedId of visited) {
+      rootByGroupId.set(visitedId, resolvedId);
+    }
+
+    return resolvedId;
+  };
 
   for (const entry of productGroupEntries) {
-    const groupName = groupNameById.get(entry.groupId);
-    if (groupName) {
+    const group = groupById.get(entry.groupId);
+    if (group) {
       const existingGroups = productGroupsByProductId.get(entry.productId);
-      const groupInfo = { id: entry.groupId, name: groupName };
+      const groupInfo = { id: entry.groupId, name: group.name };
       if (existingGroups) {
         existingGroups.push(groupInfo);
       } else {
@@ -298,6 +623,16 @@ async function GroupProductsPage({ searchParams }: Props) {
     if (resolvedGroupId && entry.groupId === resolvedGroupId) {
       groupProductIds.add(entry.productId);
     }
+
+    if (group) {
+      const rootId = resolveRootGroupId(entry.groupId);
+      let treeIds = treeIdsByProductId.get(entry.productId);
+      if (!treeIds) {
+        treeIds = new Set<number>();
+        treeIdsByProductId.set(entry.productId, treeIds);
+      }
+      treeIds.add(rootId);
+    }
   }
 
   for (const groupsList of productGroupsByProductId.values()) {
@@ -305,6 +640,51 @@ async function GroupProductsPage({ searchParams }: Props) {
       const nameOrder = a.name.localeCompare(b.name);
       return nameOrder !== 0 ? nameOrder : a.id - b.id;
     });
+  }
+
+  const multiTreeProductIds = new Set<number>();
+  for (const [productId, treeIds] of treeIdsByProductId) {
+    if (treeIds.size >= 2) {
+      multiTreeProductIds.add(productId);
+    }
+  }
+
+  let visibleProducts = filteredProducts;
+  if (multiTreeOnly) {
+    const beforeCount = visibleProducts.length;
+    visibleProducts = visibleProducts.filter((product) =>
+      multiTreeProductIds.has(product.id)
+    );
+    productsAndTotal.total = Math.max(
+      0,
+      productsAndTotal.total - (beforeCount - visibleProducts.length)
+    );
+  }
+
+  if (visibleProducts.length === 0) {
+    return (
+      <div className="container mx-auto pb-4 pt-4">
+        <div className="flex flex-1 flex-col gap-4">
+          <TypographyH3>Asignar productos a grupo</TypographyH3>
+          <GroupProductsToolbar
+            groups={groups}
+            createGroup={createGroup}
+            initialValue={searchValue}
+            initialGroupId={resolvedGroupId}
+            initialMultiTree={multiTreeOnly}
+          />
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>Productos no encontrados</EmptyTitle>
+              <EmptyDescription>
+                No hay productos con m\u00faltiples categor\u00edas para esta
+                b\u00fasqueda.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -316,9 +696,10 @@ async function GroupProductsPage({ searchParams }: Props) {
           createGroup={createGroup}
           initialValue={searchValue}
           initialGroupId={resolvedGroupId}
+          initialMultiTree={multiTreeOnly}
         />
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
-          {filteredProducts.map((product) => {
+          {visibleProducts.map((product) => {
             const isInGroup = resolvedGroupId
               ? groupProductIds.has(product.id)
               : false;

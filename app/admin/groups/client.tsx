@@ -47,10 +47,13 @@ export function GroupsManager({
   groups,
   createGroup,
   updateGroup,
+  deleteGroup,
 }: GroupsManagerProps) {
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [leftSearch, setLeftSearch] = useState("");
   const [rightSearch, setRightSearch] = useState("");
@@ -224,6 +227,27 @@ export function GroupsManager({
     });
   }
 
+  async function handleDeleteGroup() {
+    if (!selectedParentId) {
+      return;
+    }
+
+    setDeleteError(null);
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("groupId", String(selectedParentId));
+      const result = await deleteGroup(formData);
+
+      if (result.error) {
+        setDeleteError(result.error);
+        return;
+      }
+
+      setDeleteDialogOpen(false);
+      setSelectedParentId(null);
+    });
+  }
+
   async function toggleChildGroup(childId: number, isCurrentlyChild: boolean) {
     startTransition(async () => {
       const formData = new FormData();
@@ -335,7 +359,55 @@ export function GroupsManager({
   return (
     <div className="flex flex-col gap-4">
       {/* Create Group Button */}
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="destructive"
+              disabled={!selectedParent || isPending}
+            >
+              Eliminar grupo
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Eliminar grupo</DialogTitle>
+              <DialogDescription>
+                Esta acción eliminará el grupo seleccionado, sus relaciones con
+                productos y las frases de búsqueda asociadas.
+              </DialogDescription>
+            </DialogHeader>
+            {deleteError && (
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                {deleteError}
+              </div>
+            )}
+            <div className="text-sm">
+              Grupo seleccionado:{" "}
+              <span className="font-semibold">
+                {selectedParent?.name ?? "N/A"}
+              </span>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDeleteGroup}
+                disabled={!selectedParent || isPending}
+              >
+                {isPending ? "Eliminando..." : "Confirmar eliminación"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>

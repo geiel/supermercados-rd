@@ -199,7 +199,7 @@ const base: Array<Synonym> = [
     { synonyms: ["sugar", "azucar", "sug"], query: ["azucar", "sug:*", "a"], id: "azucar"},
     { synonyms: ["azucar refinada", "azucar refino", "azucar refina", "azucar refinado"], query: ["azucar & refin:*"], complex: ["azucar", "white"]},
     { synonyms: ["diet", "dietetica", "dietetico", "dieta"], query: ["diet:*", "sin & azucar", "zero & sugar", "bajo & azucar"], id: "diet"},
-    { synonyms: ["stevia"], query: ["stevia"], complex: ["azucar", "diet"]},
+    { synonyms: ["stevia", "azucar dieta", "edulcolorante", "endulzante", "sustituto azucar"], query: ["stevia", "azucar & dieta", "edulcolorante", "endulzante", "sustituto & azucar"]},
     { synonyms: ["salami", "salame", "slm", "salm"], query: ["salam:*", "slm", "salm"], id: "salami"},  
     { synonyms: ["olive", "aceituna"], query: ["olive:*", "aceitun:*"]},
     { synonyms: ["pickle", "encurtido", "encurtida", "pickled"], query: ["pickle:*", "encurtid:*"]},

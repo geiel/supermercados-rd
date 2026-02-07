@@ -38,6 +38,7 @@ type GroupRow = {
   cheaperProductId: number | null;
   compareBy: string | null;
   isComparable: boolean;
+  imageUrl: string | null;
 };
 
 export async function getGroupProducts({
@@ -57,6 +58,7 @@ export async function getGroupProducts({
       cheaperProductId: true,
       compareBy: true,
       isComparable: true,
+      imageUrl: true,
     },
     where: (groups, { eq }) => eq(groups.humanNameId, humanId),
   })) as GroupRow | undefined;
@@ -65,22 +67,48 @@ export async function getGroupProducts({
     return null;
   }
 
-  // Fetch child groups where parentGroupId equals current group's id
-  const childGroupsRows = await db.query.groups.findMany({
-    columns: {
-      id: true,
-      name: true,
-      humanNameId: true,
-      isComparable: true,
-    },
-    where: (groups, { eq }) => eq(groups.parentGroupId, group.id),
-  });
+  // Fetch child groups that have at least one visible product.
+  const childGroupsRows = await db
+    .select({
+      id: groups.id,
+      name: groups.name,
+      humanNameId: groups.humanNameId,
+      isComparable: groups.isComparable,
+      imageUrl: groups.imageUrl,
+    })
+    .from(groups)
+    .innerJoin(productsGroups, eq(productsGroups.groupId, groups.id))
+    .innerJoin(
+      products,
+      and(
+        eq(products.id, productsGroups.productId),
+        or(isNull(products.deleted), eq(products.deleted, false))
+      )
+    )
+    .innerJoin(
+      productsShopsPrices,
+      and(
+        eq(productsShopsPrices.productId, products.id),
+        isNotNull(productsShopsPrices.currentPrice),
+        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      )
+    )
+    .where(eq(groups.parentGroupId, group.id))
+    .groupBy(
+      groups.id,
+      groups.name,
+      groups.humanNameId,
+      groups.isComparable,
+      groups.imageUrl
+    )
+    .orderBy(asc(groups.name));
 
   const childGroups: GroupExplorerChildGroup[] = childGroupsRows.map((row) => ({
     id: row.id,
     name: row.name,
     humanNameId: row.humanNameId,
     isComparable: row.isComparable,
+    imageUrl: row.imageUrl,
   }));
 
   // Build price filters with optional shop filtering
@@ -363,6 +391,7 @@ export async function getGroupProducts({
       humanId: group.humanNameId,
       cheaperProductId: group.cheaperProductId,
       isComparable: group.isComparable,
+      imageUrl: group.imageUrl,
     },
     products: productsList,
     childGroups,
