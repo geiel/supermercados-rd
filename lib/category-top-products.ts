@@ -59,5 +59,10 @@ export async function getCategoryTopProducts(categoryId: number) {
   });
 
   const productById = new Map(productsRows.map((product) => [product.id, product]));
-  return productIds.map((id) => productById.get(id)).filter(Boolean);
+  return productIds
+    .map((id) => productById.get(id))
+    .filter(
+      (product): product is (typeof productsRows)[number] =>
+        product !== undefined
+    );
 }

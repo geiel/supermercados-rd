@@ -3,7 +3,6 @@ import {
   groups as groupsTable,
   products as productsTable,
   productsGroups,
-  productsSelect,
   productsShopsPrices,
 } from "@/db/schema";
 import Image from "next/image";
@@ -47,6 +46,9 @@ type Props = {
     multi_tree: string | undefined;
   }>;
 };
+
+type GroupProduct = Awaited<ReturnType<typeof searchProducts>>["products"][number];
+type ProductsAndTotal = Awaited<ReturnType<typeof searchProducts>>;
 
 function getOffset(page: string | undefined): number {
   if (!page) {
@@ -459,10 +461,7 @@ async function GroupProductsPage({ searchParams }: Props) {
   const multiTreeOnly = multi_tree === "1" || multi_tree === "true";
 
   const onlySupermarketProducts = only_shop_products ? true : false;
-  let productsAndTotal: {
-    products: productsSelect[];
-    total: number;
-  };
+  let productsAndTotal: ProductsAndTotal;
 
   if (!trimmedValue) {
     if (!multiTreeOnly) {
@@ -804,7 +803,7 @@ function GroupProductsFallback() {
   );
 }
 
-function ExploreImage({ product }: { product: productsSelect }) {
+function ExploreImage({ product }: { product: GroupProduct }) {
   if (!product.image) {
     return (
       <Image

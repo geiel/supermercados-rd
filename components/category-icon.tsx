@@ -1,6 +1,6 @@
-import type { ComponentType } from "react";
 import Image from "next/image";
 import * as LucideIcons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -35,10 +35,10 @@ export function CategoryIcon({ icon, className }: CategoryIconProps) {
   }
 
   const iconName = toPascalCase(icon);
-  const Icon =
-    (LucideIcons as Record<string, ComponentType<{ className?: string }>>)[
-      iconName
-    ] ?? null;
+  const Icon = (LucideIcons as unknown as Record<
+    string,
+    LucideIcon | undefined
+  >)[iconName];
 
   if (Icon) {
     return <Icon className={cn("size-5", className)} />;
