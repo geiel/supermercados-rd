@@ -5,23 +5,38 @@ import { toSlug } from "@/lib/utils";
 const BASE_URL = "https://supermercadosrd.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Fetch all products with prices (only products that are available)
-  const products = await db.query.products.findMany({
-    columns: {
-      id: true,
-      name: true,
-    },
-    where: (products, { gt, isNotNull, or }) =>
-      or(gt(products.rank, "3"), isNotNull(products.relevance)),
-    with: {
-      shopCurrentPrices: {
-        columns: { productId: true },
-        where: (scp, { isNull, eq, or }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-        limit: 1,
+  const [products, groups, categories] = await Promise.all([
+    // Fetch all products with prices (only products that are available)
+    db.query.products.findMany({
+      columns: {
+        id: true,
+        name: true,
       },
-    },
-  });
+      where: (products, { gt, isNotNull, or }) =>
+        or(gt(products.rank, "3"), isNotNull(products.relevance)),
+      with: {
+        shopCurrentPrices: {
+          columns: { productId: true, updateAt: true },
+          where: (scp, { isNull, eq, or }) =>
+            or(isNull(scp.hidden), eq(scp.hidden, false)),
+          orderBy: (scp, { desc }) => desc(scp.updateAt),
+          limit: 1,
+        },
+      },
+    }),
+    // Fetch all groups
+    db.query.groups.findMany({
+      columns: {
+        humanNameId: true,
+      },
+    }),
+    // Fetch all public group categories (/categorias/[slug])
+    db.query.categories.findMany({
+      columns: {
+        humanNameId: true,
+      },
+    }),
+  ]);
 
   console.log(`Sitemap: Found ${products.length} products.`);
 
@@ -29,13 +44,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const activeProducts = products.filter(
     (p) => p.shopCurrentPrices.length > 0
   );
-
-  // Fetch all groups
-  const groups = await db.query.groups.findMany({
-    columns: {
-      humanNameId: true,
-    },
-  });
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
@@ -51,14 +59,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${BASE_URL}/categorias`,
+      changeFrequency: "yearly",
+      priority: 0.9,
+    },
   ];
 
   // Product pages
-  const productPages: MetadataRoute.Sitemap = activeProducts.map((product) => ({
-    url: `${BASE_URL}/productos/${toSlug(product.name)}/${product.id}`,
-    changeFrequency: "daily" as const,
-    priority: 0.7,
-  }));
+  const productPages: MetadataRoute.Sitemap = activeProducts.map((product) => {
+    const lastModified = product.shopCurrentPrices[0]?.updateAt;
+
+    return {
+      url: `${BASE_URL}/productos/${toSlug(product.name)}/${product.id}`,
+      ...(lastModified ? { lastModified } : {}),
+      changeFrequency: "daily" as const,
+      priority: 0.7,
+    };
+  });
 
   // Group pages
   const groupPages: MetadataRoute.Sitemap = groups.map((group) => ({
@@ -68,5 +86,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...groupPages, ...productPages];
+  // Group category pages (/categorias/[slug])
+  const categoryPages: MetadataRoute.Sitemap = categories.map((category) => ({
+    url: `${BASE_URL}/categorias/${category.humanNameId}`,
+    changeFrequency: "yearly" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...groupPages, ...categoryPages, ...productPages];
 }
