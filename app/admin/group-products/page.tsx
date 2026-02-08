@@ -151,31 +151,18 @@ async function getMultiTreeProducts({
     : sql``;
 
   const query = sql`
-    WITH RECURSIVE group_roots AS (
-      SELECT ${groupsTable.id} AS id,
-        ${groupsTable.parentGroupId} AS parent_id,
-        ${groupsTable.id} AS root_id
-      FROM ${groupsTable}
-      WHERE ${groupsTable.parentGroupId} IS NULL
-      UNION ALL
-      SELECT ${groupsTable.id} AS id,
-        ${groupsTable.parentGroupId} AS parent_id,
-        gr.root_id
-      FROM ${groupsTable}
-      JOIN group_roots gr ON ${groupsTable.parentGroupId} = gr.id
-    ),
-    product_roots AS (
+    WITH sibling_parent_matches AS (
       SELECT ${productsGroups.productId} AS product_id,
-        gr.root_id
+        ${groupsTable.parentGroupId} AS parent_id
       FROM ${productsGroups}
-      JOIN group_roots gr ON ${productsGroups.groupId} = gr.id
-      GROUP BY ${productsGroups.productId}, gr.root_id
+      JOIN ${groupsTable} ON ${productsGroups.groupId} = ${groupsTable.id}
+      WHERE ${groupsTable.parentGroupId} IS NOT NULL
+      GROUP BY ${productsGroups.productId}, ${groupsTable.parentGroupId}
+      HAVING COUNT(DISTINCT ${productsGroups.groupId}) >= 2
     ),
     multi_tree AS (
-      SELECT product_id
-      FROM product_roots
-      GROUP BY product_id
-      HAVING COUNT(*) >= 2
+      SELECT DISTINCT product_id
+      FROM sibling_parent_matches
     )
     SELECT ${productsTable.id} AS id, COUNT(*) OVER() AS total_count
     FROM ${productsTable}
@@ -569,43 +556,10 @@ async function GroupProductsPage({ searchParams }: Props) {
     { id: number; name: string }[]
   >();
   const groupProductIds = new Set<number>();
-  const treeIdsByProductId = new Map<number, Set<number>>();
-  const rootByGroupId = new Map<number, number>();
-
-  const resolveRootGroupId = (groupId: number) => {
-    const cached = rootByGroupId.get(groupId);
-    if (cached) {
-      return cached;
-    }
-
-    let currentId: number | null | undefined = groupId;
-    const visited = new Set<number>();
-
-    while (currentId !== null && currentId !== undefined) {
-      if (visited.has(currentId)) {
-        break;
-      }
-
-      visited.add(currentId);
-      const group = groupById.get(currentId);
-
-      if (!group || group.parentGroupId == null) {
-        break;
-      }
-
-      currentId = group.parentGroupId;
-    }
-
-    const resolvedId =
-      currentId !== null && currentId !== undefined && groupById.has(currentId)
-        ? currentId
-        : groupId;
-    for (const visitedId of visited) {
-      rootByGroupId.set(visitedId, resolvedId);
-    }
-
-    return resolvedId;
-  };
+  const siblingGroupsByParentIdByProductId = new Map<
+    number,
+    Map<number, Set<number>>
+  >();
 
   for (const entry of productGroupEntries) {
     const group = groupById.get(entry.groupId);
@@ -623,14 +577,24 @@ async function GroupProductsPage({ searchParams }: Props) {
       groupProductIds.add(entry.productId);
     }
 
-    if (group) {
-      const rootId = resolveRootGroupId(entry.groupId);
-      let treeIds = treeIdsByProductId.get(entry.productId);
-      if (!treeIds) {
-        treeIds = new Set<number>();
-        treeIdsByProductId.set(entry.productId, treeIds);
+    if (group?.parentGroupId != null) {
+      let siblingGroupsByParentId =
+        siblingGroupsByParentIdByProductId.get(entry.productId);
+      if (!siblingGroupsByParentId) {
+        siblingGroupsByParentId = new Map<number, Set<number>>();
+        siblingGroupsByParentIdByProductId.set(
+          entry.productId,
+          siblingGroupsByParentId
+        );
       }
-      treeIds.add(rootId);
+
+      let siblingGroupIds = siblingGroupsByParentId.get(group.parentGroupId);
+      if (!siblingGroupIds) {
+        siblingGroupIds = new Set<number>();
+        siblingGroupsByParentId.set(group.parentGroupId, siblingGroupIds);
+      }
+
+      siblingGroupIds.add(entry.groupId);
     }
   }
 
@@ -642,8 +606,15 @@ async function GroupProductsPage({ searchParams }: Props) {
   }
 
   const multiTreeProductIds = new Set<number>();
-  for (const [productId, treeIds] of treeIdsByProductId) {
-    if (treeIds.size >= 2) {
+  for (const [
+    productId,
+    siblingGroupsByParentId,
+  ] of siblingGroupsByParentIdByProductId) {
+    const hasMultipleGroupsWithSameParent = Array.from(
+      siblingGroupsByParentId.values()
+    ).some((siblingGroupIds) => siblingGroupIds.size >= 2);
+
+    if (hasMultipleGroupsWithSameParent) {
       multiTreeProductIds.add(productId);
     }
   }
