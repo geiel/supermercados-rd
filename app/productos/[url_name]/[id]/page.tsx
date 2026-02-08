@@ -7,12 +7,15 @@ import { ProductImage } from "@/components/product-image";
 import { RelatedProducts } from "@/components/related-products";
 import { ShopPriceRowActions } from "@/components/shop-price-row";
 import { ScrollToSection } from "@/components/scroll-to-section";
+import { Button } from "@/components/ui/button";
 import { Unit } from "@/components/unit";
 import { GroupBreadcrumbs } from "@/components/group-breadcrumbs";
 import { db } from "@/db";
-import { getGroupBreadcrumbPaths } from "@/lib/group-breadcrumbs";
+import { products, productsGroups, productsShopsPrices } from "@/db/schema";
+import { getGroupBreadcrumbPaths, type GroupBreadcrumbItem } from "@/lib/group-breadcrumbs";
 import { searchProducts } from "@/lib/search-query";
 import { sanitizeForTsQuery } from "@/lib/utils";
+import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import {
   ChartNoAxesColumnDecreasing,
   MessageCircleWarning,
@@ -20,6 +23,7 @@ import {
 } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { cacheTag, cacheLife } from "next/cache";
 
 type Props = {
@@ -85,6 +89,9 @@ export default async function Page({ params }: Props) {
   const groups = product.groupProduct.map((gp) => gp.group);
   const groupBreadcrumbs = await getGroupBreadcrumbPaths(
     groups.map((group) => group.id)
+  );
+  const relatedProductsGroupLink = await getRelatedProductsGroupLink(
+    groupBreadcrumbs
   );
 
   const badgeType = getPriceBadgeType(product);
@@ -231,7 +238,14 @@ export default async function Page({ params }: Props) {
         </section>
 
         <section className="flex flex-col gap-2">
-          <div className="font-bold text-2xl">Productos relacionados</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-bold text-2xl">Productos relacionados</div>
+            {relatedProductsGroupLink ? (
+              <Button variant="link" size="sm" asChild className="h-auto p-0">
+                <Link href={relatedProductsGroupLink.href}>Ver todas</Link>
+              </Button>
+            ) : null}
+          </div>
           <RelatedProducts relatedProducts={relatedProducts.products} />
         </section>
 
@@ -567,4 +581,84 @@ async function searchRelatedProducts(name: string, canSeeHiddenProducts: boolean
     undefined,
     canSeeHiddenProducts
   );
+}
+
+const MIN_PRODUCTS_FOR_DIRECT_GROUP_LINK = 7;
+
+async function getRelatedProductsGroupLink(
+  groupPaths: GroupBreadcrumbItem[][]
+): Promise<GroupBreadcrumbItem | null> {
+  if (groupPaths.length === 0) {
+    return null;
+  }
+
+  const groupChains = groupPaths
+    .map((path) => path.filter((item) => item.href.startsWith("/grupos/")))
+    .filter((path) => path.length > 0);
+
+  if (groupChains.length === 0) {
+    return null;
+  }
+
+  let primaryGroupChain = groupChains[0];
+
+  for (const current of groupChains.slice(1)) {
+    if (current.length > primaryGroupChain.length) {
+      primaryGroupChain = current;
+    }
+  }
+
+  const group = primaryGroupChain[primaryGroupChain.length - 1];
+  const parentGroup =
+    primaryGroupChain.length > 1
+      ? primaryGroupChain[primaryGroupChain.length - 2]
+      : null;
+
+  if (!parentGroup) {
+    return group;
+  }
+
+  const productsCountByGroupId = await getVisibleProductsCountByGroupIds([
+    group.id,
+    parentGroup.id,
+  ]);
+  const groupProductsCount = productsCountByGroupId.get(group.id) ?? 0;
+
+  if (groupProductsCount < MIN_PRODUCTS_FOR_DIRECT_GROUP_LINK) {
+    return parentGroup;
+  }
+
+  return group;
+}
+
+async function getVisibleProductsCountByGroupIds(groupIds: number[]) {
+  if (groupIds.length === 0) {
+    return new Map<number, number>();
+  }
+
+  const rows = await db
+    .select({
+      groupId: productsGroups.groupId,
+      count: sql<number>`count(distinct ${products.id})`,
+    })
+    .from(productsGroups)
+    .innerJoin(
+      products,
+      and(
+        eq(products.id, productsGroups.productId),
+        or(isNull(products.deleted), eq(products.deleted, false))
+      )
+    )
+    .innerJoin(
+      productsShopsPrices,
+      and(
+        eq(productsShopsPrices.productId, products.id),
+        isNotNull(productsShopsPrices.currentPrice),
+        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      )
+    )
+    .where(inArray(productsGroups.groupId, groupIds))
+    .groupBy(productsGroups.groupId);
+
+  return new Map(rows.map((row) => [row.groupId, Number(row.count)]));
 }
