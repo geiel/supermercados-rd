@@ -14,8 +14,10 @@ import {
 import ScrollPeek from "@/components/ui/scroll-peek";
 import { getGroupBreadcrumbsForGroup } from "@/lib/group-breadcrumbs";
 import { getGroupProducts } from "@/lib/group-products";
+import { trackGroupVisit } from "@/lib/posthog-server";
 import { GROUP_EXPLORER_DESKTOP_PAGE_SIZE, type GroupExplorerFilters as Filters } from "@/types/group-explorer";
 import { PackageSearch } from "lucide-react";
+import { headers } from "next/headers";
 
 type GroupExplorerProps = {
     humanId: string;
@@ -86,7 +88,16 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
         );
     }
 
-    const breadcrumbs = await getGroupBreadcrumbsForGroup(result.group.id);
+    const requestHeaders = await headers();
+    const [breadcrumbs] = await Promise.all([
+        getGroupBreadcrumbsForGroup(result.group.id),
+        trackGroupVisit({
+            groupId: result.group.id,
+            groupName: result.group.name,
+            groupHumanId: result.group.humanId,
+            requestHeaders,
+        }),
+    ]);
 
     return (
         <div className="container mx-auto px-2 pb-2 space-y-4">
