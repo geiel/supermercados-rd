@@ -5,6 +5,7 @@
 - If an drawer or dialog is just a list for select one item use a radio button style with the text, if it is a multiple select use a checkbox with text style.
 - All /admin pages and apis should be only accesible by the admin user.
 - All /api | endpoints that are only being used by /admin pages should be in the /api/admin folder so is protected.
+- Prefer server-side tracking over client-side tracking whenever possible to reduce ad blocker interference.
 
 ## Installing new libraries
 - Always use `pnpm`.
