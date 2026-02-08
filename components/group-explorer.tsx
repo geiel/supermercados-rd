@@ -94,7 +94,7 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
         trackGroupVisit({
             groupId: result.group.id,
             groupName: result.group.name,
-            groupHumanId: result.group.humanNameId,
+            groupHumanId: result.group.humanId,
             requestHeaders,
         }),
     ]);
