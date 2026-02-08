@@ -94,7 +94,7 @@ export default function Home() {
         </div>
       </section>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<HomePageCategoriesSectionSkeleton />}>
         <HomePageCategoriesSection />
       </Suspense>
       </main>
@@ -158,4 +158,36 @@ function TodaysDealsSkeleton() {
       </div>
     </section>
   )
+}
+
+function HomePageCategoriesSectionSkeleton() {
+  return (
+    <section>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <TypographyH3>Mejor valor por tu dinero</TypographyH3>
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <ScrollPeek
+          itemWidth="min(max(35vw, 110px), 218px)"
+          itemWidthMd="224px"
+        >
+          <div className="flex space-x-2 p-2 relative">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <div key={index} className="flex flex-col gap-2 min-w-0">
+                <Skeleton className="w-full max-w-[180px] aspect-square mx-auto" />
+                <div className="px-2 flex flex-col gap-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-4 w-14" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollPeek>
+      </div>
+    </section>
+  );
 }
