@@ -11,11 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Unit } from "@/components/unit";
 import { GroupBreadcrumbs } from "@/components/group-breadcrumbs";
 import { db } from "@/db";
-import { products, productsGroups, productsShopsPrices } from "@/db/schema";
+import { categoriesGroups, products, productsGroups, productsShopsPrices } from "@/db/schema";
 import { getGroupBreadcrumbPaths, type GroupBreadcrumbItem } from "@/lib/group-breadcrumbs";
-import { searchProducts } from "@/lib/search-query";
-import { sanitizeForTsQuery } from "@/lib/utils";
-import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import {
   ChartNoAxesColumnDecreasing,
   MessageCircleWarning,
@@ -29,6 +27,11 @@ import { cacheTag, cacheLife } from "next/cache";
 type Props = {
   params: Promise<{ id: string; url_name: string }>;
 };
+
+const MAX_ALLOWED_RELATED_PRODUCTS = 16;
+const MIN_RELATED_PRODUCTS_BEFORE_GROUP_FALLBACK = 10;
+const HIGH_SIMILARITY_SIM_SCORE_THRESHOLD = 0.5;
+const NO_GROUP_SIMILARITY_MIN_THRESHOLD = 0.3;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, url_name } = await params;
@@ -78,14 +81,6 @@ export default async function Page({ params }: Props) {
     return <div>Producto no encontrado.</div>;
   }
 
-  const relatedProducts = await searchRelatedProducts(product.name, false);
-  relatedProducts.products.splice(
-    relatedProducts.products.findIndex((i) => i.id === product.id),
-    1
-  );
-
-  const shops = await getShops();
-
   const groups = product.groupProduct.map((gp) => gp.group);
   const groupBreadcrumbs = await getGroupBreadcrumbPaths(
     groups.map((group) => group.id)
@@ -93,6 +88,40 @@ export default async function Page({ params }: Props) {
   const relatedProductsGroupLink = await getRelatedProductsGroupLink(
     groupBreadcrumbs
   );
+  const relatedProductsCategoryLink =
+    getRelatedProductsCategoryLink(groupBreadcrumbs);
+  const relatedProductsPrimaryGroup = getPrimaryRelatedGroup(groupBreadcrumbs);
+
+  const shopsPromise = getShops();
+  let relatedProducts = !relatedProductsPrimaryGroup
+    ? await getRelatedProductsBySimilarityNoGroup(
+        product.name,
+        product.id,
+        MAX_ALLOWED_RELATED_PRODUCTS
+      )
+    : relatedProductsCategoryLink
+      ? await getHighRankingRelatedProductsByCategory(
+          product.name,
+          product.id,
+          relatedProductsCategoryLink.id,
+          MAX_ALLOWED_RELATED_PRODUCTS
+        )
+      : [];
+
+  if (relatedProductsPrimaryGroup && relatedProducts.length < MIN_RELATED_PRODUCTS_BEFORE_GROUP_FALLBACK) {
+    const fallbackProducts = await getRelatedProductsFromSameGroup({
+      groupId: relatedProductsPrimaryGroup.id,
+      currentProductId: product.id,
+      excludedProductIds: relatedProducts.map((item) => item.id),
+      limit: MAX_ALLOWED_RELATED_PRODUCTS - relatedProducts.length,
+    });
+
+    relatedProducts = [...relatedProducts, ...fallbackProducts].slice(
+      0,
+      MAX_ALLOWED_RELATED_PRODUCTS
+    );
+  }
+  const shops = await shopsPromise;
 
   const badgeType = getPriceBadgeType(product);
 
@@ -246,7 +275,7 @@ export default async function Page({ params }: Props) {
               </Button>
             ) : null}
           </div>
-          <RelatedProducts relatedProducts={relatedProducts.products} />
+          <RelatedProducts relatedProducts={relatedProducts} />
         </section>
 
         <section
@@ -569,18 +598,262 @@ async function getShops() {
   return await db.query.shops.findMany();
 }
 
-async function searchRelatedProducts(name: string, canSeeHiddenProducts: boolean) {
+function getRelatedProductsCategoryLink(
+  groupPaths: GroupBreadcrumbItem[][]
+): GroupBreadcrumbItem | null {
+  if (groupPaths.length === 0) {
+    return null;
+  }
+
+  const orderedPaths = [...groupPaths].sort((a, b) => b.length - a.length);
+  for (const path of orderedPaths) {
+    const category = path.find((item) => item.href.startsWith("/categorias/"));
+    if (category) {
+      return category;
+    }
+  }
+
+  return null;
+}
+
+function getPrimaryRelatedGroup(
+  groupPaths: GroupBreadcrumbItem[][]
+): GroupBreadcrumbItem | null {
+  if (groupPaths.length === 0) {
+    return null;
+  }
+
+  const groupChains = groupPaths
+    .map((path) => path.filter((item) => item.href.startsWith("/grupos/")))
+    .filter((path) => path.length > 0);
+
+  if (groupChains.length === 0) {
+    return null;
+  }
+
+  let primaryGroupChain = groupChains[0];
+
+  for (const current of groupChains.slice(1)) {
+    if (current.length > primaryGroupChain.length) {
+      primaryGroupChain = current;
+    }
+  }
+
+  return primaryGroupChain[primaryGroupChain.length - 1];
+}
+
+async function getHighRankingRelatedProductsByCategory(
+  name: string,
+  currentProductId: number,
+  categoryId: number,
+  limit: number
+) {
   "use cache";
   cacheLife("product");
 
-  return await searchProducts(
-    sanitizeForTsQuery(name),
-    16,
-    0,
-    false,
-    undefined,
-    canSeeHiddenProducts
-  );
+  const similarityScore =
+    sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${name})))`;
+  const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
+
+  const productIdsRows = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(
+      and(
+        or(isNull(products.deleted), eq(products.deleted, false)),
+        ne(products.id, currentProductId),
+        sql`${similarityScore} >= ${HIGH_SIMILARITY_SIM_SCORE_THRESHOLD}`,
+        sql`EXISTS (
+          SELECT 1
+          FROM ${productsGroups}
+          INNER JOIN ${categoriesGroups}
+            ON ${categoriesGroups.groupId} = ${productsGroups.groupId}
+          WHERE ${productsGroups.productId} = ${products.id}
+            AND ${categoriesGroups.categoryId} = ${categoryId}
+        )`,
+        sql`EXISTS (
+          SELECT 1
+          FROM ${productsShopsPrices}
+          WHERE ${productsShopsPrices.productId} = ${products.id}
+            AND ${productsShopsPrices.currentPrice} IS NOT NULL
+            AND (
+              ${productsShopsPrices.hidden} IS NULL
+              OR ${productsShopsPrices.hidden} = FALSE
+            )
+        )`
+      )
+    )
+    .orderBy(desc(similarityScore), desc(rankOrder), desc(products.id))
+    .limit(limit);
+
+  const productIds = productIdsRows.map((row) => row.id);
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  const productsRows = await db.query.products.findMany({
+    where: (products, { inArray }) => inArray(products.id, productIds),
+    with: {
+      brand: true,
+      possibleBrand: true,
+      shopCurrentPrices: {
+        where: (scp, { isNull, eq, or }) =>
+          or(isNull(scp.hidden), eq(scp.hidden, false)),
+      },
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const productById = new Map(productsRows.map((item) => [item.id, item]));
+  return productIds
+    .map((id) => productById.get(id))
+    .filter(
+      (product): product is (typeof productsRows)[number] => product !== undefined
+    );
+}
+
+async function getRelatedProductsBySimilarityNoGroup(
+  name: string,
+  currentProductId: number,
+  limit: number
+) {
+  "use cache";
+  cacheLife("product");
+
+  const similarityScore =
+    sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${name})))`;
+  const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
+
+  const productIdsRows = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(
+      and(
+        or(isNull(products.deleted), eq(products.deleted, false)),
+        ne(products.id, currentProductId),
+        sql`${similarityScore} > ${NO_GROUP_SIMILARITY_MIN_THRESHOLD}`,
+        sql`EXISTS (
+          SELECT 1
+          FROM ${productsShopsPrices}
+          WHERE ${productsShopsPrices.productId} = ${products.id}
+            AND ${productsShopsPrices.currentPrice} IS NOT NULL
+            AND (
+              ${productsShopsPrices.hidden} IS NULL
+              OR ${productsShopsPrices.hidden} = FALSE
+            )
+        )`
+      )
+    )
+    .orderBy(desc(similarityScore), desc(rankOrder), desc(products.id))
+    .limit(limit);
+
+  const productIds = productIdsRows.map((row) => row.id);
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  const productsRows = await db.query.products.findMany({
+    where: (products, { inArray }) => inArray(products.id, productIds),
+    with: {
+      brand: true,
+      possibleBrand: true,
+      shopCurrentPrices: {
+        where: (scp, { isNull, eq, or }) =>
+          or(isNull(scp.hidden), eq(scp.hidden, false)),
+      },
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const productById = new Map(productsRows.map((item) => [item.id, item]));
+  return productIds
+    .map((id) => productById.get(id))
+    .filter(
+      (product): product is (typeof productsRows)[number] => product !== undefined
+    );
+}
+
+async function getRelatedProductsFromSameGroup({
+  groupId,
+  currentProductId,
+  excludedProductIds,
+  limit,
+}: {
+  groupId: number;
+  currentProductId: number;
+  excludedProductIds: number[];
+  limit: number;
+}) {
+  if (limit <= 0) {
+    return [];
+  }
+
+  const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
+
+  const productIdsRows = await db
+    .select({ id: products.id })
+    .from(productsGroups)
+    .innerJoin(
+      products,
+      and(
+        eq(products.id, productsGroups.productId),
+        or(isNull(products.deleted), eq(products.deleted, false))
+      )
+    )
+    .innerJoin(
+      productsShopsPrices,
+      and(
+        eq(productsShopsPrices.productId, products.id),
+        isNotNull(productsShopsPrices.currentPrice),
+        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      )
+    )
+    .where(eq(productsGroups.groupId, groupId))
+    .groupBy(products.id, products.rank)
+    .orderBy(desc(rankOrder), desc(products.id))
+    .limit(100);
+
+  const excludedIds = new Set([currentProductId, ...excludedProductIds]);
+  const productIds = productIdsRows
+    .map((row) => row.id)
+    .filter((id) => !excludedIds.has(id))
+    .slice(0, limit);
+
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  const productsRows = await db.query.products.findMany({
+    where: (products, { inArray }) => inArray(products.id, productIds),
+    with: {
+      brand: true,
+      possibleBrand: true,
+      shopCurrentPrices: {
+        where: (scp, { isNull, eq, or }) =>
+          or(isNull(scp.hidden), eq(scp.hidden, false)),
+      },
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const productById = new Map(productsRows.map((item) => [item.id, item]));
+  return productIds
+    .map((id) => productById.get(id))
+    .filter(
+      (product): product is (typeof productsRows)[number] => product !== undefined
+    );
 }
 
 const MIN_PRODUCTS_FOR_DIRECT_GROUP_LINK = 7;
