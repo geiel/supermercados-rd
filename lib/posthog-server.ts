@@ -30,6 +30,22 @@ function isBotRequest(requestHeaders: Headers): boolean {
   );
 }
 
+function isLocalhostRequest(requestHeaders: Headers): boolean {
+  const hostHeader =
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
+  const firstHost = hostHeader.split(",")[0]?.trim().toLowerCase() ?? "";
+  const hostname = firstHost.startsWith("[")
+    ? firstHost.slice(1, firstHost.indexOf("]"))
+    : firstHost.split(":")[0];
+
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "0.0.0.0"
+  );
+}
+
 function getClientIp(requestHeaders: Headers): string {
   const forwardedFor = requestHeaders.get("x-forwarded-for");
   if (forwardedFor) {
@@ -64,6 +80,7 @@ export async function trackGroupVisit({
   const host = process.env.POSTHOG_HOST ?? process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
   if (!apiKey || !host) return;
+  if (isLocalhostRequest(requestHeaders)) return;
   if (isPrefetchRequest(requestHeaders)) return;
   if (isBotRequest(requestHeaders)) return;
 
