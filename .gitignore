@@ -45,3 +45,5 @@ next-env.d.ts
 
 # Chromium binary (generated during Vercel build)
 /public/chromium-pack.tar
+# Sentry Config File
+.env.sentry-build-plugin
