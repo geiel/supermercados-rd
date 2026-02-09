@@ -11,12 +11,19 @@ import {
 } from "./logs";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { hideProductPrice, showProductPrice } from "../db-utils";
-import { getBravoHeaders, fetchWithRetry } from "./http-client";
+import {
+  getBravoHeaders,
+  fetchWithRetry,
+  type FetchWithRetryConfig,
+} from "./http-client";
 import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "Bravo";
 
-async function getProductInfo(api: string | null) {
+async function getProductInfo(
+  api: string | null,
+  requestConfig?: FetchWithRetryConfig
+) {
   if (!api) {
     return null;
   }
@@ -26,7 +33,7 @@ async function getProductInfo(api: string | null) {
   let jsonResponse: unknown;
 
   try {
-    const response = await fetchWithRetry(api, { headers });
+    const response = await fetchWithRetry(api, { headers }, requestConfig);
     if (!response) return null;
     jsonResponse = await response.json();
   } catch (err) {
@@ -79,7 +86,8 @@ async function getProductInfo(api: string | null) {
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
   ignoreTimeValidation = false,
-  dontLog = false
+  dontLog = false,
+  requestConfig?: FetchWithRetryConfig
 ) {
   if (
     !ignoreTimeValidation &&
@@ -90,7 +98,10 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice, dontLog);
-  const productInfo = await getProductInfo(productShopPrice.api);
+  const productInfo = await getProductInfo(
+    productShopPrice.api,
+    requestConfig
+  );
 
   if (!productInfo) {
     processErrorLog(scrapper, productShopPrice);

@@ -335,6 +335,11 @@ export function getHeadersByShopId(shopId: number, url?: string): Record<string,
   }
 }
 
+export type FetchWithRetryConfig = {
+  maxRetries?: number;
+  timeoutMs?: number;
+};
+
 /**
  * Fetch with retry and exponential backoff
  * Handles rate limiting (429) and server errors (503)
@@ -342,28 +347,35 @@ export function getHeadersByShopId(shopId: number, url?: string): Record<string,
 export async function fetchWithRetry(
   url: string,
   options: RequestInit = {},
-  maxRetries = 3
+  config: FetchWithRetryConfig = {}
 ): Promise<Response | null> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  const { maxRetries = 3, timeoutMs = 10000 } = config;
+  const attempts = Math.max(1, maxRetries);
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       const response = await fetch(url, {
         ...options,
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       // Handle rate limiting
       if (response.status === 429 || response.status === 503) {
+        if (attempt === attempts - 1) {
+          return null;
+        }
+
         const waitTime = Math.pow(2, attempt) * 5000 + Math.random() * 2000;
-        console.log(`[RETRY] Status ${response.status} - waiting ${Math.round(waitTime)}ms before retry ${attempt + 1}/${maxRetries}`);
+        console.log(`[RETRY] Status ${response.status} - waiting ${Math.round(waitTime)}ms before retry ${attempt + 1}/${attempts}`);
         await new Promise((r) => setTimeout(r, waitTime));
         continue;
       }
 
       return response;
     } catch (error) {
-      console.log(`[ERROR] Attempt ${attempt + 1}/${maxRetries} failed:`, error instanceof Error ? error.message : error);
+      console.log(`[ERROR] Attempt ${attempt + 1}/${attempts} failed:`, error instanceof Error ? error.message : error);
       
-      if (attempt === maxRetries - 1) {
+      if (attempt === attempts - 1) {
         return null;
       }
       

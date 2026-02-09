@@ -11,7 +11,11 @@ import { db } from "@/db";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { hideProductPrice, showProductPrice } from "../db-utils";
-import { getPlazaLamaHeaders, fetchWithRetry } from "./http-client";
+import {
+  getPlazaLamaHeaders,
+  fetchWithRetry,
+  type FetchWithRetryConfig,
+} from "./http-client";
 import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "Plaza Lama";
@@ -31,7 +35,10 @@ const raw = [
   },
 ];
 
-async function getProductInfo(productShopPrice: productsShopsPrices) {
+async function getProductInfo(
+  productShopPrice: productsShopsPrices,
+  requestConfig?: FetchWithRetryConfig
+) {
   if (!productShopPrice.api) {
     return null;
   }
@@ -48,7 +55,8 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
         method: "POST",
         body: JSON.stringify(raw),
         headers,
-      }
+      },
+      requestConfig
     );
 
     if (!response) return null;
@@ -98,7 +106,8 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
   ignoreTimeValidation = false,
-  dontLog = false
+  dontLog = false,
+  requestConfig?: FetchWithRetryConfig
 ) {
   if (
     !ignoreTimeValidation &&
@@ -109,7 +118,7 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice, dontLog);
-  const productInfo = await getProductInfo(productShopPrice);
+  const productInfo = await getProductInfo(productShopPrice, requestConfig);
 
   if (!productInfo) {
     processErrorLog(scrapper, productShopPrice);

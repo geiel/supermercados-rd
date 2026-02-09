@@ -8,6 +8,7 @@ import { nacional } from "@/lib/scrappers/nacional";
 import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
+import type { FetchWithRetryConfig } from "@/lib/scrappers/http-client";
 import { sanitizeForTsQuery } from "@/lib/utils";
 import { getExploreParentGroups } from "@/lib/explore-groups";
 import {
@@ -16,6 +17,11 @@ import {
   type ExploreProduct,
   type ExploreProductsResponse,
 } from "@/types/explore";
+
+const EXPLORE_SCRAPER_REQUEST_CONFIG: FetchWithRetryConfig = {
+  timeoutMs: 7000,
+  maxRetries: 1,
+};
 
 type ProductWithRelations = {
   id: number;
@@ -43,20 +49,59 @@ type ExploreProductsQuery = {
 
 async function updateShopPrices(shopPrices: productsShopsPrices[]) {
   await Promise.all(
-    shopPrices.map((shopPrice) => {
-      switch (shopPrice.shopId) {
-        case 1:
-          return sirena.processByProductShopPrice(shopPrice);
-        case 2:
-          return nacional.processByProductShopPrice(shopPrice);
-        case 4:
-          return plazaLama.processByProductShopPrice(shopPrice);
-        case 5:
-          return pricesmart.processByProductShopPrice(shopPrice);
-        case 6:
-          return bravo.processByProductShopPrice(shopPrice);
-        default:
-          return Promise.resolve();
+    shopPrices.map(async (shopPrice) => {
+      try {
+        switch (shopPrice.shopId) {
+          case 1:
+            await sirena.processByProductShopPrice(
+              shopPrice,
+              false,
+              false,
+              EXPLORE_SCRAPER_REQUEST_CONFIG
+            );
+            return;
+          case 2:
+            await nacional.processByProductShopPrice(
+              shopPrice,
+              false,
+              false,
+              EXPLORE_SCRAPER_REQUEST_CONFIG
+            );
+            return;
+          case 4:
+            await plazaLama.processByProductShopPrice(
+              shopPrice,
+              false,
+              false,
+              EXPLORE_SCRAPER_REQUEST_CONFIG
+            );
+            return;
+          case 5:
+            await pricesmart.processByProductShopPrice(
+              shopPrice,
+              false,
+              false,
+              EXPLORE_SCRAPER_REQUEST_CONFIG
+            );
+            return;
+          case 6:
+            await bravo.processByProductShopPrice(
+              shopPrice,
+              false,
+              false,
+              EXPLORE_SCRAPER_REQUEST_CONFIG
+            );
+            return;
+          default:
+            return;
+        }
+      } catch (error) {
+        console.error(
+          "[explore-products] Ignored scraper error",
+          shopPrice.shopId,
+          shopPrice.productId,
+          error
+        );
       }
     })
   );
