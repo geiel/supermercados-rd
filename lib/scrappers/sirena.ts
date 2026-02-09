@@ -14,12 +14,19 @@ import { db } from "@/db";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { isLessThan12HoursAgo } from "./utils";
 import { hideProductPrice, showProductPrice } from "../db-utils";
-import { getSirenaHeaders, fetchWithRetry } from "./http-client";
+import {
+  getSirenaHeaders,
+  fetchWithRetry,
+  type FetchWithRetryConfig,
+} from "./http-client";
 import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "La Sirena";
 
-async function getProductInfo(productShopPrice: productsShopsPrices) {
+async function getProductInfo(
+  productShopPrice: productsShopsPrices,
+  requestConfig?: FetchWithRetryConfig
+) {
   if (!productShopPrice.api) {
     return null;
   }
@@ -29,7 +36,11 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
   let jsonResponse: unknown;
 
   try {
-    const response = await fetchWithRetry(productShopPrice.api, { headers });
+    const response = await fetchWithRetry(
+      productShopPrice.api,
+      { headers },
+      requestConfig
+    );
     if (!response) return null;
     jsonResponse = await response.json();
   } catch (err) {
@@ -70,7 +81,8 @@ async function getProductInfo(productShopPrice: productsShopsPrices) {
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
   ignoreTimeValidation = false,
-  dontLog = false
+  dontLog = false,
+  requestConfig?: FetchWithRetryConfig
 ) {
   if (
     !ignoreTimeValidation &&
@@ -81,7 +93,7 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice, dontLog);
-  const productInfo = await getProductInfo(productShopPrice);
+  const productInfo = await getProductInfo(productShopPrice, requestConfig);
 
   if (!productInfo) {
     processErrorLog(scrapper, productShopPrice);

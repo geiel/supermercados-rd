@@ -271,6 +271,7 @@ const base: Array<Synonym> = [
     { synonyms: ["s gluten"], query: ["s & gluten"], complex: ["sin", "gluten"]},
     { synonyms: ["salsa", "sauce", "sausage"], query: ["salsa", "sauce", "sausage"], id: "salsa"},
     { synonyms: ["salsa de tomate", "salsa de tomates", "pasta de tomate", "pasta de tomates"], query: ["pasta & tomate"], complex: ["salsa", "tomate"]},
+    { synonyms: ["salsa inglesa", "worcestershire", "worcester"], query: ["salsa & inglesa", "worcestershire", "worcester"]},
     { synonyms: ["wheat", "trigo"], query: ["wheat", "trigo"]},
     { synonyms: ["codito", "elbow"], query: ["codito:*", "elbow:*"]},
     { synonyms: ["aunt jemima", "pearl milling company", "pearl milling"], query: ["aunt & jemima", "pearl & milling"]},

@@ -11,7 +11,11 @@ import { isLessThan12HoursAgo } from "./utils";
 import { db } from "@/db";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { hideProductPrice, showProductPrice } from "../db-utils";
-import { getPricesmartHeaders, fetchWithRetry } from "./http-client";
+import {
+  getPricesmartHeaders,
+  fetchWithRetry,
+  type FetchWithRetryConfig,
+} from "./http-client";
 import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "Pricesmart";
@@ -21,7 +25,8 @@ type Price = {
 };
 
 async function getProductInfo(
-  productShopPrice: productsShopsPrices
+  productShopPrice: productsShopsPrices,
+  requestConfig?: FetchWithRetryConfig
 ): Promise<Price | null> {
   const price: Price = {
     currentPrice: "",
@@ -48,7 +53,8 @@ async function getProductInfo(
           },
         ]),
         headers,
-      }
+      },
+      requestConfig
     );
 
     if (!response) return price;
@@ -157,7 +163,8 @@ async function getProductInfo(
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
   ignoreTimeValidation = false,
-  dontLog = false
+  dontLog = false,
+  requestConfig?: FetchWithRetryConfig
 ) {
   if (
     !ignoreTimeValidation &&
@@ -168,7 +175,7 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice, dontLog);
-  const price = await getProductInfo(productShopPrice);
+  const price = await getProductInfo(productShopPrice, requestConfig);
 
   if (!price || !price.currentPrice) {
     processErrorLog(scrapper, productShopPrice);

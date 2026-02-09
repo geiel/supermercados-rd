@@ -14,15 +14,19 @@ import {
 } from "./logs";
 import { isLessThan12HoursAgo } from "./utils";
 import { hideProductPrice, showProductPrice } from "../db-utils";
-import { getNacionalHeaders, fetchWithRetry } from "./http-client";
+import {
+  getNacionalHeaders,
+  fetchWithRetry,
+  type FetchWithRetryConfig,
+} from "./http-client";
 import { revalidateProduct } from "../revalidate-product";
 
 const scrapper = "Nacional";
 
-async function getHtml(url: string) {
+async function getHtml(url: string, requestConfig?: FetchWithRetryConfig) {
   try {
     const headers = getNacionalHeaders(url);
-    const response = await fetchWithRetry(url, { headers });
+    const response = await fetchWithRetry(url, { headers }, requestConfig);
 
     if (!response) return undefined;
     return await response.text();
@@ -34,7 +38,8 @@ async function getHtml(url: string) {
 async function processByProductShopPrice(
   productShopPrice: productsShopsPrices,
   ignoreTimeValidation = false,
-  dontLog = false
+  dontLog = false,
+  requestConfig?: FetchWithRetryConfig
 ) {
   if (
     !ignoreTimeValidation &&
@@ -45,7 +50,7 @@ async function processByProductShopPrice(
   }
 
   initProcessLog(scrapper, productShopPrice, dontLog);
-  const html = await getHtml(productShopPrice.url);
+  const html = await getHtml(productShopPrice.url, requestConfig);
 
   if (!html) {
     processErrorLog(scrapper, productShopPrice);
@@ -75,7 +80,9 @@ async function processByProductShopPrice(
     processErrorLog(scrapper, productShopPrice, `titulo: ${title}`);
 
     if (title.includes("503 backend read error")) {
-      process.exit(1);
+      if (!requestConfig) {
+        process.exit(1);
+      }
     }
     
     return;
