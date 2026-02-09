@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
   Breadcrumb,
@@ -26,11 +26,258 @@ type ResponsiveBreadcrumbProps = {
   compactMobileMode?: "current" | "parent" | "last";
 };
 
+type LastOverflowCandidate = {
+  startIndex: number;
+  showTrailingEllipsis: boolean;
+};
+
+function areSameLastOverflowCandidate(
+  left: LastOverflowCandidate,
+  right: LastOverflowCandidate
+) {
+  return (
+    left.startIndex === right.startIndex &&
+    left.showTrailingEllipsis === right.showTrailingEllipsis
+  );
+}
+
+function buildLastOverflowCandidates(total: number) {
+  const candidates: LastOverflowCandidate[] = [];
+
+  const pushCandidate = (candidate: LastOverflowCandidate) => {
+    if (
+      candidates.some((existing) =>
+        areSameLastOverflowCandidate(existing, candidate)
+      )
+    ) {
+      return;
+    }
+    candidates.push(candidate);
+  };
+
+  pushCandidate({
+    startIndex: 0,
+    showTrailingEllipsis: false,
+  });
+
+  for (let startIndex = 1; startIndex <= Math.max(total - 2, 0); startIndex += 1) {
+    pushCandidate({
+      startIndex,
+      showTrailingEllipsis: false,
+    });
+  }
+
+  if (total >= 2) {
+    pushCandidate({
+      startIndex: total - 2,
+      showTrailingEllipsis: true,
+    });
+  }
+
+  return candidates;
+}
+
+type RenderLastOverflowNodesOptions = {
+  keyPrefix: string;
+  includeSchemaData: boolean;
+};
+
+function renderLastOverflowNodes(
+  items: GroupBreadcrumbItem[],
+  candidate: LastOverflowCandidate,
+  { keyPrefix, includeSchemaData }: RenderLastOverflowNodesOptions
+) {
+  if (items.length === 0) return [];
+
+  const safeStartIndex = Math.min(candidate.startIndex, items.length - 1);
+  const remainingItems = items.slice(safeStartIndex);
+  const visibleItems = candidate.showTrailingEllipsis
+    ? remainingItems.slice(0, 1)
+    : remainingItems;
+
+  const nodes: ReactNode[] = [];
+
+  visibleItems.forEach((item, visibleIndex) => {
+    const originalIndex = safeStartIndex + visibleIndex;
+    const isCurrentPage =
+      !candidate.showTrailingEllipsis && originalIndex === items.length - 1;
+    const itemKey = `${keyPrefix}-item-${originalIndex}-${item.id}-${item.href}`;
+
+    nodes.push(
+      <BreadcrumbItem
+        key={itemKey}
+        {...(includeSchemaData
+          ? {
+              itemScope: true,
+              itemType: "http://schema.org/ListItem",
+              itemProp: "itemListElement",
+            }
+          : {})}
+      >
+        <BreadcrumbLink asChild className={isCurrentPage ? "text-foreground font-normal" : undefined}>
+          <Link href={item.href} {...(includeSchemaData ? { itemProp: "item" } : {})} aria-current={isCurrentPage ? "page" : undefined}>
+            <span
+              {...(includeSchemaData ? { itemProp: "name" } : {})}
+              className={cn(
+                "truncate",
+                isCurrentPage ? "max-w-[58vw] md:max-w-none" : "max-w-[40vw] md:max-w-none"
+              )}
+            >
+              {item.name}
+            </span>
+          </Link>
+        </BreadcrumbLink>
+        {includeSchemaData ? (
+          <meta itemProp="position" content={String(originalIndex + 1)} />
+        ) : null}
+      </BreadcrumbItem>
+    );
+
+    if (!candidate.showTrailingEllipsis && visibleIndex < visibleItems.length - 1) {
+      nodes.push(
+        <BreadcrumbSeparator
+          key={`${keyPrefix}-sep-${originalIndex}-${item.id}-${item.href}`}
+        />
+      );
+    }
+  });
+
+  if (candidate.showTrailingEllipsis && visibleItems.length > 0) {
+    const ellipsisAfterIndex = safeStartIndex;
+
+    nodes.push(
+      <BreadcrumbSeparator key={`${keyPrefix}-sep-ellipsis-${ellipsisAfterIndex}`} />
+    );
+    nodes.push(
+      <BreadcrumbItem key={`${keyPrefix}-ellipsis-${ellipsisAfterIndex}`}>
+        <BreadcrumbEllipsis />
+      </BreadcrumbItem>
+    );
+  }
+
+  return nodes;
+}
+
+function OverflowLastBreadcrumb({
+  items,
+  className,
+}: Pick<ResponsiveBreadcrumbProps, "items" | "className">) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const candidateMeasureRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const candidates = useMemo(
+    () => buildLastOverflowCandidates(items.length),
+    [items.length]
+  );
+  const [activeCandidate, setActiveCandidate] = useState<LastOverflowCandidate>(
+    candidates[0] ?? { startIndex: 0, showTrailingEllipsis: false }
+  );
+
+  useEffect(() => {
+    setActiveCandidate(candidates[0] ?? { startIndex: 0, showTrailingEllipsis: false });
+  }, [candidates]);
+
+  useEffect(() => {
+    candidateMeasureRefs.current = candidateMeasureRefs.current.slice(
+      0,
+      candidates.length
+    );
+  }, [candidates.length]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const measureRoot = measureRef.current;
+    if (!container || !measureRoot) return;
+
+    const pickBestCandidate = () => {
+      const availableWidth = container.clientWidth;
+      if (availableWidth <= 0 || candidates.length === 0) return;
+
+      let bestIndex = candidates.length - 1;
+      let hasMeasurement = false;
+
+      for (let index = 0; index < candidates.length; index += 1) {
+        const candidateMeasureNode = candidateMeasureRefs.current[index];
+        if (!candidateMeasureNode) continue;
+        hasMeasurement = true;
+
+        if (candidateMeasureNode.scrollWidth <= availableWidth) {
+          bestIndex = index;
+          break;
+        }
+      }
+
+      if (!hasMeasurement) return;
+
+      const nextCandidate = candidates[bestIndex];
+      if (!nextCandidate) return;
+
+      setActiveCandidate((previousCandidate) =>
+        areSameLastOverflowCandidate(previousCandidate, nextCandidate)
+          ? previousCandidate
+          : nextCandidate
+      );
+    };
+
+    pickBestCandidate();
+    const observer = new ResizeObserver(() => pickBestCandidate());
+    observer.observe(container);
+    observer.observe(measureRoot);
+    return () => observer.disconnect();
+  }, [candidates]);
+
+  return (
+    <div ref={containerRef} className={cn("relative w-full", className)}>
+      <Breadcrumb>
+        <BreadcrumbList
+          className="flex-nowrap whitespace-nowrap overflow-hidden w-full"
+          itemScope
+          itemType="http://schema.org/BreadcrumbList"
+        >
+          {renderLastOverflowNodes(items, activeCandidate, {
+            keyPrefix: "visible",
+            includeSchemaData: true,
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div
+        ref={measureRef}
+        className="pointer-events-none absolute top-0 left-0 -z-10 h-0 overflow-visible invisible"
+        aria-hidden="true"
+      >
+        {candidates.map((candidate, index) => (
+          <div
+            key={`measure-candidate-${index}`}
+            ref={(node) => {
+              candidateMeasureRefs.current[index] = node;
+            }}
+            className="w-max"
+          >
+            <Breadcrumb>
+              <BreadcrumbList className="flex-nowrap whitespace-nowrap overflow-visible w-max">
+                {renderLastOverflowNodes(items, candidate, {
+                  keyPrefix: `measure-${index}`,
+                  includeSchemaData: false,
+                })}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ResponsiveBreadcrumb({
   items,
   className,
   compactMobileMode = "current",
 }: ResponsiveBreadcrumbProps) {
+  if (compactMobileMode === "last") {
+    return <OverflowLastBreadcrumb items={items} className={className} />;
+  }
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
   const isCompactRef = useRef(isCompact);
@@ -81,14 +328,10 @@ function ResponsiveBreadcrumb({
 
   const total = items.length;
   const showAllOnMobile = total <= 3;
-  const hasHiddenMobileItems = compactMobileMode === "last" ? false : total > 3;
+  const hasHiddenMobileItems = total > 3;
 
   const isVisibleOnMobile = (index: number) =>
-    compactMobileMode === "last"
-      ? total <= 1
-        ? index === 0
-        : index >= total - 2
-      : showAllOnMobile || index === 0 || index >= total - 2;
+    showAllOnMobile || index === 0 || index >= total - 2;
 
   const isHiddenWhenCompact = (index: number) =>
     total > 2 && index < total - 2;
@@ -98,8 +341,6 @@ function ResponsiveBreadcrumb({
       ? total <= 1
         ? index === 0
         : index === total - 2
-      : compactMobileMode === "last"
-        ? index === total - 1
       : total <= 1 || index >= total - 2;
 
   const itemClassName = (index: number) =>
@@ -139,24 +380,6 @@ function ResponsiveBreadcrumb({
     const isLast = index === total - 1;
     const itemKey = `item-${index}-${item.id}-${item.href}`;
     const separatorKey = `sep-${index}-${item.id}-${item.href}`;
-
-    if (
-      compactMobileMode === "last" &&
-      index === total - 1 &&
-      total > 1
-    ) {
-      nodes.push(
-        <BreadcrumbItem key="compact-last-ellipsis" className={compactMobileEllipsisClass}>
-          <BreadcrumbEllipsis />
-        </BreadcrumbItem>
-      );
-      nodes.push(
-        <BreadcrumbSeparator
-          key="compact-last-ellipsis-separator"
-          className={compactMobileEllipsisClass}
-        />
-      );
-    }
 
     if (
       compactMobileMode === "current" &&

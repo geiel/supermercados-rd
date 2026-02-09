@@ -103,7 +103,7 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
         <div className="container mx-auto px-2 pb-2 space-y-4">
             <GroupBreadcrumbs
                 paths={breadcrumbs.length > 0 ? [breadcrumbs] : []}
-                compactMobileMode="parent"
+                compactMobileMode="last"
             />
             <div className="flex gap-2 items-center justify-between">
                 <div className="flex items-baseline gap-2">
