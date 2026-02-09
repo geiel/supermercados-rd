@@ -651,8 +651,6 @@ async function getHighRankingRelatedProductsByCategory(
   "use cache";
   cacheLife("product");
 
-  const similarityScore =
-    sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${name})))`;
   const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
 
   const productIdsRows = await db
@@ -662,7 +660,7 @@ async function getHighRankingRelatedProductsByCategory(
       and(
         or(isNull(products.deleted), eq(products.deleted, false)),
         ne(products.id, currentProductId),
-        sql`${similarityScore} >= ${HIGH_SIMILARITY_SIM_SCORE_THRESHOLD}`,
+        sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${name}))) >= ${HIGH_SIMILARITY_SIM_SCORE_THRESHOLD}`,
         sql`EXISTS (
           SELECT 1
           FROM ${productsGroups}
@@ -683,7 +681,7 @@ async function getHighRankingRelatedProductsByCategory(
         )`
       )
     )
-    .orderBy(desc(similarityScore), desc(rankOrder), desc(products.id))
+    .orderBy(desc(rankOrder), desc(products.id))
     .limit(limit);
 
   const productIds = productIdsRows.map((row) => row.id);
@@ -724,8 +722,6 @@ async function getRelatedProductsBySimilarityNoGroup(
   "use cache";
   cacheLife("product");
 
-  const similarityScore =
-    sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${name})))`;
   const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
 
   const productIdsRows = await db
@@ -735,7 +731,7 @@ async function getRelatedProductsBySimilarityNoGroup(
       and(
         or(isNull(products.deleted), eq(products.deleted, false)),
         ne(products.id, currentProductId),
-        sql`${similarityScore} > ${NO_GROUP_SIMILARITY_MIN_THRESHOLD}`,
+        sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${name}))) > ${NO_GROUP_SIMILARITY_MIN_THRESHOLD}`,
         sql`EXISTS (
           SELECT 1
           FROM ${productsShopsPrices}
@@ -748,7 +744,7 @@ async function getRelatedProductsBySimilarityNoGroup(
         )`
       )
     )
-    .orderBy(desc(similarityScore), desc(rankOrder), desc(products.id))
+    .orderBy(desc(rankOrder), desc(products.id))
     .limit(limit);
 
   const productIds = productIdsRows.map((row) => row.id);
