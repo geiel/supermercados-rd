@@ -24,8 +24,6 @@ export async function getDeals({
   sort = DEALS_DEFAULT_SORT,
   filters = {},
 }: GetDealsOptions): Promise<DealsResponse> {
-  "use cache";
-
   const { shopIds, groupIds, minPrice, maxPrice, minDrop } = filters;
   const filterConditions: SQL<unknown>[] = [];
 
