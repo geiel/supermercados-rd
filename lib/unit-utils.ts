@@ -28,6 +28,100 @@ export const OUNCES_IN_POUND = 16;
 export const CENTIMETERS_IN_METER = 100;
 export const CENTIMETERS_IN_FOOT = 30.48;
 export const CENTIMETERS_IN_YARD = 91.44;
+export const MILLIMETERS_IN_CENTIMETER = 10;
+export const GRAMS_IN_OUNCE = 28.35;
+export const GRAMS_IN_KILOGRAM = 1000;
+
+const SEARCH_UNIT_ALIASES: Record<string, string> = {
+  lb: "LB",
+  lbs: "LB",
+  libra: "LB",
+  libras: "LB",
+  pound: "LB",
+  pounds: "LB",
+  oz: "OZ",
+  onza: "OZ",
+  onzas: "OZ",
+  g: "GR",
+  gr: "GR",
+  grs: "GR",
+  gramo: "GR",
+  gramos: "GR",
+  gram: "GR",
+  grams: "GR",
+  kg: "KG",
+  kgs: "KG",
+  kilo: "KG",
+  kilos: "KG",
+  kilogramo: "KG",
+  kilogramos: "KG",
+  kilogram: "KG",
+  kilograms: "KG",
+  ml: "ML",
+  mls: "ML",
+  mililitro: "ML",
+  mililitros: "ML",
+  milliliter: "ML",
+  milliliters: "ML",
+  cc: "CC",
+  cl: "CL",
+  cls: "CL",
+  centilitro: "CL",
+  centilitros: "CL",
+  lt: "LT",
+  lts: "LT",
+  ltr: "LT",
+  ltrs: "LT",
+  litro: "LT",
+  litros: "LT",
+  liter: "LT",
+  liters: "LT",
+  l: "LT",
+  gl: "GL",
+  gal: "GL",
+  gals: "GL",
+  galon: "GL",
+  galones: "GL",
+  gallon: "GL",
+  gallons: "GL",
+  und: "UND",
+  uds: "UND",
+  ud: "UND",
+  unidad: "UND",
+  unidades: "UND",
+  unit: "UND",
+  units: "UND",
+  m: "M",
+  metro: "M",
+  metros: "M",
+  ft: "FT",
+  pie: "FT",
+  pies: "FT",
+  yd: "YD",
+  yarda: "YD",
+  yardas: "YD",
+};
+
+const SEARCH_UNITS_SORTED = Object.keys(SEARCH_UNIT_ALIASES).sort(
+  (a, b) => b.length - a.length
+);
+const SEARCH_UNITS_PATTERN = SEARCH_UNITS_SORTED.map((unit) =>
+  unit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+).join("|");
+const SEARCH_UNIT_WITH_AMOUNT_REGEX = new RegExp(
+  `(?:^|\\s)(\\d+(?:[\\.,]\\d+)?)\\s*(${SEARCH_UNITS_PATTERN})(?=\\b)`,
+  "i"
+);
+const SEARCH_UNIT_ONLY_REGEX = new RegExp(
+  `(?:^|\\s)(${SEARCH_UNITS_PATTERN})(?=\\b)`,
+  "i"
+);
+
+export type SearchUnitTarget = {
+  parsed: ParsedUnit;
+  amountsByUnit: Record<string, number>;
+  cleanedSearchText: string;
+};
 
 export function convertToBase(amount: number, unit: string, measurement: Measurement): number {
   switch (measurement) {
@@ -152,6 +246,107 @@ export function parseUnitWithGroupConversion(
   }
 
   return parsed;
+}
+
+function normalizeSearchUnitInput(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9.,\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function addSearchTargetAmount(
+  target: Record<string, number>,
+  unit: string,
+  amount: number
+) {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return;
+  }
+
+  const existing = target[unit];
+  if (existing !== undefined && existing > 0) {
+    // Keep the first amount for determinism.
+    return;
+  }
+
+  target[unit] = amount;
+}
+
+function getEquivalentAmountsByUnit(parsed: ParsedUnit): Record<string, number> {
+  const amountsByUnit: Record<string, number> = {};
+
+  if (parsed.measurement === "count") {
+    addSearchTargetAmount(amountsByUnit, "UND", parsed.base);
+    return amountsByUnit;
+  }
+
+  if (parsed.measurement === "length") {
+    addSearchTargetAmount(amountsByUnit, "CM", parsed.base);
+    addSearchTargetAmount(amountsByUnit, "MM", parsed.base * MILLIMETERS_IN_CENTIMETER);
+    addSearchTargetAmount(amountsByUnit, "M", parsed.base / CENTIMETERS_IN_METER);
+    addSearchTargetAmount(amountsByUnit, "FT", parsed.base / CENTIMETERS_IN_FOOT);
+    addSearchTargetAmount(amountsByUnit, "YD", parsed.base / CENTIMETERS_IN_YARD);
+    return amountsByUnit;
+  }
+
+  const bridgeOunces =
+    parsed.measurement === "weight"
+      ? parsed.base / GRAMS_IN_OUNCE
+      : parsed.base / FLUID_OUNCE_IN_ML;
+
+  // Weight equivalents.
+  const grams = bridgeOunces * GRAMS_IN_OUNCE;
+  addSearchTargetAmount(amountsByUnit, "GR", grams);
+  addSearchTargetAmount(amountsByUnit, "KG", grams / GRAMS_IN_KILOGRAM);
+  addSearchTargetAmount(amountsByUnit, "OZ", bridgeOunces);
+  addSearchTargetAmount(amountsByUnit, "LB", bridgeOunces / OUNCES_IN_POUND);
+
+  // Volume equivalents.
+  const milliliters = bridgeOunces * FLUID_OUNCE_IN_ML;
+  addSearchTargetAmount(amountsByUnit, "ML", milliliters);
+  addSearchTargetAmount(amountsByUnit, "CC", milliliters);
+  addSearchTargetAmount(amountsByUnit, "CL", milliliters / 10);
+  addSearchTargetAmount(amountsByUnit, "LT", milliliters / 1000);
+  addSearchTargetAmount(amountsByUnit, "GL", milliliters / 3785.411784);
+
+  return amountsByUnit;
+}
+
+export function extractSearchUnitTarget(valueRaw: string): SearchUnitTarget | null {
+  const normalized = normalizeSearchUnitInput(valueRaw);
+  if (!normalized) return null;
+
+  const unitWithAmountMatch = normalized.match(SEARCH_UNIT_WITH_AMOUNT_REGEX);
+  const unitOnlyMatch = unitWithAmountMatch
+    ? null
+    : normalized.match(SEARCH_UNIT_ONLY_REGEX);
+
+  const rawUnit = unitWithAmountMatch?.[2] ?? unitOnlyMatch?.[1];
+  const normalizedUnit = rawUnit ? SEARCH_UNIT_ALIASES[rawUnit.toLowerCase()] : undefined;
+  if (!normalizedUnit) return null;
+
+  const rawAmount = unitWithAmountMatch?.[1] ?? "1";
+  const amount = Number(rawAmount.replace(",", "."));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const parsed = parseUnit(`${formatAmount(amount)} ${normalizedUnit}`);
+  if (!parsed) return null;
+
+  const cleanedSearchText = normalized
+    .replace(SEARCH_UNIT_WITH_AMOUNT_REGEX, " ")
+    .replace(SEARCH_UNIT_ONLY_REGEX, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    parsed,
+    amountsByUnit: getEquivalentAmountsByUnit(parsed),
+    cleanedSearchText,
+  };
 }
 
 function roundToStep(value: number, step: number) {

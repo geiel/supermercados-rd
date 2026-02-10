@@ -2,7 +2,8 @@ import { db } from "@/db";
 import { products, productsShopsPrices } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { baseV2 } from "./synonyms-v2";
-import { expandUnitFilter } from "./unit-utils";
+import { expandUnitFilter, extractSearchUnitTarget } from "./unit-utils";
+import { sanitizeForTsQuery } from "./utils";
 
 type SynonymFull = {
     synonyms: string[];
@@ -10,6 +11,12 @@ type SynonymFull = {
     id: string | undefined;
     complex: string[] | undefined;
 }
+
+const SEARCH_UNIT_EXACT_TOLERANCE = 0.05;
+const SEARCH_UNIT_MIN_TARGET_AMOUNT = 0.000001;
+const SEARCH_UNIT_TEXT_RANK_FACTOR = 0.6;
+const SEARCH_UNIT_TEXT_RANK_MIN = 0.015;
+const SEARCH_UNIT_TEXT_SIM_MIN = 0.2;
 
 export function removeAccents(str: string) {
   return str
@@ -28,8 +35,83 @@ export async function searchProducts(
   onlySupermarketProducts = false,
   unitsFilter: string[] = []
 ) {
-  
-  const tsQueryV2 = buildTsQueryV2(removeAccents(value));
+  const searchUnitTarget = extractSearchUnitTarget(value);
+  const searchTextForMatching =
+    searchUnitTarget?.cleanedSearchText.length
+      ? searchUnitTarget.cleanedSearchText
+      : value;
+  const normalizedSearchValue = sanitizeForTsQuery(searchTextForMatching);
+  if (!normalizedSearchValue) {
+    return { products: [], total: 0 };
+  }
+
+  const tsQueryV2 = buildTsQueryV2(removeAccents(normalizedSearchValue));
+  const searchUnitAmountEntries = searchUnitTarget
+    ? Object.entries(searchUnitTarget.amountsByUnit).filter(
+        ([, amount]) => Number.isFinite(amount) && amount > 0
+      )
+    : [];
+  const hasSearchUnitTarget = searchUnitAmountEntries.length > 0;
+  const searchUnitParsedAmount = searchUnitTarget
+    ? sql`${searchUnitTarget.parsed.amount}::numeric`
+    : sql`NULL::numeric`;
+  const searchUnitExactTolerance = sql`${SEARCH_UNIT_EXACT_TOLERANCE}::numeric`;
+  const searchUnitMinTargetAmount = sql`${SEARCH_UNIT_MIN_TARGET_AMOUNT}::numeric`;
+
+  const productBaseUnit = sql`COALESCE(fts."baseUnit", fuzzy."baseUnit")`;
+  const productBaseAmount = sql`NULLIF(COALESCE(fts."baseUnitAmount", fuzzy."baseUnitAmount")::numeric, 0)`;
+  const searchTargetAmountForRow = hasSearchUnitTarget
+    ? sql`CASE ${sql.join(
+        searchUnitAmountEntries.map(([unit, amount]) => {
+          return sql`WHEN ${productBaseUnit} = ${unit} THEN ${amount}::numeric`;
+        }),
+        sql` `
+      )} ELSE NULL::numeric END`
+    : sql`NULL::numeric`;
+  const searchUnitExactMatch = hasSearchUnitTarget && searchUnitTarget
+    ? sql`CASE
+        WHEN ${productBaseUnit} = ${searchUnitTarget.parsed.normalizedUnit}
+          AND ${productBaseAmount} IS NOT NULL
+          AND ABS(${productBaseAmount} - ${searchUnitParsedAmount}) <= ${searchUnitExactTolerance}
+        THEN 1
+        ELSE 0
+      END`
+    : sql`0`;
+  const searchUnitSameUnit = hasSearchUnitTarget && searchUnitTarget
+    ? sql`CASE
+        WHEN ${productBaseUnit} = ${searchUnitTarget.parsed.normalizedUnit} THEN 1
+        ELSE 0
+      END`
+    : sql`0`;
+  const searchUnitHasEquivalent = hasSearchUnitTarget
+    ? sql`CASE
+        WHEN ${searchTargetAmountForRow} IS NOT NULL AND ${productBaseAmount} IS NOT NULL THEN 1
+        ELSE 0
+      END`
+    : sql`0`;
+  const searchUnitDistance = hasSearchUnitTarget
+    ? sql`CASE
+        WHEN ${searchTargetAmountForRow} IS NOT NULL
+          AND ${productBaseAmount} IS NOT NULL
+          AND ${searchTargetAmountForRow} > ${searchUnitMinTargetAmount}
+        THEN ABS(LN(${productBaseAmount} / ${searchTargetAmountForRow}))
+        ELSE NULL
+      END`
+    : sql`NULL`;
+  const searchUnitTextGate = hasSearchUnitTarget
+    ? sql`CASE
+        WHEN (
+          CASE WHEN unaccent(lower(name)) LIKE unaccent(lower(${normalizedSearchValue}))||'%' THEN 1 ELSE 0 END
+        ) = 1 THEN 1
+        WHEN COALESCE(ts_rank, 0) >= GREATEST(
+          MAX(COALESCE(ts_rank, 0)) OVER () * ${SEARCH_UNIT_TEXT_RANK_FACTOR},
+          ${SEARCH_UNIT_TEXT_RANK_MIN}
+        ) THEN 1
+        WHEN COALESCE(sim, 0) >= ${SEARCH_UNIT_TEXT_SIM_MIN} THEN 1
+        ELSE 0
+      END`
+    : sql`1`;
+
   const normalizedUnitsFilter = Array.from(
     new Set(
       unitsFilter.flatMap((unit) => {
@@ -52,8 +134,6 @@ export async function searchProducts(
     ? sql`ARRAY[${sql.join(normalizedUnitsFilter.map((u) => sql`${u}`), sql`, `)}]`
     : null;
 
-  console.log(tsQueryV2);
-
   const query = sql`
           WITH
             fts AS (
@@ -64,6 +144,8 @@ export async function searchProducts(
                 rank,
                 "brandId",
                 unit,
+                "baseUnit",
+                "baseUnitAmount",
                 relevance,
                 ts_rank(
                   name_unaccent_es || name_unaccent_en,
@@ -84,9 +166,11 @@ export async function searchProducts(
                 rank,
                 "brandId",
                 unit,
-                similarity(unaccent(lower(name)), unaccent(lower(${value}))) AS sim
+                "baseUnit",
+                "baseUnitAmount",
+                similarity(unaccent(lower(name)), unaccent(lower(${normalizedSearchValue}))) AS sim
                 FROM ${products}
-                WHERE unaccent(lower(name)) % unaccent(lower(${value}))
+                WHERE unaccent(lower(name)) % unaccent(lower(${normalizedSearchValue}))
                 ${hasUnitFilter && unitsArray ? sql`AND unit = ANY(${unitsArray})` : sql``}
             )
         SELECT
@@ -96,7 +180,12 @@ export async function searchProducts(
             COALESCE(fts.rank, fuzzy.rank)            AS product_rank,
             COALESCE(fts.relevance, 0)  AS product_relevance,
             CASE WHEN ts_rank IS NOT NULL THEN 1 ELSE 0 END AS is_exact,
-            CASE WHEN unaccent(lower(name)) LIKE unaccent(lower(${value}))||'%' THEN 1 ELSE 0 END AS is_prefix,
+            CASE WHEN unaccent(lower(name)) LIKE unaccent(lower(${normalizedSearchValue}))||'%' THEN 1 ELSE 0 END AS is_prefix,
+            ${searchUnitTextGate} AS search_unit_text_gate,
+            ${searchUnitExactMatch} AS search_unit_exact_match,
+            ${searchUnitSameUnit} AS search_unit_same_unit,
+            ${searchUnitHasEquivalent} AS search_unit_has_equivalent,
+            ${searchUnitDistance} AS search_unit_distance,
             COUNT(*) OVER() AS total_count
         FROM fts
         FULL JOIN fuzzy USING (id, name)
@@ -142,6 +231,17 @@ export async function searchProducts(
       is_exact      DESC,
   `)
 
+  if (hasSearchUnitTarget) {
+    query.append(sql`
+      search_unit_text_gate DESC,
+      is_prefix DESC,
+      search_unit_exact_match DESC,
+      search_unit_has_equivalent DESC,
+      search_unit_distance ASC NULLS LAST,
+      search_unit_same_unit DESC,
+    `);
+  }
+
   if (hasUnitFilter) {
     const unitsOrderArray = sql`ARRAY[${sql.join(unitsFilter.map((u) => sql`${u}`), sql`, `)}]`;
     query.append(sql`
@@ -149,7 +249,9 @@ export async function searchProducts(
     `);
   }
 
-  query.append(sql` is_prefix DESC, `);
+  if (!hasSearchUnitTarget) {
+    query.append(sql` is_prefix DESC, `);
+  }
   
   if (orderByRanking) {
     query.append(sql` 

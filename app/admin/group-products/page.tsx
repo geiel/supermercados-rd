@@ -7,7 +7,7 @@ import {
 } from "@/db/schema";
 import Image from "next/image";
 import Link from "next/link";
-import { getShopsIds, sanitizeForTsQuery, toSlug } from "@/lib/utils";
+import { getShopsIds, toSlug } from "@/lib/utils";
 import { BottomPagination } from "@/components/bottom-pagination";
 import { ProductImage } from "@/components/product-image";
 import { searchProducts } from "@/lib/search-query";
@@ -486,7 +486,7 @@ async function GroupProductsPage({ searchParams }: Props) {
     });
   } else {
     productsAndTotal = await searchProducts(
-      sanitizeForTsQuery(trimmedValue),
+      trimmedValue,
       15,
       getOffset(page),
       true,
