@@ -9,7 +9,6 @@ import { plazaLama } from "@/lib/scrappers/plaza-lama";
 import { pricesmart } from "@/lib/scrappers/pricesmart";
 import { bravo } from "@/lib/scrappers/bravo";
 import type { FetchWithRetryConfig } from "@/lib/scrappers/http-client";
-import { sanitizeForTsQuery } from "@/lib/utils";
 import { getExploreParentGroups } from "@/lib/explore-groups";
 import {
   EXPLORE_PREFETCH_COUNT,
@@ -201,7 +200,6 @@ export async function getExploreProducts({
   unitFilters = [],
 }: ExploreProductsQuery): Promise<ExploreProductsResponse> {
   const rawSearchValue = value.trim();
-  const sanitizedSearchValue = sanitizeForTsQuery(rawSearchValue);
 
   const prefetchedProducts = await fetchProductsByIds(prefetchIds);
   const prefetchNeeded = Math.min(displayCount, prefetchedProducts.length);
@@ -209,7 +207,7 @@ export async function getExploreProducts({
   const fetchCount = remainingNeeded + prefetchCount;
 
   const productsAndTotal = await searchProducts(
-    sanitizedSearchValue,
+    rawSearchValue,
     fetchCount,
     offset,
     true,
