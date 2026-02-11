@@ -280,16 +280,53 @@ export async function searchProducts(
   `)
 
   const rows = await db.execute<{ id: number; total_count: string }>(query);
+  const shouldFilterShopCurrentPrices =
+    (shopIds?.length ?? 0) > 0 || !includeHiddenProducts;
+
   const productsResponse = await db.query.products.findMany({
+    columns: {
+      id: true,
+      categoryId: true,
+      name: true,
+      unit: true,
+      image: true,
+    },
     where: (products, { inArray }) =>
       inArray(
         products.id,
         rows.map((r) => r.id)
       ),
     with: {
-      shopCurrentPrices: true,
-      brand: true,
-      possibleBrand: true,
+      shopCurrentPrices: shouldFilterShopCurrentPrices
+        ? {
+            where: (shopPrice, { and, eq, inArray, isNull, or }) => {
+              const visibleCondition = or(
+                isNull(shopPrice.hidden),
+                eq(shopPrice.hidden, false)
+              );
+
+              if (shopIds && shopIds.length > 0) {
+                return includeHiddenProducts
+                  ? inArray(shopPrice.shopId, shopIds)
+                  : and(inArray(shopPrice.shopId, shopIds), visibleCondition);
+              }
+
+              return visibleCondition;
+            },
+          }
+        : true,
+      brand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      possibleBrand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
       productDeal: {
         columns: {
           dropPercentage: true,

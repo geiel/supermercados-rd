@@ -268,7 +268,6 @@ async function getShop(shopId: number) {
     columns: {
       id: true,
       name: true,
-      logo: true,
     },
     where: (shops, { eq }) => eq(shops.id, shopId),
   });

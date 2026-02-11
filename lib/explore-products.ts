@@ -1,7 +1,7 @@
 import "server-only";
 
 import { db } from "@/db";
-import type { productsShopsPrices } from "@/db/schema";
+import type { productsShopsPrices as ProductShopPrice } from "@/db/schema";
 import { searchProducts } from "@/lib/search-query";
 import { sirena } from "@/lib/scrappers/sirena";
 import { nacional } from "@/lib/scrappers/nacional";
@@ -30,7 +30,7 @@ type ProductWithRelations = {
   image: string | null;
   brand: { id: number; name: string };
   possibleBrand: { id: number; name: string } | null;
-  shopCurrentPrices: productsShopsPrices[];
+  shopCurrentPrices: ProductShopPrice[];
   productDeal: { dropPercentage: string | number } | null;
 };
 
@@ -46,7 +46,7 @@ type ExploreProductsQuery = {
   unitFilters?: string[];
 };
 
-async function updateShopPrices(shopPrices: productsShopsPrices[]) {
+async function updateShopPrices(shopPrices: ProductShopPrice[]) {
   await Promise.all(
     shopPrices.map(async (shopPrice) => {
       try {
@@ -141,22 +141,63 @@ async function fetchLowestPrices(
   return new Map(prices.map((price) => [price.productId, price.currentPrice]));
 }
 
-async function fetchProductsByIds(ids: number[]) {
+async function fetchProductsByIds(
+  ids: number[],
+  shopIds: number[],
+  includeHiddenProducts: boolean
+) {
   if (ids.length === 0) {
     return [];
   }
 
+  const shouldFilterShopCurrentPrices =
+    shopIds.length > 0 || !includeHiddenProducts;
+
   const products = await db.query.products.findMany({
+    columns: {
+      id: true,
+      name: true,
+      unit: true,
+      categoryId: true,
+      image: true,
+    },
     where: (products, { inArray }) => inArray(products.id, ids),
     with: {
-      shopCurrentPrices: true,
-      brand: true,
-      possibleBrand: true,
+      shopCurrentPrices: shouldFilterShopCurrentPrices
+        ? {
+            where: (shopPrice, { and, eq, inArray, isNull, or }) => {
+              const visibleCondition = or(
+                isNull(shopPrice.hidden),
+                eq(shopPrice.hidden, false)
+              );
+
+              if (shopIds.length > 0) {
+                return includeHiddenProducts
+                  ? inArray(shopPrice.shopId, shopIds)
+                  : and(inArray(shopPrice.shopId, shopIds), visibleCondition);
+              }
+
+              return visibleCondition;
+            },
+          }
+        : true,
+      brand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      possibleBrand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
       productDeal: {
         columns: {
-          dropPercentage: true
-        }
-      }
+          dropPercentage: true,
+        },
+      },
     },
   });
 
@@ -201,7 +242,11 @@ export async function getExploreProducts({
 }: ExploreProductsQuery): Promise<ExploreProductsResponse> {
   const rawSearchValue = value.trim();
 
-  const prefetchedProducts = await fetchProductsByIds(prefetchIds);
+  const prefetchedProducts = await fetchProductsByIds(
+    prefetchIds,
+    shopIds,
+    includeHiddenProducts
+  );
   const prefetchNeeded = Math.min(displayCount, prefetchedProducts.length);
   const remainingNeeded = displayCount - prefetchNeeded;
   const fetchCount = remainingNeeded + prefetchCount;
