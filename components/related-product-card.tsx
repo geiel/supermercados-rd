@@ -1,11 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import {
-  productsBrandsSelect,
-  productsSelect,
-  productsShopsPrices,
-} from "@/db/schema";
 import { ProductImage } from "@/components/product-image";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { Unit } from "@/components/unit";
@@ -14,17 +9,35 @@ import { AddToListButton } from "@/components/add-to-list-button";
 import { toSlug } from "@/lib/utils";
 import { OfferBadge } from "@/components/offer-badge";
 
-type RelatedProductCardProps = {
-  product: productsSelect & {
-    brand: productsBrandsSelect;
-    possibleBrand: productsBrandsSelect | null;
-  } & {
-    shopCurrentPrices: productsShopsPrices[];
-    productDeal: { dropPercentage: string | number } | null;
+export type RelatedProductCardProduct = {
+  id: number;
+  name: string;
+  image: string | null;
+  unit: string;
+  categoryId: number;
+  brand: {
+    id: number;
+    name: string;
   };
+  possibleBrand: {
+    id: number;
+    name: string;
+  } | null;
+  shopCurrentPrices: Array<{
+    currentPrice: string | null;
+  }>;
+  productDeal: { dropPercentage: string | number } | null;
+};
+
+type RelatedProductCardProps = {
+  product: RelatedProductCardProduct;
 };
 
 export function RelatedProductCard({ product }: RelatedProductCardProps) {
+  if (product.shopCurrentPrices.length === 0) {
+    return null;
+  }
+
   const cheapest = product.shopCurrentPrices.reduce((minSoFar, current) =>
     Number(current.currentPrice) < Number(minSoFar.currentPrice)
       ? current

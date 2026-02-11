@@ -1,20 +1,13 @@
 import {
-  productsBrandsSelect,
-  productsSelect,
-  productsShopsPrices,
-} from "@/db/schema";
-import { RelatedProductCard } from "./related-product-card";
+  RelatedProductCard,
+  type RelatedProductCardProduct,
+} from "./related-product-card";
 import ScrollPeek from "./ui/scroll-peek";
 
 export function RelatedProducts({
   relatedProducts,
 }: {
-  relatedProducts: Array<
-    productsSelect & { brand: productsBrandsSelect, possibleBrand: productsBrandsSelect | null } & {
-      shopCurrentPrices: productsShopsPrices[];
-      productDeal: { dropPercentage: string | number } | null;
-    }
-  >;
+  relatedProducts: RelatedProductCardProduct[];
 }) {
   return (
     <ScrollPeek itemWidth="150px">

@@ -81,10 +81,8 @@ export default async function Page({ params }: Props) {
     return <div>Producto no encontrado.</div>;
   }
 
-  const groups = product.groupProduct.map((gp) => gp.group);
-  const groupBreadcrumbs = await getGroupBreadcrumbPaths(
-    groups.map((group) => group.id)
-  );
+  const groupIds = product.groupProduct.map((groupProduct) => groupProduct.groupId);
+  const groupBreadcrumbs = await getGroupBreadcrumbPaths(groupIds);
   const relatedProductsGroupLink = await getRelatedProductsGroupLink(
     groupBreadcrumbs
   );
@@ -122,6 +120,7 @@ export default async function Page({ params }: Props) {
     );
   }
   const shops = await shopsPromise;
+  const shopLogoById = new Map(shops.map((shop) => [shop.id, shop.logo]));
 
   const badgeType = getPriceBadgeType(product);
 
@@ -228,35 +227,42 @@ export default async function Page({ params }: Props) {
           <div className="font-bold text-2xl">Donde comprar</div>
           {product.shopCurrentPrices
             .filter((shopPrice) => shopPrice.currentPrice !== null)
-            .map((shopPrice, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-4 items-center py-4"
-              hidden={Boolean(shopPrice.hidden)}
-            >
-              <Image
-                src={`/supermarket-logo/${shopPrice.shop.logo}`}
-                width={0}
-                height={0}
-                className="w-[50px] h-auto"
-                alt="Supermarket logo"
-                unoptimized
-              />
-              <ShopPrice
-                shopPrice={shopPrice}
-                unit={product.unit}
-                categoryId={product.categoryId}
-                productName={product.name}
-              />
-              <ShopPriceRowActions
-                shopId={shopPrice.shopId}
-                productId={product.id}
-                url={shopPrice.url}
-                api={shopPrice.api}
-                shops={shops}
-              />
-            </div>
-          ))}
+            .map((shopPrice, i) => {
+              const logo = shopLogoById.get(shopPrice.shopId);
+              if (!logo) {
+                return null;
+              }
+
+              return (
+                <div
+                  key={i}
+                  className="grid grid-cols-4 items-center py-4"
+                  hidden={Boolean(shopPrice.hidden)}
+                >
+                  <Image
+                    src={`/supermarket-logo/${logo}`}
+                    width={0}
+                    height={0}
+                    className="w-[50px] h-auto"
+                    alt="Supermarket logo"
+                    unoptimized
+                  />
+                  <ShopPrice
+                    shopPrice={shopPrice}
+                    unit={product.unit}
+                    categoryId={product.categoryId}
+                    productName={product.name}
+                  />
+                  <ShopPriceRowActions
+                    shopId={shopPrice.shopId}
+                    productId={product.id}
+                    url={shopPrice.url}
+                    api={shopPrice.api}
+                    shops={shops}
+                  />
+                </div>
+              );
+            })}
 
           <div className="mt-4 flex items-center space-x-2">
             <MessageCircleWarning size={20} />
@@ -548,23 +554,47 @@ async function getProductData(id: number) {
   cacheLife("product");
 
   return await db.query.products.findFirst({
+    columns: {
+      id: true,
+      name: true,
+      image: true,
+      unit: true,
+      categoryId: true,
+    },
     where: (products, { eq }) => eq(products.id, id),
     with: {
       shopCurrentPrices: {
+        columns: {
+          productId: true,
+          shopId: true,
+          url: true,
+          api: true,
+          currentPrice: true,
+          regularPrice: true,
+          updateAt: true,
+          hidden: true,
+        },
         where: (scp, { isNull, eq, or }) =>
           or(isNull(scp.hidden), eq(scp.hidden, false)),
-        with: {
-          shop: true,
-        },
         orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
       },
-      brand: true,
-      possibleBrand: true,
+      brand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      possibleBrand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
       pricesHistory: true,
       visibilityHistory: true,
       groupProduct: {
-        with: {
-          group: true,
+        columns: {
+          groupId: true,
         },
       },
     },
@@ -595,7 +625,13 @@ async function getProductMetadata(id: number) {
 async function getShops() {
   "use cache";
   cacheLife("days");
-  return await db.query.shops.findMany();
+  return await db.query.shops.findMany({
+    columns: {
+      id: true,
+      name: true,
+      logo: true,
+    },
+  });
 }
 
 function getRelatedProductsCategoryLink(
@@ -642,6 +678,60 @@ function getPrimaryRelatedGroup(
   return primaryGroupChain[primaryGroupChain.length - 1];
 }
 
+async function getRelatedProductsByIds(productIds: number[]) {
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  const productsRows = await db.query.products.findMany({
+    columns: {
+      id: true,
+      name: true,
+      image: true,
+      unit: true,
+      categoryId: true,
+    },
+    where: (products, { inArray }) => inArray(products.id, productIds),
+    with: {
+      brand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      possibleBrand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      shopCurrentPrices: {
+        columns: {
+          currentPrice: true,
+        },
+        where: (scp, { and, isNotNull, isNull, eq, or }) =>
+          and(
+            isNotNull(scp.currentPrice),
+            or(isNull(scp.hidden), eq(scp.hidden, false))
+          ),
+        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+      },
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const productById = new Map(productsRows.map((item) => [item.id, item]));
+  return productIds
+    .map((id) => productById.get(id))
+    .filter(
+      (product): product is (typeof productsRows)[number] => product !== undefined
+    );
+}
+
 async function getHighRankingRelatedProductsByCategory(
   name: string,
   currentProductId: number,
@@ -685,33 +775,7 @@ async function getHighRankingRelatedProductsByCategory(
     .limit(limit);
 
   const productIds = productIdsRows.map((row) => row.id);
-  if (productIds.length === 0) {
-    return [];
-  }
-
-  const productsRows = await db.query.products.findMany({
-    where: (products, { inArray }) => inArray(products.id, productIds),
-    with: {
-      brand: true,
-      possibleBrand: true,
-      shopCurrentPrices: {
-        where: (scp, { isNull, eq, or }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-      },
-      productDeal: {
-        columns: {
-          dropPercentage: true,
-        },
-      },
-    },
-  });
-
-  const productById = new Map(productsRows.map((item) => [item.id, item]));
-  return productIds
-    .map((id) => productById.get(id))
-    .filter(
-      (product): product is (typeof productsRows)[number] => product !== undefined
-    );
+  return getRelatedProductsByIds(productIds);
 }
 
 async function getRelatedProductsBySimilarityNoGroup(
@@ -748,33 +812,7 @@ async function getRelatedProductsBySimilarityNoGroup(
     .limit(limit);
 
   const productIds = productIdsRows.map((row) => row.id);
-  if (productIds.length === 0) {
-    return [];
-  }
-
-  const productsRows = await db.query.products.findMany({
-    where: (products, { inArray }) => inArray(products.id, productIds),
-    with: {
-      brand: true,
-      possibleBrand: true,
-      shopCurrentPrices: {
-        where: (scp, { isNull, eq, or }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-      },
-      productDeal: {
-        columns: {
-          dropPercentage: true,
-        },
-      },
-    },
-  });
-
-  const productById = new Map(productsRows.map((item) => [item.id, item]));
-  return productIds
-    .map((id) => productById.get(id))
-    .filter(
-      (product): product is (typeof productsRows)[number] => product !== undefined
-    );
+  return getRelatedProductsByIds(productIds);
 }
 
 async function getRelatedProductsFromSameGroup({
@@ -827,29 +865,7 @@ async function getRelatedProductsFromSameGroup({
     return [];
   }
 
-  const productsRows = await db.query.products.findMany({
-    where: (products, { inArray }) => inArray(products.id, productIds),
-    with: {
-      brand: true,
-      possibleBrand: true,
-      shopCurrentPrices: {
-        where: (scp, { isNull, eq, or }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-      },
-      productDeal: {
-        columns: {
-          dropPercentage: true,
-        },
-      },
-    },
-  });
-
-  const productById = new Map(productsRows.map((item) => [item.id, item]));
-  return productIds
-    .map((id) => productById.get(id))
-    .filter(
-      (product): product is (typeof productsRows)[number] => product !== undefined
-    );
+  return getRelatedProductsByIds(productIds);
 }
 
 const MIN_PRODUCTS_FOR_DIRECT_GROUP_LINK = 7;

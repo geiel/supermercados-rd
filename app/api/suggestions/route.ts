@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const limit = searchParams.get("limit");
 
   if (!value) {
-    return;
+    return new Response();
   }
 
   const parentGroup = alias(groups, "parent_group");

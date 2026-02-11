@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { products, productsShopsPrices } from "@/db/schema";
+import { products, productsGroups, productsShopsPrices } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { baseV2 } from "./synonyms-v2";
 import { expandUnitFilter, extractSearchUnitTarget } from "./unit-utils";
@@ -33,7 +33,8 @@ export async function searchProducts(
   shopIds?: number[],
   includeHiddenProducts = false,
   onlySupermarketProducts = false,
-  unitsFilter: string[] = []
+  unitsFilter: string[] = [],
+  onlyUngrouped = false
 ) {
   const searchUnitTarget = extractSearchUnitTarget(value);
   const searchTextForMatching =
@@ -208,6 +209,16 @@ export async function searchProducts(
     `);
   }
 
+  if (onlyUngrouped) {
+    query.append(sql`
+      AND NOT EXISTS (
+        SELECT 1
+        FROM ${productsGroups}
+        WHERE ${productsGroups.productId} = COALESCE(fts.id, fuzzy.id)
+      )
+    `);
+  }
+
   if (onlySupermarketProducts) {
     const supermarketBrandIds = [28, 54, 9, 77, 80, 69, 19, 30, 2527];
     const supermarketNameKeywords = ["bravo", "lider", "wala", "selection", "gold", "zerca", "mubravo"];
@@ -269,16 +280,53 @@ export async function searchProducts(
   `)
 
   const rows = await db.execute<{ id: number; total_count: string }>(query);
+  const shouldFilterShopCurrentPrices =
+    (shopIds?.length ?? 0) > 0 || !includeHiddenProducts;
+
   const productsResponse = await db.query.products.findMany({
+    columns: {
+      id: true,
+      categoryId: true,
+      name: true,
+      unit: true,
+      image: true,
+    },
     where: (products, { inArray }) =>
       inArray(
         products.id,
         rows.map((r) => r.id)
       ),
     with: {
-      shopCurrentPrices: true,
-      brand: true,
-      possibleBrand: true,
+      shopCurrentPrices: shouldFilterShopCurrentPrices
+        ? {
+            where: (shopPrice, { and, eq, inArray, isNull, or }) => {
+              const visibleCondition = or(
+                isNull(shopPrice.hidden),
+                eq(shopPrice.hidden, false)
+              );
+
+              if (shopIds && shopIds.length > 0) {
+                return includeHiddenProducts
+                  ? inArray(shopPrice.shopId, shopIds)
+                  : and(inArray(shopPrice.shopId, shopIds), visibleCondition);
+              }
+
+              return visibleCondition;
+            },
+          }
+        : true,
+      brand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      possibleBrand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
       productDeal: {
         columns: {
           dropPercentage: true,
