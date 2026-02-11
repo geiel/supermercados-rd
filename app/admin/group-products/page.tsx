@@ -44,6 +44,7 @@ type Props = {
     unit_filter: string | undefined;
     groupId: string | undefined;
     multi_tree: string | undefined;
+    unassigned_only: string | undefined;
   }>;
 };
 
@@ -167,6 +168,241 @@ async function getMultiTreeProducts({
     SELECT ${productsTable.id} AS id, COUNT(*) OVER() AS total_count
     FROM ${productsTable}
     JOIN multi_tree mt ON mt.product_id = ${productsTable.id}
+    WHERE ${productsTable.deleted} IS NOT TRUE
+      ${unitFilter}
+      ${supermarketFilter}
+      AND EXISTS (
+        SELECT 1
+        FROM ${productsShopsPrices}
+        WHERE ${productsShopsPrices.productId} = ${productsTable.id}
+        ${shopFilter}
+        ${hiddenFilter}
+      )
+    ORDER BY ${productsTable.id} ASC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `;
+
+  const rows = await db.execute<{ id: number; total_count: string }>(query);
+  if (rows.length === 0) {
+    return { products: [], total: 0 };
+  }
+
+  const productsResponse = await db.query.products.findMany({
+    where: (products, { inArray }) =>
+      inArray(
+        products.id,
+        rows.map((row) => row.id)
+      ),
+    with: {
+      shopCurrentPrices: true,
+      brand: true,
+      possibleBrand: true,
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const byId = new Map(productsResponse.map((product) => [product.id, product]));
+  const orderedProducts = rows.map((row) => byId.get(row.id)!);
+
+  return {
+    products: orderedProducts,
+    total: Number(rows[0].total_count),
+  };
+}
+
+async function getUngroupedProducts({
+  limit,
+  offset,
+  shopIds,
+  includeHiddenProducts,
+  onlySupermarketProducts,
+  unitsFilter,
+}: {
+  limit: number;
+  offset: number;
+  shopIds?: number[];
+  includeHiddenProducts: boolean;
+  onlySupermarketProducts: boolean;
+  unitsFilter: string[];
+}) {
+  const normalizedUnitsFilter = normalizeUnitFiltersForQuery(unitsFilter);
+  const hasUnitFilter = normalizedUnitsFilter.length > 0;
+  const unitsArray = hasUnitFilter
+    ? sql`ARRAY[${sql.join(
+        normalizedUnitsFilter.map((unit) => sql`${unit}`),
+        sql`, `
+      )}]`
+    : null;
+
+  const supermarketBrandIds = [28, 54, 9, 77, 80, 69, 19, 30, 2527];
+  const supermarketNameKeywords = [
+    "bravo",
+    "lider",
+    "wala",
+    "selection",
+    "gold",
+    "zerca",
+    "mubravo",
+  ];
+  const keywordConditions = supermarketNameKeywords.map((keyword) =>
+    sql`unaccent(${productsTable.name}) ~* ('\\y' || ${keyword} || '\\y')`
+  );
+
+  const shopFilter =
+    shopIds && shopIds.length > 0
+      ? sql`AND ${productsShopsPrices.shopId} IN (${sql.join(
+          shopIds,
+          sql`,`
+        )})`
+      : sql``;
+
+  const hiddenFilter = includeHiddenProducts
+    ? sql``
+    : sql`AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)`;
+
+  const unitFilter =
+    hasUnitFilter && unitsArray
+      ? sql`AND ${productsTable.unit} = ANY(${unitsArray})`
+      : sql``;
+
+  const supermarketFilter = onlySupermarketProducts
+    ? sql`
+        AND ${productsTable.brandId} IN (${sql.join(
+          supermarketBrandIds,
+          sql`,`
+        )})
+        AND (${sql.join(keywordConditions, sql` OR `)})
+      `
+    : sql``;
+
+  const query = sql`
+    SELECT ${productsTable.id} AS id, COUNT(*) OVER() AS total_count
+    FROM ${productsTable}
+    WHERE ${productsTable.deleted} IS NOT TRUE
+      ${unitFilter}
+      ${supermarketFilter}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM ${productsGroups}
+        WHERE ${productsGroups.productId} = ${productsTable.id}
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM ${productsShopsPrices}
+        WHERE ${productsShopsPrices.productId} = ${productsTable.id}
+        ${shopFilter}
+        ${hiddenFilter}
+      )
+    ORDER BY ${productsTable.id} ASC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `;
+
+  const rows = await db.execute<{ id: number; total_count: string }>(query);
+  if (rows.length === 0) {
+    return { products: [], total: 0 };
+  }
+
+  const productsResponse = await db.query.products.findMany({
+    where: (products, { inArray }) =>
+      inArray(
+        products.id,
+        rows.map((row) => row.id)
+      ),
+    with: {
+      shopCurrentPrices: true,
+      brand: true,
+      possibleBrand: true,
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const byId = new Map(productsResponse.map((product) => [product.id, product]));
+  const orderedProducts = rows.map((row) => byId.get(row.id)!);
+
+  return {
+    products: orderedProducts,
+    total: Number(rows[0].total_count),
+  };
+}
+
+async function getAllProducts({
+  limit,
+  offset,
+  shopIds,
+  includeHiddenProducts,
+  onlySupermarketProducts,
+  unitsFilter,
+}: {
+  limit: number;
+  offset: number;
+  shopIds?: number[];
+  includeHiddenProducts: boolean;
+  onlySupermarketProducts: boolean;
+  unitsFilter: string[];
+}) {
+  const normalizedUnitsFilter = normalizeUnitFiltersForQuery(unitsFilter);
+  const hasUnitFilter = normalizedUnitsFilter.length > 0;
+  const unitsArray = hasUnitFilter
+    ? sql`ARRAY[${sql.join(
+        normalizedUnitsFilter.map((unit) => sql`${unit}`),
+        sql`, `
+      )}]`
+    : null;
+
+  const supermarketBrandIds = [28, 54, 9, 77, 80, 69, 19, 30, 2527];
+  const supermarketNameKeywords = [
+    "bravo",
+    "lider",
+    "wala",
+    "selection",
+    "gold",
+    "zerca",
+    "mubravo",
+  ];
+  const keywordConditions = supermarketNameKeywords.map((keyword) =>
+    sql`unaccent(${productsTable.name}) ~* ('\\y' || ${keyword} || '\\y')`
+  );
+
+  const shopFilter =
+    shopIds && shopIds.length > 0
+      ? sql`AND ${productsShopsPrices.shopId} IN (${sql.join(
+          shopIds,
+          sql`,`
+        )})`
+      : sql``;
+
+  const hiddenFilter = includeHiddenProducts
+    ? sql``
+    : sql`AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)`;
+
+  const unitFilter =
+    hasUnitFilter && unitsArray
+      ? sql`AND ${productsTable.unit} = ANY(${unitsArray})`
+      : sql``;
+
+  const supermarketFilter = onlySupermarketProducts
+    ? sql`
+        AND ${productsTable.brandId} IN (${sql.join(
+          supermarketBrandIds,
+          sql`,`
+        )})
+        AND (${sql.join(keywordConditions, sql` OR `)})
+      `
+    : sql``;
+
+  const query = sql`
+    SELECT ${productsTable.id} AS id, COUNT(*) OVER() AS total_count
+    FROM ${productsTable}
     WHERE ${productsTable.deleted} IS NOT TRUE
       ${unitFilter}
       ${supermarketFilter}
@@ -422,6 +658,7 @@ async function GroupProductsPage({ searchParams }: Props) {
     unit_filter,
     groupId,
     multi_tree,
+    unassigned_only,
   } =
     await searchParams;
 
@@ -429,7 +666,9 @@ async function GroupProductsPage({ searchParams }: Props) {
     orderBy: (groups, { asc }) => asc(groups.name),
   });
 
-  const selectedGroupId = groupId ? Number(groupId) : undefined;
+  const isLegacyUnassignedOnly = groupId === "__unassigned__";
+  const selectedGroupId =
+    groupId && !isLegacyUnassignedOnly ? Number(groupId) : undefined;
   const resolvedGroupId =
     selectedGroupId && Number.isFinite(selectedGroupId) && selectedGroupId > 0
       ? selectedGroupId
@@ -445,45 +684,45 @@ async function GroupProductsPage({ searchParams }: Props) {
   const unitFilters = normalizeUnitFiltersForSearch(
     parseUnitFilterParam(unit_filter)
   );
-  const multiTreeOnly = multi_tree === "1" || multi_tree === "true";
+  const unassignedOnly =
+    isLegacyUnassignedOnly ||
+    unassigned_only === "1" ||
+    unassigned_only === "true";
+  const multiTreeOnly =
+    (multi_tree === "1" || multi_tree === "true") && !unassignedOnly;
 
   const onlySupermarketProducts = only_shop_products ? true : false;
   let productsAndTotal: ProductsAndTotal;
 
   if (!trimmedValue) {
-    if (!multiTreeOnly) {
-      return (
-        <div className="container mx-auto pb-4 pt-4">
-          <div className="flex flex-1 flex-col gap-4">
-            <TypographyH3>Asignar productos a grupo</TypographyH3>
-            <GroupProductsToolbar
-              groups={groups}
-              createGroup={createGroup}
-              initialValue={searchValue}
-              initialGroupId={resolvedGroupId}
-              initialMultiTree={multiTreeOnly}
-            />
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>Busca un producto</EmptyTitle>
-                <EmptyDescription>
-                  Escribe un nombre para empezar.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          </div>
-        </div>
-      );
+    if (unassignedOnly) {
+      productsAndTotal = await getUngroupedProducts({
+        limit: 15,
+        offset: getOffset(page),
+        shopIds: shopsIds,
+        includeHiddenProducts: canSeeHiddenProducts,
+        onlySupermarketProducts,
+        unitsFilter: unitFilters,
+      });
+    } else if (multiTreeOnly) {
+      productsAndTotal = await getMultiTreeProducts({
+        limit: 15,
+        offset: getOffset(page),
+        shopIds: shopsIds,
+        includeHiddenProducts: canSeeHiddenProducts,
+        onlySupermarketProducts,
+        unitsFilter: unitFilters,
+      });
+    } else {
+      productsAndTotal = await getAllProducts({
+        limit: 15,
+        offset: getOffset(page),
+        shopIds: shopsIds,
+        includeHiddenProducts: canSeeHiddenProducts,
+        onlySupermarketProducts,
+        unitsFilter: unitFilters,
+      });
     }
-
-    productsAndTotal = await getMultiTreeProducts({
-      limit: 15,
-      offset: getOffset(page),
-      shopIds: shopsIds,
-      includeHiddenProducts: canSeeHiddenProducts,
-      onlySupermarketProducts,
-      unitsFilter: unitFilters,
-    });
   } else {
     productsAndTotal = await searchProducts(
       trimmedValue,
@@ -493,7 +732,8 @@ async function GroupProductsPage({ searchParams }: Props) {
       shopsIds,
       canSeeHiddenProducts,
       onlySupermarketProducts,
-      unitFilters
+      unitFilters,
+      unassignedOnly
     );
   }
 
@@ -506,14 +746,22 @@ async function GroupProductsPage({ searchParams }: Props) {
   });
 
   if (filteredProducts.length === 0) {
-    const emptyTitle = multiTreeOnly
-      ? "No hay productos con m\u00faltiples categor\u00edas"
-      : "Productos no encontrados";
-    const emptyDescription = multiTreeOnly
+    const emptyTitle = unassignedOnly
+      ? "No hay productos sin grupo asignado"
+      : multiTreeOnly
+        ? "No hay productos con m\u00faltiples categor\u00edas"
+        : "Productos no encontrados";
+    const emptyDescription = unassignedOnly
       ? trimmedValue
-        ? "No hay productos con m\u00faltiples categor\u00edas para esta b\u00fasqueda."
-        : "No hay productos con m\u00faltiples categor\u00edas."
-      : "No hay resultados para esta b\u00fasqueda.";
+        ? "No hay productos sin grupo asignado para esta b\u00fasqueda."
+        : "No hay productos sin grupo asignado."
+      : multiTreeOnly
+        ? trimmedValue
+          ? "No hay productos con m\u00faltiples categor\u00edas para esta b\u00fasqueda."
+          : "No hay productos con m\u00faltiples categor\u00edas."
+        : trimmedValue
+          ? "No hay resultados para esta b\u00fasqueda."
+          : "No hay productos disponibles con los filtros actuales.";
 
     return (
       <div className="container mx-auto pb-4 pt-4">
@@ -525,6 +773,7 @@ async function GroupProductsPage({ searchParams }: Props) {
             initialValue={searchValue}
             initialGroupId={resolvedGroupId}
             initialMultiTree={multiTreeOnly}
+            initialUnassignedOnly={unassignedOnly}
           />
           <Empty>
             <EmptyHeader>
@@ -620,7 +869,7 @@ async function GroupProductsPage({ searchParams }: Props) {
   }
 
   let visibleProducts = filteredProducts;
-  if (multiTreeOnly) {
+  if (multiTreeOnly && !unassignedOnly) {
     const beforeCount = visibleProducts.length;
     visibleProducts = visibleProducts.filter((product) =>
       multiTreeProductIds.has(product.id)
@@ -642,13 +891,19 @@ async function GroupProductsPage({ searchParams }: Props) {
             initialValue={searchValue}
             initialGroupId={resolvedGroupId}
             initialMultiTree={multiTreeOnly}
+            initialUnassignedOnly={unassignedOnly}
           />
           <Empty>
             <EmptyHeader>
               <EmptyTitle>Productos no encontrados</EmptyTitle>
               <EmptyDescription>
-                No hay productos con m\u00faltiples categor\u00edas para esta
-                b\u00fasqueda.
+                {unassignedOnly
+                  ? "No hay productos sin grupo asignado para esta b\u00fasqueda."
+                  : multiTreeOnly
+                    ? "No hay productos con m\u00faltiples categor\u00edas para esta b\u00fasqueda."
+                    : trimmedValue
+                      ? "No hay resultados para esta b\u00fasqueda."
+                      : "No hay productos disponibles con los filtros actuales."}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -667,6 +922,7 @@ async function GroupProductsPage({ searchParams }: Props) {
           initialValue={searchValue}
           initialGroupId={resolvedGroupId}
           initialMultiTree={multiTreeOnly}
+          initialUnassignedOnly={unassignedOnly}
         />
         <div className="grid grid-cols-2 place-items-stretch md:grid-cols-3 lg:grid-cols-5">
           {visibleProducts.map((product) => {

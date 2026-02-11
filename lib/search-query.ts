@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { products, productsShopsPrices } from "@/db/schema";
+import { products, productsGroups, productsShopsPrices } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { baseV2 } from "./synonyms-v2";
 import { expandUnitFilter, extractSearchUnitTarget } from "./unit-utils";
@@ -33,7 +33,8 @@ export async function searchProducts(
   shopIds?: number[],
   includeHiddenProducts = false,
   onlySupermarketProducts = false,
-  unitsFilter: string[] = []
+  unitsFilter: string[] = [],
+  onlyUngrouped = false
 ) {
   const searchUnitTarget = extractSearchUnitTarget(value);
   const searchTextForMatching =
@@ -205,6 +206,16 @@ export async function searchProducts(
   if (!includeHiddenProducts) {
     query.append(sql`
       AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)
+    `);
+  }
+
+  if (onlyUngrouped) {
+    query.append(sql`
+      AND NOT EXISTS (
+        SELECT 1
+        FROM ${productsGroups}
+        WHERE ${productsGroups.productId} = COALESCE(fts.id, fuzzy.id)
+      )
     `);
   }
 
