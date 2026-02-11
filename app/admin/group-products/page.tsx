@@ -87,6 +87,48 @@ function normalizeUnitFiltersForQuery(units: string[]): string[] {
   );
 }
 
+async function fetchProductsForRows(
+  rows: Array<{ id: number }>
+) {
+  const productsResponse = await db.query.products.findMany({
+    columns: {
+      id: true,
+      categoryId: true,
+      name: true,
+      unit: true,
+      image: true,
+    },
+    where: (products, { inArray }) =>
+      inArray(
+        products.id,
+        rows.map((row) => row.id)
+      ),
+    with: {
+      shopCurrentPrices: true,
+      brand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      possibleBrand: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      productDeal: {
+        columns: {
+          dropPercentage: true,
+        },
+      },
+    },
+  });
+
+  const byId = new Map(productsResponse.map((product) => [product.id, product]));
+  return rows.map((row) => byId.get(row.id)!);
+}
+
 async function getMultiTreeProducts({
   limit,
   offset,
@@ -188,26 +230,7 @@ async function getMultiTreeProducts({
     return { products: [], total: 0 };
   }
 
-  const productsResponse = await db.query.products.findMany({
-    where: (products, { inArray }) =>
-      inArray(
-        products.id,
-        rows.map((row) => row.id)
-      ),
-    with: {
-      shopCurrentPrices: true,
-      brand: true,
-      possibleBrand: true,
-      productDeal: {
-        columns: {
-          dropPercentage: true,
-        },
-      },
-    },
-  });
-
-  const byId = new Map(productsResponse.map((product) => [product.id, product]));
-  const orderedProducts = rows.map((row) => byId.get(row.id)!);
+  const orderedProducts = await fetchProductsForRows(rows);
 
   return {
     products: orderedProducts,
@@ -308,26 +331,7 @@ async function getUngroupedProducts({
     return { products: [], total: 0 };
   }
 
-  const productsResponse = await db.query.products.findMany({
-    where: (products, { inArray }) =>
-      inArray(
-        products.id,
-        rows.map((row) => row.id)
-      ),
-    with: {
-      shopCurrentPrices: true,
-      brand: true,
-      possibleBrand: true,
-      productDeal: {
-        columns: {
-          dropPercentage: true,
-        },
-      },
-    },
-  });
-
-  const byId = new Map(productsResponse.map((product) => [product.id, product]));
-  const orderedProducts = rows.map((row) => byId.get(row.id)!);
+  const orderedProducts = await fetchProductsForRows(rows);
 
   return {
     products: orderedProducts,
@@ -423,26 +427,7 @@ async function getAllProducts({
     return { products: [], total: 0 };
   }
 
-  const productsResponse = await db.query.products.findMany({
-    where: (products, { inArray }) =>
-      inArray(
-        products.id,
-        rows.map((row) => row.id)
-      ),
-    with: {
-      shopCurrentPrices: true,
-      brand: true,
-      possibleBrand: true,
-      productDeal: {
-        columns: {
-          dropPercentage: true,
-        },
-      },
-    },
-  });
-
-  const byId = new Map(productsResponse.map((product) => [product.id, product]));
-  const orderedProducts = rows.map((row) => byId.get(row.id)!);
+  const orderedProducts = await fetchProductsForRows(rows);
 
   return {
     products: orderedProducts,
@@ -663,8 +648,25 @@ async function GroupProductsPage({ searchParams }: Props) {
     await searchParams;
 
   const groups = await db.query.groups.findMany({
+    columns: {
+      id: true,
+      name: true,
+      description: true,
+      parentGroupId: true,
+    },
     orderBy: (groups, { asc }) => asc(groups.name),
   });
+
+  const shopLogoById = new Map(
+    (
+      await db.query.shops.findMany({
+        columns: {
+          id: true,
+          logo: true,
+        },
+      })
+    ).map((shop) => [shop.id, shop.logo])
+  );
 
   const isLegacyUnassignedOnly = groupId === "__unassigned__";
   const selectedGroupId =
@@ -1007,7 +1009,10 @@ async function GroupProductsPage({ searchParams }: Props) {
                     />
                     {product.name}
                   </div>
-                  <ShopExclusive shopPrices={product.shopCurrentPrices} />
+                  <ShopExclusive
+                    shopPrices={product.shopCurrentPrices}
+                    shopLogoById={shopLogoById}
+                  />
                 </Link>
               </div>
             );
@@ -1068,23 +1073,23 @@ function ExploreImage({ product }: { product: GroupProduct }) {
 
 async function ShopExclusive({
   shopPrices,
+  shopLogoById,
 }: {
   shopPrices: productsShopsPrices[];
+  shopLogoById: Map<number, string>;
 }) {
-  if (shopPrices.length > 1) {
+  if (shopPrices.length !== 1) {
     return null;
   }
 
-  const logo = await db.query.shops.findFirst({
-    columns: {
-      logo: true,
-    },
-    where: (shops, { eq }) => eq(shops.id, shopPrices[0].shopId),
-  });
+  const logo = shopLogoById.get(shopPrices[0].shopId);
+  if (!logo) {
+    return null;
+  }
 
   return (
     <Image
-      src={`/supermarket-logo/${logo?.logo}`}
+      src={`/supermarket-logo/${logo}`}
       width={0}
       height={0}
       sizes="100vw"

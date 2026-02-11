@@ -14,7 +14,12 @@ export default function Page() {
 async function MergeProductsByBrandPage() {
   await validateAdminUser();
 
-  const brands = await db.query.productsBrands.findMany();
+  const brands = await db.query.productsBrands.findMany({
+    columns: {
+      id: true,
+      name: true,
+    },
+  });
 
   return (
     <div className="container mx-auto pt-2">
