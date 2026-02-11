@@ -29,9 +29,9 @@ type Props = {
 };
 
 const MAX_ALLOWED_RELATED_PRODUCTS = 16;
-const MIN_RELATED_PRODUCTS_BEFORE_GROUP_FALLBACK = 10;
 const HIGH_SIMILARITY_SIM_SCORE_THRESHOLD = 0.5;
 const NO_GROUP_SIMILARITY_MIN_THRESHOLD = 0.3;
+const PARENT_GROUP_FALLBACK_SIMILARITY_MIN_THRESHOLD = 0.1;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, url_name } = await params;
@@ -88,7 +88,12 @@ export default async function Page({ params }: Props) {
   );
   const relatedProductsCategoryLink =
     getRelatedProductsCategoryLink(groupBreadcrumbs);
-  const relatedProductsPrimaryGroup = getPrimaryRelatedGroup(groupBreadcrumbs);
+  const relatedProductsGroupData = getPrimaryRelatedGroupAndParent(
+    groupBreadcrumbs
+  );
+  const relatedProductsPrimaryGroup = relatedProductsGroupData?.group ?? null;
+  const relatedProductsParentGroup =
+    relatedProductsGroupData?.parentGroup ?? null;
 
   const shopsPromise = getShops();
   let relatedProducts = !relatedProductsPrimaryGroup
@@ -106,15 +111,40 @@ export default async function Page({ params }: Props) {
         )
       : [];
 
-  if (relatedProductsPrimaryGroup && relatedProducts.length < MIN_RELATED_PRODUCTS_BEFORE_GROUP_FALLBACK) {
-    const fallbackProducts = await getRelatedProductsFromSameGroup({
-      groupId: relatedProductsPrimaryGroup.id,
-      currentProductId: product.id,
-      excludedProductIds: relatedProducts.map((item) => item.id),
-      limit: MAX_ALLOWED_RELATED_PRODUCTS - relatedProducts.length,
-    });
+  if (
+    relatedProductsPrimaryGroup &&
+    relatedProducts.length < MAX_ALLOWED_RELATED_PRODUCTS
+  ) {
+    const fallbackProductsFromPrimaryGroup = await getRelatedProductsFromSameGroup(
+      {
+        groupId: relatedProductsPrimaryGroup.id,
+        currentProductId: product.id,
+        excludedProductIds: relatedProducts.map((item) => item.id),
+        limit: MAX_ALLOWED_RELATED_PRODUCTS - relatedProducts.length,
+      }
+    );
 
-    relatedProducts = [...relatedProducts, ...fallbackProducts].slice(
+    relatedProducts = [
+      ...relatedProducts,
+      ...fallbackProductsFromPrimaryGroup,
+    ].slice(0, MAX_ALLOWED_RELATED_PRODUCTS);
+  }
+
+  if (
+    relatedProductsParentGroup &&
+    relatedProducts.length < MAX_ALLOWED_RELATED_PRODUCTS
+  ) {
+    const fallbackProductsFromParentGroup =
+      await getRelatedProductsFromGroupByNameSimilarity({
+        groupId: relatedProductsParentGroup.id,
+        currentProductName: product.name,
+        currentProductId: product.id,
+        excludedProductIds: relatedProducts.map((item) => item.id),
+        limit: MAX_ALLOWED_RELATED_PRODUCTS - relatedProducts.length,
+        minimumSimilarity: PARENT_GROUP_FALLBACK_SIMILARITY_MIN_THRESHOLD,
+      });
+
+    relatedProducts = [...relatedProducts, ...fallbackProductsFromParentGroup].slice(
       0,
       MAX_ALLOWED_RELATED_PRODUCTS
     );
@@ -652,9 +682,9 @@ function getRelatedProductsCategoryLink(
   return null;
 }
 
-function getPrimaryRelatedGroup(
+function getPrimaryRelatedGroupChain(
   groupPaths: GroupBreadcrumbItem[][]
-): GroupBreadcrumbItem | null {
+): GroupBreadcrumbItem[] | null {
   if (groupPaths.length === 0) {
     return null;
   }
@@ -675,7 +705,25 @@ function getPrimaryRelatedGroup(
     }
   }
 
-  return primaryGroupChain[primaryGroupChain.length - 1];
+  return primaryGroupChain;
+}
+
+function getPrimaryRelatedGroupAndParent(
+  groupPaths: GroupBreadcrumbItem[][]
+): { group: GroupBreadcrumbItem; parentGroup: GroupBreadcrumbItem | null } | null {
+  const primaryGroupChain = getPrimaryRelatedGroupChain(groupPaths);
+
+  if (!primaryGroupChain) {
+    return null;
+  }
+
+  const group = primaryGroupChain[primaryGroupChain.length - 1];
+  const parentGroup =
+    primaryGroupChain.length > 1
+      ? primaryGroupChain[primaryGroupChain.length - 2]
+      : null;
+
+  return { group, parentGroup };
 }
 
 async function getRelatedProductsByIds(productIds: number[]) {
@@ -868,36 +916,81 @@ async function getRelatedProductsFromSameGroup({
   return getRelatedProductsByIds(productIds);
 }
 
-const MIN_PRODUCTS_FOR_DIRECT_GROUP_LINK = 7;
+async function getRelatedProductsFromGroupByNameSimilarity({
+  groupId,
+  currentProductName,
+  currentProductId,
+  excludedProductIds,
+  limit,
+  minimumSimilarity,
+}: {
+  groupId: number;
+  currentProductName: string;
+  currentProductId: number;
+  excludedProductIds: number[];
+  limit: number;
+  minimumSimilarity: number;
+}) {
+  if (limit <= 0) {
+    return [];
+  }
+
+  const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
+  const similarityScore = sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${currentProductName})))`;
+
+  const productIdsRows = await db
+    .select({ id: products.id })
+    .from(productsGroups)
+    .innerJoin(
+      products,
+      and(
+        eq(products.id, productsGroups.productId),
+        or(isNull(products.deleted), eq(products.deleted, false))
+      )
+    )
+    .innerJoin(
+      productsShopsPrices,
+      and(
+        eq(productsShopsPrices.productId, products.id),
+        isNotNull(productsShopsPrices.currentPrice),
+        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      )
+    )
+    .where(
+      and(
+        eq(productsGroups.groupId, groupId),
+        sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${currentProductName}))) >= ${minimumSimilarity}`
+      )
+    )
+    .groupBy(products.id, products.rank)
+    .orderBy(desc(similarityScore), desc(rankOrder), desc(products.id))
+    .limit(100);
+
+  const excludedIds = new Set([currentProductId, ...excludedProductIds]);
+  const productIds = productIdsRows
+    .map((row) => row.id)
+    .filter((id) => !excludedIds.has(id))
+    .slice(0, limit);
+
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  return getRelatedProductsByIds(productIds);
+}
+
+const MIN_PRODUCTS_FOR_DIRECT_GROUP_LINK = 16;
 
 async function getRelatedProductsGroupLink(
   groupPaths: GroupBreadcrumbItem[][]
 ): Promise<GroupBreadcrumbItem | null> {
-  if (groupPaths.length === 0) {
+  const primaryGroupData = getPrimaryRelatedGroupAndParent(groupPaths);
+
+  if (!primaryGroupData) {
     return null;
   }
 
-  const groupChains = groupPaths
-    .map((path) => path.filter((item) => item.href.startsWith("/grupos/")))
-    .filter((path) => path.length > 0);
-
-  if (groupChains.length === 0) {
-    return null;
-  }
-
-  let primaryGroupChain = groupChains[0];
-
-  for (const current of groupChains.slice(1)) {
-    if (current.length > primaryGroupChain.length) {
-      primaryGroupChain = current;
-    }
-  }
-
-  const group = primaryGroupChain[primaryGroupChain.length - 1];
-  const parentGroup =
-    primaryGroupChain.length > 1
-      ? primaryGroupChain[primaryGroupChain.length - 2]
-      : null;
+  const { group, parentGroup } = primaryGroupData;
 
   if (!parentGroup) {
     return group;

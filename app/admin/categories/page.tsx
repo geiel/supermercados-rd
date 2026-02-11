@@ -104,13 +104,29 @@ async function CategoriesPage() {
 
   const [categories, groupsList, categoriesGroupsList] = await Promise.all([
     db.query.categories.findMany({
+      columns: {
+        id: true,
+        name: true,
+        humanNameId: true,
+        icon: true,
+      },
       orderBy: (categories, { asc }) => asc(categories.name),
     }),
     db.query.groups.findMany({
+      columns: {
+        id: true,
+        name: true,
+        parentGroupId: true,
+      },
       where: (groups, { isNull }) => isNull(groups.parentGroupId),
       orderBy: (groups, { asc }) => asc(groups.name),
     }),
-    db.query.categoriesGroups.findMany(),
+    db.query.categoriesGroups.findMany({
+      columns: {
+        categoryId: true,
+        groupId: true,
+      },
+    }),
   ]);
 
   return (

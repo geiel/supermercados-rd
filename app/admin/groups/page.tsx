@@ -360,6 +360,15 @@ async function GroupsPage() {
   await validateAdminUser();
 
   const groups = await db.query.groups.findMany({
+    columns: {
+      id: true,
+      name: true,
+      description: true,
+      humanNameId: true,
+      showSearch: true,
+      isComparable: true,
+      parentGroupId: true,
+    },
     orderBy: (groups, { asc }) => asc(groups.name),
   });
 
