@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 const BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET;
@@ -16,11 +17,10 @@ export async function revalidateProduct(productId: number) {
     });
 
     if (!response.ok) {
-      console.error(
-        `[REVALIDATE] Failed to revalidate product ${productId}: ${response.status}`
+      Sentry.logger.error(`[REVALIDATE] Failed to revalidate product ${productId}: ${response.status}`
       );
     }
   } catch (error) {
-    console.error(`[REVALIDATE] Error revalidating product ${productId}:`, error);
+    Sentry.logger.error(`[REVALIDATE] Error revalidating product ${productId}:`, { error });
   }
 }

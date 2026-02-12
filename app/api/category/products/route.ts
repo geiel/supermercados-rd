@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getCategoryProducts } from "@/lib/home-page-categories";
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("[api/category/products] Failed to fetch products", error);
+    Sentry.logger.error("[api/category/products] Failed to fetch products", { error });
     return NextResponse.json(
       { error: "Failed to fetch category products" },
       { status: 500 }

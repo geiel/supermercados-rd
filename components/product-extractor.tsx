@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { Combobox } from "@/components/combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,7 +118,7 @@ export function ProductExtractor({
         [productId]: updated.name,
       }));
     } catch (err) {
-      console.error(err);
+      Sentry.logger.error("Unexpected error", { error: err });
     } finally {
       setUpdatingProductId(null);
     }

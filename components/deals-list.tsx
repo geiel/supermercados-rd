@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -248,7 +249,7 @@ export function DealsList({
         setTotalCount(data.total);
         setOffset(data.nextOffset);
       } catch (error) {
-        console.error("[deals] Failed to load deals", error);
+        Sentry.logger.error("[deals] Failed to load deals", { error });
         setErrorMessage("No se pudieron cargar mas ofertas.");
       } finally {
         if (requestId === requestIdRef.current) {
@@ -322,7 +323,7 @@ export function DealsList({
       setOffset(data.nextOffset);
       hasLoadedMoreRef.current = true;
     } catch (error) {
-      console.error("[deals] Failed to load more deals", error);
+      Sentry.logger.error("[deals] Failed to load more deals", { error });
       setErrorMessage("No se pudieron cargar mas ofertas.");
     } finally {
       if (requestId === requestIdRef.current) {

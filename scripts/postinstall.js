@@ -4,6 +4,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const Sentry = require('@sentry/nextjs');
 
 const publicDir = path.join(__dirname, '..', 'public');
 const outputPath = path.join(publicDir, 'chromium-pack.tar');
@@ -27,7 +28,7 @@ if (process.env.CI || process.env.VERCEL) {
     
     console.log('✅ Chromium packaged successfully!');
   } catch (error) {
-    console.error('❌ Failed to package Chromium:', error.message);
+    Sentry.logger.error('❌ Failed to package Chromium:', { error: error.message });
     // Don't fail the build if packaging fails - the remote URL will be used as fallback
   }
 } else {

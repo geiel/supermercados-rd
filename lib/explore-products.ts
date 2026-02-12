@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { db } from "@/db";
 import type { productsShopsPrices as ProductShopPrice } from "@/db/schema";
 import { searchProducts } from "@/lib/search-query";
@@ -292,7 +293,7 @@ export async function getExploreProducts({
   );
   if (prefetchShopPrices.length > 0) {
     void updateShopPrices(prefetchShopPrices).catch((error) => {
-      console.error("[explore-products] Prefetch update failed", error);
+      Sentry.logger.error("[explore-products] Prefetch update failed", { error });
     });
   }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -67,7 +68,7 @@ export default function MergeProductsByBrand({
     try {
       await adminMergeProduct(Number(parentProductId), Number(childProductId));
     } catch (error) {
-      console.error(error);
+      Sentry.logger.error("Unexpected error", { error });
     }
 
     setLoadingProcess(false);

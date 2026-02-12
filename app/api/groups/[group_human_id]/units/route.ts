@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 
@@ -169,7 +170,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(units);
   } catch (error) {
-    console.error("[api/groups/units] Failed to load units", error);
+    Sentry.logger.error("[api/groups/units] Failed to load units", { error });
     return NextResponse.json(
       { message: "Unable to load units at the moment." },
       { status: 500 }

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { getGroupProducts } from "@/lib/group-products";
@@ -96,7 +97,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("[api/groups/products] Failed to load products", error);
+    Sentry.logger.error("[api/groups/products] Failed to load products", { error });
     return NextResponse.json(
       { message: "Unable to load products at the moment." },
       { status: 500 }

@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { db } from "@/db";
 import { feedback, productIssueReports, productIssueEnum, categorySuggestions, categorySuggestionTypeEnum } from "@/db/schema/feedback";
 
@@ -28,7 +29,7 @@ export async function submitFeedback(data: SubmitFeedbackData) {
 
     return { success: true };
   } catch (error) {
-    console.error("Error submitting feedback:", error);
+    Sentry.logger.error("Error submitting feedback:", { error });
     return { success: false, error: "Error al enviar el comentario" };
   }
 }
@@ -44,7 +45,7 @@ export async function submitIssueReport(data: SubmitIssueReportData) {
 
     return { success: true };
   } catch (error) {
-    console.error("Error submitting issue report:", error);
+    Sentry.logger.error("Error submitting issue report:", { error });
     return { success: false, error: "Error al reportar el problema" };
   }
 }
@@ -71,7 +72,7 @@ export async function submitCategorySuggestion(data: SubmitCategorySuggestionDat
 
     return { success: true };
   } catch (error) {
-    console.error("Error submitting category suggestion:", error);
+    Sentry.logger.error("Error submitting category suggestion:", { error });
     return { success: false, error: "Error al enviar la sugerencia" };
   }
 }

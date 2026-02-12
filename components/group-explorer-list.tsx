@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -275,7 +276,7 @@ export function GroupExplorerList({
         setTotalCount(data.total);
         setOffset(data.nextOffset);
       } catch (error) {
-        console.error("[group-explorer] Failed to load products", error);
+        Sentry.logger.error("[group-explorer] Failed to load products", { error });
         setErrorMessage("No se pudieron cargar mas productos.");
       } finally {
         if (requestId === requestIdRef.current) {
@@ -356,7 +357,7 @@ export function GroupExplorerList({
       setOffset(data.nextOffset);
       hasLoadedMoreRef.current = true;
     } catch (error) {
-      console.error("[group-explorer] Failed to load more", error);
+      Sentry.logger.error("[group-explorer] Failed to load more", { error });
       setErrorMessage("No se pudieron cargar mas productos.");
     } finally {
       if (requestId === requestIdRef.current) {
