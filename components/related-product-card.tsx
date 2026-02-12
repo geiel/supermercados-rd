@@ -8,6 +8,7 @@ import { ProductBrand } from "@/components/product-brand";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { toSlug } from "@/lib/utils";
 import { OfferBadge } from "@/components/offer-badge";
+import { Price } from "@/components/price";
 
 export type RelatedProductCardProduct = {
   id: number;
@@ -89,7 +90,7 @@ export function RelatedProductCard({ product }: RelatedProductCardProps) {
           {product.name}
         </div>
         <div>
-          <div className="font-bold text-lg">RD${cheapest.currentPrice}</div>
+          <Price value={cheapest.currentPrice} className="font-bold text-lg" />
           <PricePerUnit
             unit={product.unit}
             price={Number(cheapest.currentPrice)}

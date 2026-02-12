@@ -26,6 +26,7 @@ import { useShops } from "@/hooks/use-shops";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserList } from "@/hooks/use-user-list";
 import { updateListSelectedShops } from "@/lib/compare";
+import { formatPriceWithCurrency } from "@/lib/price-format";
 import type { CompareMode } from "@/lib/list-calculations";
 import type { shopsSelect } from "@/db/schema";
 
@@ -373,7 +374,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                     <div className="flex flex-col gap-1">
                         <h2 className="font-bold text-2xl">{displayName}</h2>
                         <div className="text-muted-foreground">
-                            {stats.totalProducts} productos · <span className="font-bold text-foreground">RD${stats.totalPrice.toFixed(2)}</span>
+                            {stats.totalProducts} productos · <span className="font-bold text-foreground">{formatPriceWithCurrency(stats.totalPrice) ?? "RD$0"}</span>
                         </div>
                     </div>
 
@@ -483,7 +484,7 @@ export function ListPage({ listId, listName = "Lista de compras" }: ListPageProp
                                         unoptimized
                                     />
                                 </div>
-                                <div className="font-bold">RD${shopTotalPrice.toFixed(2)}</div>
+                                <div className="font-bold">{formatPriceWithCurrency(shopTotalPrice) ?? "RD$0"}</div>
                             </div>
                             <ProductItems
                                 items={items as never}

@@ -14,6 +14,7 @@ import {
 } from "@/components/group-explorer-filters";
 import { GroupExplorerGridSkeleton } from "@/components/group-explorer-skeleton";
 import { PricePerUnit } from "@/components/price-per-unit";
+import { Price } from "@/components/price";
 import { ProductBrand } from "@/components/product-brand";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
@@ -570,7 +571,7 @@ function GroupExplorerCard({ product }: { product: GroupExplorerProduct }) {
           {product.name}
         </div>
         <div>
-          <div className="font-bold text-lg pt-1">RD${product.currentPrice}</div>
+          <Price value={product.currentPrice} className="font-bold text-lg pt-1" />
           <PricePerUnit
             unit={product.unit}
             price={Number(product.currentPrice)}

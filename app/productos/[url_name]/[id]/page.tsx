@@ -1,4 +1,5 @@
 import { AddToListButton } from "@/components/add-to-list-button";
+import { Price } from "@/components/price";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { PricesChart } from "@/components/prices-chart";
 import { ProductBrand } from "@/components/product-brand";
@@ -14,6 +15,7 @@ import { GroupBreadcrumbs } from "@/components/group-breadcrumbs";
 import { db } from "@/db";
 import { categoriesGroups, products, productsGroups, productsShopsPrices } from "@/db/schema";
 import { getGroupBreadcrumbPaths, type GroupBreadcrumbItem } from "@/lib/group-breadcrumbs";
+import { formatPriceValue } from "@/lib/price-format";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import {
   ChartNoAxesColumnDecreasing,
@@ -367,10 +369,7 @@ const toValidPrice = (value: string | null | undefined) => {
 };
 
 const formatPriceDelta = (value: number) => {
-  return value.toLocaleString("es-DO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+  return formatPriceValue(value);
 };
 
 function getPriceBadgeType(product: {
@@ -571,11 +570,12 @@ function ShopPrice({
   return (
     <div className="col-span-2">
       <div className="flex gap-1 items-center overflow-auto">
-        <div className="font-bold text-lg">RD${shopPrice.currentPrice}</div>
+        <Price value={shopPrice.currentPrice} className="font-bold text-lg" />
         {Number(shopPrice.currentPrice) < Number(shopPrice.regularPrice) ? (
-          <div className="line-through text-lg">
-            ${shopPrice.regularPrice}
-          </div>
+          <Price
+            value={shopPrice.regularPrice}
+            className="line-through text-lg"
+          />
         ) : null}
       </div>
       <PricePerUnit

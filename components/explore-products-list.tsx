@@ -10,6 +10,7 @@ import { AddToListButton } from "@/components/add-to-list-button";
 import { ProductImage } from "@/components/product-image";
 import { ProductBrand } from "@/components/product-brand";
 import { PricePerUnit } from "@/components/price-per-unit";
+import { Price } from "@/components/price";
 import { Unit } from "@/components/unit";
 import { Button } from "@/components/ui/button";
 import {
@@ -391,7 +392,7 @@ function ProductPrice({ product }: { product: ExploreProduct }) {
 
   return (
     <div>
-      <div className="font-bold text-lg pt-1">RD${product.currentPrice}</div>
+      <Price value={product.currentPrice} className="font-bold text-lg pt-1" />
       {Number.isFinite(numericPrice) ? (
         <PricePerUnit
           unit={product.unit}

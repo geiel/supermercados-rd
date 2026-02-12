@@ -13,6 +13,7 @@ import { ProductBrand } from "@/components/product-brand";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { OfferBadge } from "@/components/offer-badge";
 import { toSlug } from "@/lib/utils";
+import { Price } from "@/components/price";
 
 type CategoryTopProductCardProps = {
   product: productsSelect & {
@@ -77,7 +78,7 @@ export function CategoryTopProductCard({ product }: CategoryTopProductCardProps)
             <span className="line-clamp-2">{product.name}</span>
           </div>
           <div>
-            <div className="font-bold text-lg">RD${cheapest.currentPrice}</div>
+            <Price value={cheapest.currentPrice} className="font-bold text-lg" />
             <PricePerUnit
               unit={product.unit}
               price={Number(cheapest.currentPrice)}

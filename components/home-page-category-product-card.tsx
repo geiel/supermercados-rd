@@ -9,6 +9,7 @@ import { toSlug } from "@/lib/utils";
 import type { HomePageCategoryProduct } from "@/lib/home-page-categories";
 import { OfferBadge } from "@/components/offer-badge";
 import { PricePerUnit } from "@/components/price-per-unit";
+import { Price } from "@/components/price";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
@@ -66,7 +67,7 @@ export function HomePageCategoryProductCard({ product }: Props) {
             <span className="line-clamp-2">{product.name}</span>
           </div>
           <div>
-            <div className="font-bold text-lg">RD${product.currentPrice}</div>
+            <Price value={product.currentPrice} className="font-bold text-lg" />
             {Number.isFinite(numericPrice) ? (
               <PricePerUnit
                 unit={product.unit}

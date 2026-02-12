@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
 import { ProductImage } from "@/components/product-image";
+import { Price } from "@/components/price";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -211,10 +212,6 @@ export function BestValueProductsClient({
 }
 
 function ProductCard({ product }: { product: BestValueProduct }) {
-  const formattedPrice = product.currentPrice
-    ? `RD$${Number(product.currentPrice).toFixed(2)}`
-    : "Sin precio";
-
   return (
     <div className="rounded-lg border p-3 bg-card hover:shadow-md transition-shadow">
       <Link
@@ -255,7 +252,11 @@ function ProductCard({ product }: { product: BestValueProduct }) {
         </div>
 
         {/* Price */}
-        <p className="text-sm font-semibold text-primary">{formattedPrice}</p>
+        <Price
+          value={product.currentPrice}
+          className="text-sm font-semibold text-primary"
+          fallback="Sin precio"
+        />
       </Link>
     </div>
   );

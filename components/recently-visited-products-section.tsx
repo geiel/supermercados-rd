@@ -7,18 +7,13 @@ import { TypographyH3 } from "@/components/typography-h3";
 import ScrollPeek from "@/components/ui/scroll-peek";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
+import { Price } from "@/components/price";
 import { PricePerUnit } from "@/components/price-per-unit";
 import {
   getRecentlyVisitedProducts,
   type RecentlyVisitedProduct,
 } from "@/lib/recently-visited-products";
 import { toSlug } from "@/lib/utils";
-
-const formatPrice = (price: number) =>
-  price.toLocaleString("es-DO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
 
 export function RecentlyVisitedProductsSection() {
   const [recentProducts, setRecentProducts] = useState<RecentlyVisitedProduct[]>([]);
@@ -94,11 +89,11 @@ export function RecentlyVisitedProductsSection() {
                 <div className="px-2 flex flex-col gap-1">
                   <Unit unit={product.unit} />
                   <span className="line-clamp-2">{product.name}</span>
-                  <span className="font-bold text-lg">
-                    {product.price === null
-                      ? "Precio no disponible"
-                      : `RD$${formatPrice(product.price)}`}
-                  </span>
+                  <Price
+                    value={product.price}
+                    className="font-bold text-lg"
+                    fallback="Precio no disponible"
+                  />
                   {product.price !== null && product.categoryId !== null ? (
                     <PricePerUnit
                       unit={product.unit}
