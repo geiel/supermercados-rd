@@ -4,6 +4,7 @@ import { PricesChart } from "@/components/prices-chart";
 import { ProductBrand } from "@/components/product-brand";
 import { ProductFeedbackSection } from "@/components/product-feedback-section";
 import { ProductImage } from "@/components/product-image";
+import { RecentlyVisitedProductTracker } from "@/components/recently-visited-product-tracker";
 import { RelatedProducts } from "@/components/related-products";
 import { ShopPriceRowActions } from "@/components/shop-price-row";
 import { ScrollToSection } from "@/components/scroll-to-section";
@@ -189,6 +190,16 @@ export default async function Page({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <RecentlyVisitedProductTracker
+        product={{
+          id: product.id,
+          name: product.name,
+          unit: product.unit,
+          image: product.image,
+          price: lowestPrice,
+          categoryId: product.categoryId,
         }}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
