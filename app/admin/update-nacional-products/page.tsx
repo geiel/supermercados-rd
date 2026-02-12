@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { updateProductShopUrl } from "@/lib/admin/product-urls";
 import {
   updateNacionalProducts,
@@ -35,7 +36,7 @@ export default function Page() {
       });
       return { results };
     } catch (error) {
-      console.error(error);
+      Sentry.logger.error("Unexpected error", { error });
       return {
         results: [],
         error:
@@ -65,7 +66,7 @@ export default function Page() {
       revalidatePath("/admin/update-nacional-products");
       return { appliedUrl: url };
     } catch (error) {
-      console.error(error);
+      Sentry.logger.error("Unexpected error", { error });
       return {
         error:
           error instanceof Error

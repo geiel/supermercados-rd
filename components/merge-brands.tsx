@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import {
   productsBrandsSelect,
   productsCategoriesSelect,
@@ -71,7 +72,7 @@ export default function MergeProducts({
           setIgnoredProducts(parsed);
         }
       } catch (error) {
-        console.error("Failed to parse ignoredProducts", error);
+        Sentry.logger.error("Failed to parse ignoredProducts", { error });
       }
     }
 
@@ -83,7 +84,7 @@ export default function MergeProducts({
           setIgnoredWords(parsed);
         }
       } catch (error) {
-        console.error("Failed to parse ignoredWords", error);
+        Sentry.logger.error("Failed to parse ignoredWords", { error });
       }
     }
   }, []);
@@ -117,7 +118,7 @@ export default function MergeProducts({
     try {
       await adminMergeProduct(Number(parentProductId), Number(childProductId));
     } catch (error) {
-      console.error(error);
+      Sentry.logger.error("Unexpected error", { error });
     }
 
     setLoadingProcess(false);

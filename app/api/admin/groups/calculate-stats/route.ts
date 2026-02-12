@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { and, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 
@@ -195,10 +196,7 @@ export async function POST() {
       groupsWithProducts: groupStats.size,
     });
   } catch (error) {
-    console.error(
-      "[api/admin/groups/calculate-stats] Failed to update group stats",
-      error
-    );
+    Sentry.logger.error("[api/admin/groups/calculate-stats] Failed to update group stats", { error });
     return NextResponse.json(
       { message: "Unable to calculate group stats at the moment." },
       { status: 500 }

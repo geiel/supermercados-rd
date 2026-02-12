@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/utils/supabase/server'
@@ -18,7 +19,7 @@ export async function LoginUserGoogle() {
     })
 
     if (error || !data?.url) {
-        console.error('Google sign-in failed', error)
+        Sentry.logger.error('Google sign-in failed', { error })
         return { error: 'Unable to start Google sign-in' }
     }
 

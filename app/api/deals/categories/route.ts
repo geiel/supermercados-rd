@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { and, eq, gt, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 
@@ -130,7 +131,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(groupOptions);
   } catch (error) {
-    console.error("[api/deals/categories] Failed to load categories", error);
+    Sentry.logger.error("[api/deals/categories] Failed to load categories", { error });
     return NextResponse.json(
       { message: "Unable to load categories at the moment." },
       { status: 500 }

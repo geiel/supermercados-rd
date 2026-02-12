@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useMemo, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import type { productsBrandsSelect } from "@/db/schema";
@@ -60,7 +61,7 @@ export function PossibleBrandsClient({
         setHasLoadedCandidates(true);
         setSelectedBrands({});
       } catch (assignError) {
-        console.error(assignError);
+        Sentry.logger.error("Unexpected error", { error: assignError });
         setError(
           assignError instanceof Error
             ? assignError.message
@@ -91,7 +92,7 @@ export function PossibleBrandsClient({
           return next;
         });
       } catch (assignError) {
-        console.error(assignError);
+        Sentry.logger.error("Unexpected error", { error: assignError });
         setError(
           assignError instanceof Error
             ? assignError.message

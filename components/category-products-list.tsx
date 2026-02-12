@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -103,7 +104,7 @@ export function CategoryProductsList({
       setTotalCount(data.total);
       setOffset(data.nextOffset);
     } catch (error) {
-      console.error("[category] Failed to load more products", error);
+      Sentry.logger.error("[category] Failed to load more products", { error });
       setErrorMessage("No se pudieron cargar más productos.");
     } finally {
       if (requestId === requestIdRef.current) {

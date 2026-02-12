@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { db } from "@/db";
 import {
     groups,
@@ -512,7 +513,7 @@ export async function POST(request: Request) {
             shopsGrouped,
         } satisfies StatsApiResponse);
     } catch (error) {
-        console.error("[list/stats] API error:", error);
+        Sentry.logger.error("[list/stats] API error:", { error });
         return NextResponse.json(
             { error: "Failed to calculate stats" },
             { status: 500 }

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 
@@ -223,7 +224,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("[api/groups/price-stats] Failed to load price stats", error);
+    Sentry.logger.error("[api/groups/price-stats] Failed to load price stats", { error });
     return NextResponse.json(
       { message: "Unable to load price stats at the moment." },
       { status: 500 }

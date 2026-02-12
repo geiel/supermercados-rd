@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { cn } from "@/lib/utils";
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 import Image, { ImageProps } from "next/image";
@@ -71,7 +72,7 @@ function ProductImageInner({ productId, ...props }: ProductImageProps) {
       body: JSON.stringify({ productId, imageUrl }),
       keepalive: true,
     }).catch((error) => {
-      console.error("[product-image] Failed to report broken image", error);
+      Sentry.logger.error("[product-image] Failed to report broken image", { error });
     });
   };
 

@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { createHash } from "crypto";
 
 type TrackGroupVisitInput = {
@@ -110,11 +111,10 @@ export async function trackGroupVisit({
     });
 
     if (!response.ok) {
-      console.error(
-        `[posthog] group_visit returned ${response.status} ${response.statusText}`
+      Sentry.logger.error(`[posthog] group_visit returned ${response.status} ${response.statusText}`
       );
     }
   } catch (error) {
-    console.error("[posthog] Failed to track group_visit", error);
+    Sentry.logger.error("[posthog] Failed to track group_visit", { error });
   }
 }

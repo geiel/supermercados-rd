@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
@@ -204,7 +205,7 @@ export function ExploreProductsList({
       return;
     }
 
-    console.error("[explore-products] Failed to load more", error);
+    Sentry.logger.error("[explore-products] Failed to load more", { error });
   }, [error, isFetchNextPageError]);
 
   const products = useMemo(

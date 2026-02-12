@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { getExploreProducts } from "@/lib/explore-products";
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch (error) {
-    console.error("[api/explore-products] Invalid request body", error);
+    Sentry.logger.error("[api/explore-products] Invalid request body", { error });
     return NextResponse.json(
       { message: "Invalid request body." },
       { status: 400 }
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("[api/explore-products] Failed to load products", error);
+    Sentry.logger.error("[api/explore-products] Failed to load products", { error });
     return NextResponse.json(
       { message: "Unable to load products at the moment." },
       { status: 500 }

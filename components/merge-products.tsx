@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useState } from "react";
 import { TypographyH3 } from "./typography-h3";
 import { Input } from "./ui/input";
@@ -31,7 +32,7 @@ export function MergeProductsV2() {
     try {
       await adminMergeProduct(Number(parentProductId), Number(childProductId));
     } catch (error) {
-      console.error(error);
+      Sentry.logger.error("Unexpected error", { error });
     }
 
     setLoadingProcess(false);

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { getDeals, parseShopId } from "@/lib/deals";
@@ -92,7 +93,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("[api/deals] Failed to load deals", error);
+    Sentry.logger.error("[api/deals] Failed to load deals", { error });
     return NextResponse.json(
       { message: "Unable to load deals at the moment." },
       { status: 500 }
