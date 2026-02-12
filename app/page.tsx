@@ -1,7 +1,6 @@
 import { FrontPageDealCard } from "@/components/front-page-deal-card";
 import { GroupCategoriesStrip } from "@/components/group-categories-strip";
 import { HomePageCategoriesSection } from "@/components/home-page-categories-section";
-import { RecentlyVisitedProductsSection } from "@/components/recently-visited-products-section";
 import { TypographyH3 } from "@/components/typography-h3";
 import ScrollPeek from "@/components/ui/scroll-peek";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -93,8 +92,6 @@ export default function Home() {
           </ScrollPeek>
         </div>
       </section>
-
-      <RecentlyVisitedProductsSection />
 
       <Suspense fallback={<HomePageCategoriesSectionSkeleton />}>
         <HomePageCategoriesSection />
