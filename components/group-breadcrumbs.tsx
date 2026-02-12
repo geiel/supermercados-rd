@@ -503,7 +503,7 @@ export function GroupBreadcrumbs({
   if (paths.length === 0) return null;
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
+    <div className={cn("flex flex-col gap-2 overflow-hidden", className)}>
       {paths.map((path, pathIndex) => {
         const key = `${pathIndex}-${path
           .map((item) => `${item.id}-${item.href}`)
