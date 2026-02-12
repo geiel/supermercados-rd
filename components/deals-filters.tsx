@@ -21,6 +21,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { formatPriceWithCurrency } from "@/lib/price-format";
 import {
   DEALS_DISCOUNT_OPTIONS,
   type DealsGroupOption,
@@ -127,7 +128,7 @@ export function DealsActiveFilters({ className }: { className?: string }) {
   }, [currentMinDrop]);
 
   const formatPrice = useCallback((value: number) => {
-    return `RD$${value.toLocaleString()}`;
+    return formatPriceWithCurrency(value) ?? "RD$0";
   }, []);
 
   const priceLabel = useMemo(() => {

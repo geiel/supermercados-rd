@@ -7,6 +7,7 @@ import { AddToListButton } from "@/components/add-to-list-button";
 import { toSlug } from "@/lib/utils";
 import { OfferBadge } from "@/components/offer-badge";
 import { PricePerUnit } from "@/components/price-per-unit";
+import { Price } from "@/components/price";
 
 const SUPERMARKET_BRAND_NAMES = ["Bravo", "Jumbo Market", "Sirena", "Plaza Lama"];
 
@@ -68,7 +69,7 @@ export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
             <span className="line-clamp-2">{deal.name}</span>
           </div>
           <div>
-            <div className="font-bold text-lg">RD${deal.priceToday}</div>
+            <Price value={deal.priceToday} className="font-bold text-lg" />
             {Number.isFinite(numericPrice) && deal.product ? (
               <PricePerUnit
                 unit={deal.unit}

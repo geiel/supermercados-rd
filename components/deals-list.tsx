@@ -9,6 +9,7 @@ import { BadgePercent, ChevronDown } from "lucide-react";
 
 import { AddToListButton } from "@/components/add-to-list-button";
 import { DealsActiveFilters, DealsFilters } from "@/components/deals-filters";
+import { Price } from "@/components/price";
 import { PricePerUnit } from "@/components/price-per-unit";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
@@ -558,7 +559,7 @@ function DealPrice({ deal }: { deal: DealItem }) {
 
   return (
     <div>
-      <div className="font-bold text-lg pt-1">RD${deal.priceToday}</div>
+      <Price value={deal.priceToday} className="font-bold text-lg pt-1" />
       {Number.isFinite(numericPrice) && deal.product ? (
         <PricePerUnit
           unit={deal.unit}

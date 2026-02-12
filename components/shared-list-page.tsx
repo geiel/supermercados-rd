@@ -22,6 +22,7 @@ import { ProductItems } from "@/components/products-items";
 import { useListStats } from "@/hooks/use-list-stats";
 import { useShops } from "@/hooks/use-shops";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatPriceWithCurrency } from "@/lib/price-format";
 import type { CompareMode } from "@/lib/list-calculations";
 import type { shopsSelect, listItemsSelect, listGroupItemsSelect } from "@/db/schema";
 
@@ -284,7 +285,7 @@ export function SharedListPage({ listId }: SharedListPageProps) {
                     <div className="flex flex-col gap-1">
                         <h1 className="font-bold text-2xl">{sharedList.name}</h1>
                         <div className="text-muted-foreground">
-                            {stats.totalProducts} productos · <span className="font-bold text-foreground">RD${stats.totalPrice.toFixed(2)}</span>
+                            {stats.totalProducts} productos · <span className="font-bold text-foreground">{formatPriceWithCurrency(stats.totalPrice) ?? "RD$0"}</span>
                         </div>
                     </div>
 
@@ -372,7 +373,7 @@ export function SharedListPage({ listId }: SharedListPageProps) {
                                         unoptimized
                                     />
                                 </div>
-                                <div className="font-bold">RD${shopTotalPrice.toFixed(2)}</div>
+                                <div className="font-bold">{formatPriceWithCurrency(shopTotalPrice) ?? "RD$0"}</div>
                             </div>
                             <ProductItems
                                 items={items as never}

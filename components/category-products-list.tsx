@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { AddToListButton } from "@/components/add-to-list-button";
 import { PricePerUnit } from "@/components/price-per-unit";
+import { Price } from "@/components/price";
 import { ProductImage } from "@/components/product-image";
 import { Unit } from "@/components/unit";
 import { Spinner } from "@/components/ui/spinner";
@@ -194,7 +195,7 @@ function CategoryProductCard({ product }: { product: HomePageCategoryProduct }) 
           {product.name}
         </div>
         <div>
-          <div className="font-bold text-lg pt-1">RD${product.currentPrice}</div>
+          <Price value={product.currentPrice} className="font-bold text-lg pt-1" />
           {Number.isFinite(numericPrice) ? (
             <PricePerUnit
               unit={product.unit}

@@ -16,6 +16,7 @@ import { toSlug } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
+import { formatPriceWithCurrency } from "@/lib/price-format";
 
 type Product = productsSelect & {
     shopCurrentPrices: Array<productsShopsPrices & { shop: shopsSelect }>
@@ -368,7 +369,7 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                     : priceEntries[0];
 
             if (currentEntry.raw.currentPrice !== undefined && currentEntry.raw.currentPrice !== null) {
-                price = `RD$${currentEntry.raw.currentPrice}`;
+                price = formatPriceWithCurrency(currentEntry.raw.currentPrice) ?? "";
             }
 
             const comparisonEntries = priceEntries.filter(
@@ -387,11 +388,12 @@ const ProductItemATag = React.forwardRef<HTMLAnchorElement, ProductItemATagProps
                 const difference = comparisonEntry.value - currentEntry.value;
 
                 if (difference > 0) {
-                    const label = `RD$${difference.toFixed(2)} mas barato que ${comparisonEntry.shopName}`;
+                    const formattedDifference = formatPriceWithCurrency(difference) ?? "RD$0";
+                    const label = `${formattedDifference} mas barato que ${comparisonEntry.shopName}`;
                     computedComparison = {
                         label,
                         kind: "cheaper",
-                        prefix: `RD$${difference.toFixed(2)} mas barato que `,
+                        prefix: `${formattedDifference} mas barato que `,
                         shopName: comparisonEntry.shopName,
                     };
                 } else if (difference === 0) {
@@ -744,7 +746,7 @@ function GroupDetails({ group, type, onClose, onLocalDeleteGroup, onLocalIgnoreP
                     {hasAlternatives ? (
                         alternatives.map((alternative) => {
                             const priceLabel = Number.isFinite(alternative.price)
-                                ? `RD$${alternative.price.toFixed(2)}`
+                                ? (formatPriceWithCurrency(alternative.price) ?? "RD$--")
                                 : "RD$--";
                             const isLoading = isProductLoading(alternative.product.id);
 
@@ -904,7 +906,7 @@ function ProductDetails({ product, item, onItemClose, onAmountChange, onLocalDel
     const itemId = item?.id;
 
     const price = product.shopCurrentPrices[0]?.currentPrice
-    const formattedPrice = price !== undefined ? `RD$${price}` : ""
+    const formattedPrice = formatPriceWithCurrency(price) ?? ""
     const isLocalOnly = !item && Boolean(onLocalDeleteProduct);
 
     const handleViewProduct = (event: React.MouseEvent<HTMLAnchorElement>) => {

@@ -8,6 +8,7 @@ import {
   productsGroups,
   productsShopsPrices,
 } from "@/db/schema";
+import { formatPriceValue } from "@/lib/price-format";
 import type { PriceStatsResponse, PriceStatsBucket } from "@/types/group-explorer";
 
 type RouteParams = {
@@ -282,5 +283,5 @@ function roundToNiceNumber(value: number): number {
 }
 
 function formatPrice(value: number): string {
-  return value.toLocaleString("es-DO");
+  return formatPriceValue(value);
 }
