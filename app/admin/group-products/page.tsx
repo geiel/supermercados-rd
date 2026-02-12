@@ -321,7 +321,7 @@ async function getUngroupedProducts({
         ${shopFilter}
         ${hiddenFilter}
       )
-    ORDER BY ${productsTable.id} ASC
+    ORDER BY ${productsTable.rank} DESC NULLS LAST, ${productsTable.id} ASC
     LIMIT ${limit}
     OFFSET ${offset}
   `;
