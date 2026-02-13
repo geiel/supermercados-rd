@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { ChevronRight, PackageSearch } from "lucide-react";
 
 import { CategoryIcon } from "@/components/category-icon";
@@ -13,11 +13,12 @@ import {
 } from "@/components/ui/empty";
 import { getGroupCategories } from "@/lib/group-categories";
 
-const getCachedCategories = unstable_cache(
-  async () => getGroupCategories(),
-  ["categorias-page-categories"],
-  { revalidate: 300 }
-);
+async function getCachedCategories() {
+  "use cache";
+  cacheTag("categorias-page-categories");
+  cacheLife("max");
+  return await getGroupCategories();
+}
 
 export default function Page() {
   return (

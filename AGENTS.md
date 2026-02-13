@@ -6,6 +6,7 @@
 - All /admin pages and apis should be only accesible by the admin user.
 - All /api | endpoints that are only being used by /admin pages should be in the /api/admin folder so is protected.
 - Prefer server-side tracking over client-side tracking whenever possible to reduce ad blocker interference.
+- Do not use `unstable_cache`. Use cache components instead (`"use cache"` with `cacheTag` and `cacheLife`).
 
 ## Installing new libraries
 - Always use `pnpm`.

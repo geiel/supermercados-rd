@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { db } from "@/db";
 import { categories as categoriesTable, categoriesGroups } from "@/db/schema";
@@ -52,6 +52,8 @@ async function createCategory(formData: FormData) {
   });
 
   revalidatePath("/admin/categories");
+  revalidateTag("categorias-page-categories", "max");
+  revalidateTag("categorias-layout-categories", "max");
   return { success: true };
 }
 
@@ -88,6 +90,8 @@ async function toggleCategoryGroup(formData: FormData) {
   }
 
   revalidatePath("/admin/categories");
+  revalidateTag("categorias-page-categories", "max");
+  revalidateTag("categorias-layout-categories", "max");
   return { success: true };
 }
 
