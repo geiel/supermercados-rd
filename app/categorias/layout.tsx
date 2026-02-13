@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import Link from "next/link";
 
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,11 +18,12 @@ type LayoutProps = {
   children: ReactNode;
 };
 
-const getCachedLayoutCategories = unstable_cache(
-  async () => getGroupCategories(),
-  ["categorias-layout-categories"],
-  { revalidate: 300 }
-);
+async function getCachedLayoutCategories() {
+  "use cache";
+  cacheTag("categorias-layout-categories");
+  cacheLife("max");
+  return await getGroupCategories();
+}
 
 async function CategoriesBreadcrumbSection() {
   const categories = await getCachedLayoutCategories();
