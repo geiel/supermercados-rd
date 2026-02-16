@@ -11,8 +11,13 @@ import {
   unitTrackerInsert,
 } from "@/db/schema";
 import * as cheerio from "cheerio";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { formatUnit } from "./utils";
+import {
+  findExistingProductAcrossTables,
+  findSourceReferenceAcrossTables,
+  insertProductIntoUnverified,
+} from "./unverified-products";
 
 export type NacionalExistingProduct = {
   existing: {
@@ -127,61 +132,73 @@ export async function getProductListNacional(
     );
 
     const brand = await getCreatedBrand(product.brandName);
+    const brandId = brand?.id;
 
-    const productExist = await db.query.products.findFirst({
-      where: and(
-        eq(products.name, product.name),
-        eq(products.unit, product.unit),
-        eq(products.brandId, brand!.id)
-      ),
-      with: {
-        shopCurrentPrices: true,
-        brand: true,
-      },
+    if (!brandId) {
+      console.log(`[INFO] no brand found continue with next product`);
+      continue;
+    }
+
+    const existingProduct = await findExistingProductAcrossTables({
+      name: product.name,
+      unit: product.unit,
+      brandId,
     });
 
-    if (productExist) {
+    if (existingProduct?.source === "products") {
       existingProducts.push({
         existing: {
-          id: productExist.id,
-          name: productExist.name,
-          unit: productExist.unit,
-          image: productExist.image ?? null,
-          brandName: productExist.brand?.name ?? brand!.name,
+          id: existingProduct.product.id,
+          name: existingProduct.product.name,
+          unit: existingProduct.product.unit,
+          image: existingProduct.product.image ?? null,
+          brandName: brand.name,
         },
         incoming: {
           name: product.name,
           unit: product.unit,
           image: product.image ?? null,
-          brandName: brand!.name,
+          brandName: brand.name,
         },
       });
       console.log(`[INFO] product exist continue with next product`);
       continue;
     }
 
-    product.brandId = brand!.id;
+    if (existingProduct?.source === "unverified_products") {
+      console.log(
+        `[INFO] product already exists in unverified_products, continue with next product`
+      );
+      continue;
+    }
 
-    const priceExist = await db.query.productsShopsPrices.findFirst({
-      where: (prices, { eq }) => eq(prices.url, product.price.url),
+    product.brandId = brandId;
+
+    const sourceReferenceExist = await findSourceReferenceAcrossTables({
+      shopId: product.price.shopId,
+      url: product.price.url,
+      api: product.price.api,
     });
 
-    if (priceExist) {
-      console.log(`[INFO] product price exist continue with next product`);
+    if (sourceReferenceExist) {
+      console.log(
+        `[INFO] product source reference exists in ${sourceReferenceExist.source}, skipping`
+      );
       continue;
     }
 
     try {
-      const insertedProduct = await db
-        .insert(products)
-        .values(product)
-        .returning();
-      product.price.productId = insertedProduct[0].id;
-
-      await db.insert(productsShopsPrices).values(product.price);
-      console.log(`[INFO] product don't exist inserted`);
+      await insertProductIntoUnverified(product, {
+        shopId: product.price.shopId,
+        url: product.price.url,
+        api: product.price.api,
+      });
+      console.log(`[INFO] product inserted into unverified_products`);
     } catch (err) {
-      console.log("[ERROR] Error when trying insert a new product", err);
+      console.log(
+        "[ERROR] Error when trying insert a new unverified product",
+        err
+      );
     }
   }
 

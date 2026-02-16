@@ -42,6 +42,39 @@ export const products = pgTable(
   })
 );
 
+export const unverfiedProducts = pgTable("unverified_products", {
+id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    categoryId: integer()
+      .notNull()
+      .references(() => productsCategories.id),
+    name: text().notNull(),
+    image: text(),
+    unit: text().notNull(),
+    brandId: integer()
+      .notNull()
+      .references(() => productsBrands.id),
+    deleted: boolean().default(false),
+    rank: numeric(),
+    relevance: numeric(),
+    possibleBrandId: integer().references(() => productsBrands.id),
+    baseUnit: text(),
+    baseUnitAmount: numeric(),
+    shopId: integer().references(() => shops.id),
+    url: text(),
+    api: text(),
+  },
+  (table) => ({
+    uniqueProduct: unique("unique_unverified_product").on(
+      table.name,
+      table.unit,
+      table.brandId,
+      table.shopId,
+      table.url,
+      table.api
+    ),
+  })
+);
+
 export const searchPhases = pgTable("search_phrases", {
   phrase: text().primaryKey(),
   groupId: integer().references(() => groups.id)
