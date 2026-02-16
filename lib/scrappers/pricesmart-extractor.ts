@@ -2,7 +2,6 @@
 
 import { db } from "@/db";
 import {
-  products,
   productsBrands,
   productsInsert,
   productsShopsPrices,
@@ -10,9 +9,14 @@ import {
   unitTracker,
   unitTrackerInsert,
 } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { formatUnit } from "./utils";
+import {
+  findExistingProductAcrossTables,
+  findSourceReferenceAcrossTables,
+  insertProductIntoUnverified,
+} from "./unverified-products";
 
 const raw = JSON.stringify([
   {
@@ -128,47 +132,53 @@ export async function getProductListPricesmart(categoryId: number) {
     );
 
     const brand = await getCreatedBrand(product.brandName);
+    const brandId = brand?.id;
 
-    const productExist = await db.query.products.findFirst({
-      where: and(
-        eq(products.name, product.name),
-        eq(products.unit, product.unit),
-        eq(products.brandId, brand!.id)
-      ),
-      with: {
-        shopCurrentPrices: true,
-      },
-    });
-
-    if (productExist) {
-      console.log(`[INFO] product exist continue with next product`);
+    if (!brandId) {
+      console.log(`[INFO] no brand found continue with next product`);
       continue;
     }
 
-    product.brandId = brand!.id;
-
-    const priceExist = await db.query.productsShopsPrices.findFirst({
-      where: (prices, { eq }) => eq(prices.url, product.price.url),
+    const existingProduct = await findExistingProductAcrossTables({
+      name: product.name,
+      unit: product.unit,
+      brandId,
     });
 
-    if (priceExist) {
-      console.log(`[INFO] product price exist continue with next product`);
+    if (existingProduct) {
+      console.log(
+        `[INFO] product exists in ${existingProduct.source}, continue with next product`
+      );
+      continue;
+    }
+
+    product.brandId = brandId;
+
+    const sourceReferenceExist = await findSourceReferenceAcrossTables({
+      shopId: product.price.shopId,
+      url: product.price.url,
+      api: product.price.api,
+    });
+
+    if (sourceReferenceExist) {
+      console.log(
+        `[INFO] product source reference exists in ${sourceReferenceExist.source}, skipping`
+      );
       continue;
     }
 
     try {
-      await db.transaction(async (tx) => {
-        const insertedProduct = await tx
-          .insert(products)
-          .values(product)
-          .returning();
-        product.price.productId = insertedProduct[0].id;
-
-        await tx.insert(productsShopsPrices).values(product.price);
-        console.log(`[INFO] product don't exist inserted`);
+      await insertProductIntoUnverified(product, {
+        shopId: product.price.shopId,
+        url: product.price.url,
+        api: product.price.api,
       });
+      console.log(`[INFO] product inserted into unverified_products`);
     } catch (err) {
-      console.log("[ERROR] Error when trying insert a new product", err);
+      console.log(
+        "[ERROR] Error when trying insert a new unverified product",
+        err
+      );
     }
   }
 

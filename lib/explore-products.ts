@@ -107,39 +107,25 @@ async function updateShopPrices(shopPrices: ProductShopPrice[]) {
   );
 }
 
-async function fetchLowestPrices(
-  productIds: number[],
-  includeHiddenProducts: boolean
-) {
-  if (productIds.length === 0) {
-    return new Map<number, string | null>();
+function getLowestCurrentPrice(shopPrices: ProductShopPrice[]) {
+  let lowest: number | null = null;
+
+  for (const shopPrice of shopPrices) {
+    if (shopPrice.currentPrice === null) {
+      continue;
+    }
+
+    const parsedPrice = Number(shopPrice.currentPrice);
+    if (!Number.isFinite(parsedPrice)) {
+      continue;
+    }
+
+    if (lowest === null || parsedPrice < lowest) {
+      lowest = parsedPrice;
+    }
   }
 
-  const prices = await Promise.all(
-    productIds.map(async (productId) => {
-      const lowerPrice = await db.query.productsShopsPrices.findFirst({
-        columns: {
-          currentPrice: true,
-        },
-        where: (priceTable, { isNotNull, eq, and, or, isNull }) =>
-          includeHiddenProducts
-            ? and(
-                isNotNull(priceTable.currentPrice),
-                eq(priceTable.productId, productId)
-              )
-            : and(
-                isNotNull(priceTable.currentPrice),
-                eq(priceTable.productId, productId),
-                or(isNull(priceTable.hidden), eq(priceTable.hidden, false))
-              ),
-        orderBy: (priceTable, { asc }) => [asc(priceTable.currentPrice)],
-      });
-
-      return { productId, currentPrice: lowerPrice?.currentPrice ?? null };
-    })
-  );
-
-  return new Map(prices.map((price) => [price.productId, price.currentPrice]));
+  return lowest === null ? null : String(lowest);
 }
 
 async function fetchProductsByIds(
@@ -286,7 +272,9 @@ export async function getExploreProducts({
   const displayShopPrices = displayProducts.flatMap(
     (product) => product.shopCurrentPrices
   );
-  await updateShopPrices(displayShopPrices);
+  void updateShopPrices(displayShopPrices).catch((error) => {
+    Sentry.logger.error("[explore-products] Visible price refresh failed", { error });
+  });
 
   const prefetchShopPrices = prefetchedNext.flatMap(
     (product) => product.shopCurrentPrices
@@ -309,13 +297,10 @@ export async function getExploreProducts({
 
   const nextOffset = offset + productsAndTotal.products.length;
 
-  const [lowestPrices, groupResults] = await Promise.all([
-    fetchLowestPrices(productIds, includeHiddenProducts),
-    getExploreParentGroups(productIds, 10),
-  ]);
+  const groupResults = await getExploreParentGroups(productIds, 10);
 
   const products = displayProducts.map((product) =>
-    toExploreProduct(product, shopLogos, lowestPrices.get(product.id) ?? null)
+    toExploreProduct(product, shopLogos, getLowestCurrentPrice(product.shopCurrentPrices))
   );
 
   const prefetch = prefetchedNext.map((product) =>

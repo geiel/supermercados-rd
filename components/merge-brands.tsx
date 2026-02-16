@@ -1,11 +1,7 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
-import {
-  productsBrandsSelect,
-  productsCategoriesSelect,
-  productsSelect,
-} from "@/db/schema";
+import type { productsBrandsSelect, productsCategoriesSelect, productsSelect } from "@/db/schema";
 import { TypographyH3 } from "./typography-h3";
 import { Combobox } from "./combobox";
 import { useEffect, useState } from "react";
@@ -18,9 +14,51 @@ import Image from "next/image";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import {
-  adminMergeProduct,
+  adminMergeProductBySource,
   getSimilarProducts,
+  type ProductSource,
+  type SimilarProductsIgnoredIds,
 } from "@/lib/scrappers/admin-functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+
+type SimilarProductPair = {
+  id1: number;
+  name1: string;
+  image1: string | null;
+  unit1: string;
+  brand1Name: string;
+  deleted1: boolean | null;
+  source1: ProductSource;
+  id2: number;
+  name2: string;
+  image2: string | null;
+  unit2: string;
+  brand2Name: string;
+  deleted2: boolean | null;
+  source2: ProductSource;
+  sml: number;
+  totalSimilar: number;
+};
+
+const EMPTY_IGNORED_IDS: SimilarProductsIgnoredIds = {
+  products: [],
+  unverifiedProducts: [],
+  baseUnverifiedProducts: [],
+};
+
+const SOURCE_LABEL: Record<ProductSource, string> = {
+  products: "Producto",
+  unverified_products: "No verificado",
+};
+
+const IGNORED_PRODUCTS_STORAGE_KEY = "mergeProductsIgnoredIds";
+const IGNORED_WORDS_STORAGE_KEY = "mergeProductsIgnoredWords";
 
 export default function MergeProducts({
   brands,
@@ -33,30 +71,17 @@ export default function MergeProducts({
   const [cateogoryId, setCategoryId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<productsSelect[]>([]);
-  const [similarProducts, setSimilarProducts] = useState<
-    {
-      id1: number;
-      name1: string;
-      image1: string | null;
-      unit1: string;
-      brand1Name: string;
-      deleted1: boolean | null;
-      id2: number;
-      name2: string;
-      image2: string;
-      unit2: string;
-      brand2Name: string;
-      deleted2: boolean | null;
-      sml: number;
-      totalSimilar: number;
-    }[]
-  >([]);
+  const [similarProducts, setSimilarProducts] = useState<SimilarProductPair[]>([]);
   const [parentProductId, setParentProductId] = useState("");
+  const [parentProductSource, setParentProductSource] =
+    useState<ProductSource>("products");
   const [childProductId, setChildProductId] = useState("");
+  const [childProductSource, setChildProductSource] =
+    useState<ProductSource>("products");
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
-  const [ignoredProducts, setIgnoredProducts] = useState<number[]>([]);
-  const [ignoreBaseProducts, setIgnoreBaseProducts] = useState<number[]>([]);
+  const [ignoredIds, setIgnoredIds] =
+    useState<SimilarProductsIgnoredIds>(EMPTY_IGNORED_IDS);
   const [pendingSimilarCount, setPendingSimilarCount] = useState<number | null>(
     null
   );
@@ -64,19 +89,39 @@ export default function MergeProducts({
   const [ignoredWordInput, setIgnoredWordInput] = useState("");
 
   useEffect(() => {
-    const ignoredProductsFromStorage = localStorage.getItem("ignoredProducts");
-    if (ignoredProductsFromStorage) {
+    const ignoredIdsFromStorage = localStorage.getItem(
+      IGNORED_PRODUCTS_STORAGE_KEY
+    );
+    if (ignoredIdsFromStorage) {
       try {
-        const parsed = JSON.parse(ignoredProductsFromStorage);
-        if (Array.isArray(parsed)) {
-          setIgnoredProducts(parsed);
-        }
+        const parsed = JSON.parse(ignoredIdsFromStorage);
+        const parsedProducts = Array.isArray(parsed?.products)
+          ? parsed.products.filter((id: unknown) => Number.isInteger(id))
+          : [];
+        const parsedUnverifiedProducts = Array.isArray(
+          parsed?.unverifiedProducts
+        )
+          ? parsed.unverifiedProducts.filter((id: unknown) => Number.isInteger(id))
+          : [];
+        const parsedBaseUnverifiedProducts = Array.isArray(
+          parsed?.baseUnverifiedProducts
+        )
+          ? parsed.baseUnverifiedProducts.filter((id: unknown) => Number.isInteger(id))
+          : [];
+
+        setIgnoredIds({
+          products: parsedProducts,
+          unverifiedProducts: parsedUnverifiedProducts,
+          baseUnverifiedProducts: parsedBaseUnverifiedProducts,
+        });
       } catch (error) {
-        Sentry.logger.error("Failed to parse ignoredProducts", { error });
+        Sentry.logger.error("Failed to parse ignored IDs", { error });
       }
     }
 
-    const ignoredWordsFromStorage = localStorage.getItem("ignoredWords");
+    const ignoredWordsFromStorage = localStorage.getItem(
+      IGNORED_WORDS_STORAGE_KEY
+    );
     if (ignoredWordsFromStorage) {
       try {
         const parsed = JSON.parse(ignoredWordsFromStorage);
@@ -90,21 +135,26 @@ export default function MergeProducts({
   }, []);
 
   useEffect(() => {
-    if (ignoredProducts.length === 0) {
-      localStorage.removeItem("ignoredProducts");
+    const hasIgnoredProducts =
+      ignoredIds.products.length > 0 ||
+      ignoredIds.unverifiedProducts.length > 0 ||
+      ignoredIds.baseUnverifiedProducts.length > 0;
+
+    if (!hasIgnoredProducts) {
+      localStorage.removeItem(IGNORED_PRODUCTS_STORAGE_KEY);
       return;
     }
 
-    localStorage.setItem("ignoredProducts", JSON.stringify(ignoredProducts));
-  }, [ignoredProducts]);
+    localStorage.setItem(IGNORED_PRODUCTS_STORAGE_KEY, JSON.stringify(ignoredIds));
+  }, [ignoredIds]);
 
   useEffect(() => {
     if (ignoredWords.length === 0) {
-      localStorage.removeItem("ignoredWords");
+      localStorage.removeItem(IGNORED_WORDS_STORAGE_KEY);
       return;
     }
 
-    localStorage.setItem("ignoredWords", JSON.stringify(ignoredWords));
+    localStorage.setItem(IGNORED_WORDS_STORAGE_KEY, JSON.stringify(ignoredWords));
   }, [ignoredWords]);
 
   async function searchProducts() {
@@ -114,9 +164,21 @@ export default function MergeProducts({
   }
 
   async function mergeProduct() {
+    const parentId = Number(parentProductId);
+    const childId = Number(childProductId);
+
+    if (!Number.isInteger(parentId) || !Number.isInteger(childId)) {
+      return;
+    }
+
     setLoadingProcess(true);
     try {
-      await adminMergeProduct(Number(parentProductId), Number(childProductId));
+      await adminMergeProductBySource(
+        parentId,
+        parentProductSource,
+        childId,
+        childProductSource
+      );
     } catch (error) {
       Sentry.logger.error("Unexpected error", { error });
     }
@@ -125,45 +187,81 @@ export default function MergeProducts({
   }
 
   async function searchSimilarProducts() {
+    if (!cateogoryId) {
+      return;
+    }
+
     setLoadingSimilar(true);
     const response = await getSimilarProducts(
       Number(cateogoryId),
-      ignoredProducts,
-      ignoreBaseProducts,
+      ignoredIds,
       ignoredWords
     );
 
-
     setSimilarProducts(response);
     setPendingSimilarCount(response.length > 0 ? response[0].totalSimilar : 0);
-
-    // setSimilarProducts(await getGlobalSimilarProducts(ignoredProducts));
     setLoadingSimilar(false);
   }
 
   function removeItem(
     index: number,
-    productId: number,
-    db = true,
+    product: { id: number; source: ProductSource },
+    persist = true,
     base = false
   ) {
-    if (base) {
-      setIgnoreBaseProducts((ignoredBaseProducts) => [
-        ...ignoredBaseProducts,
-        productId,
-      ]);
+    if (base && product.source === "unverified_products") {
+      setIgnoredIds((prev) => ({
+        ...prev,
+        baseUnverifiedProducts: prev.baseUnverifiedProducts.includes(product.id)
+          ? prev.baseUnverifiedProducts
+          : [...prev.baseUnverifiedProducts, product.id],
+      }));
     }
 
-    if (db) {
-      setIgnoredProducts((prev) => {
-        if (prev.includes(productId)) {
-          return prev;
+    if (persist) {
+      setIgnoredIds((prev) => {
+        if (product.source === "products") {
+          return {
+            ...prev,
+            products: prev.products.includes(product.id)
+              ? prev.products
+              : [...prev.products, product.id],
+          };
         }
 
-        return [...prev, productId];
+        return {
+          ...prev,
+          unverifiedProducts: prev.unverifiedProducts.includes(product.id)
+            ? prev.unverifiedProducts
+            : [...prev.unverifiedProducts, product.id],
+        };
       });
     }
+
     setSimilarProducts((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function setMergeValuesFromPair(pair: SimilarProductPair) {
+    if (pair.source1 === "products" && pair.source2 === "unverified_products") {
+      setParentProductId(pair.id1.toString());
+      setParentProductSource(pair.source1);
+      setChildProductId(pair.id2.toString());
+      setChildProductSource(pair.source2);
+      return;
+    }
+
+    if (pair.source1 === "unverified_products" && pair.source2 === "products") {
+      setParentProductId(pair.id2.toString());
+      setParentProductSource(pair.source2);
+      setChildProductId(pair.id1.toString());
+      setChildProductSource(pair.source1);
+      return;
+    }
+
+    setParentProductId(pair.id1.toString());
+    setParentProductSource(pair.source1);
+    setChildProductId(pair.id2.toString());
+    setChildProductSource(pair.source2);
   }
 
   function addIgnoredWord() {
@@ -236,19 +334,45 @@ export default function MergeProducts({
           </div>
         ) : null}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Input
           type="number"
           value={parentProductId}
           onChange={(e) => setParentProductId(e.target.value)}
           placeholder="ID Padre"
         />
+        <Select
+          value={parentProductSource}
+          onValueChange={(value) => setParentProductSource(value as ProductSource)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Tabla padre" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="products">products</SelectItem>
+            <SelectItem value="unverified_products">unverified_products</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Input
           type="number"
           value={childProductId}
           onChange={(e) => setChildProductId(e.target.value)}
           placeholder="ID Hijo"
         />
+        <Select
+          value={childProductSource}
+          onValueChange={(value) => setChildProductSource(value as ProductSource)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Tabla hijo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="products">products</SelectItem>
+            <SelectItem value="unverified_products">unverified_products</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button onClick={mergeProduct} disabled={loadingProcess}>
           {loadingProcess ? <Loader2 className="animate-spin" /> : null}
           Procesar
@@ -265,14 +389,14 @@ export default function MergeProducts({
           placeholder="Categoría"
           onValueChange={(option) => setCategoryId(option.value)}
         />
-        <Button onClick={searchSimilarProducts}>
+        <Button onClick={searchSimilarProducts} disabled={!cateogoryId}>
           {loadingSimilar ? <Loader2 className="animate-spin" /> : null}
           Buscar similares
         </Button>
         <div>
           <Button
             onClick={() => {
-              setIgnoredProducts([]);
+              setIgnoredIds(EMPTY_IGNORED_IDS);
               setPendingSimilarCount(null);
             }}
           >
@@ -290,72 +414,29 @@ export default function MergeProducts({
       <div className="flex">
         <div className="grid grid-cols-3">
           {similarProducts.map((product, originalIndex) => (
-            <div key={`${product.id1}-${product.id2}`} className="contents">
-              <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]">
-                <div className="flex justify-between">
-                  <div>
-                    <div>{product.brand1Name}</div>
-                    <div className="font-semibold">{product.id1}</div>
-                  </div>
-                  {product.deleted1 ? (
-                    <span className="text-red-500 font-bold">Eliminado</span>
-                  ) : null}
-                </div>
-                <Link
-                  href={`/productos/${toSlug(product.name1)}/${product.id1}`}
-                  className="flex flex-col gap-2"
-                >
-                  <div className="flex justify-center">
-                    {product.image1 ? (
-                      <Image
-                        src={product.image1}
-                        width={200}
-                        height={200}
-                        alt={product.name1}
-                        unoptimized
-                      />
-                    ) : null}
-                  </div>
-                  <Badge>{product.unit1}</Badge>
-                  <div className="font-semibold">{product.name1}</div>
-                </Link>
-              </div>
-              <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]">
-                <div className="flex justify-between">
-                  <div>
-                    <div>{product.brand2Name}</div>
-                    <div className="font-semibold">{product.id2}</div>
-                  </div>
-                  {product.deleted2 ? (
-                    <span className="text-red-500 font-bold">Eliminado</span>
-                  ) : null}
-                </div>
-                <Link
-                  href={`/productos/${toSlug(product.name2)}/${product.id2}`}
-                  className="flex flex-col gap-2"
-                >
-                  <div className="flex justify-center">
-                    {product.image2 ? (
-                      <Image
-                        src={product.image2}
-                        width={200}
-                        height={200}
-                        alt={product.name2}
-                        unoptimized
-                      />
-                    ) : null}
-                  </div>
-                  <Badge>{product.unit2}</Badge>
-                  <div className="font-semibold">{product.name2}</div>
-                </Link>
-              </div>
+            <div key={`${product.source1}-${product.id1}-${product.source2}-${product.id2}`} className="contents">
+              <SimilarProductCard
+                id={product.id1}
+                name={product.name1}
+                image={product.image1}
+                unit={product.unit1}
+                brandName={product.brand1Name}
+                deleted={product.deleted1}
+                source={product.source1}
+              />
+              <SimilarProductCard
+                id={product.id2}
+                name={product.name2}
+                image={product.image2}
+                unit={product.unit2}
+                brandName={product.brand2Name}
+                deleted={product.deleted2}
+                source={product.source2}
+              />
               <div className="flex flex-col gap-2">
                 <Button
                   variant="secondary"
-                  onClick={() => {
-                    setParentProductId(product.id1.toString());
-                    setChildProductId(product.id2.toString());
-                  }}
+                  onClick={() => setMergeValuesFromPair(product)}
                 >
                   Usar IDs en formulario
                 </Button>
@@ -363,14 +444,24 @@ export default function MergeProducts({
                   <Button
                     variant="outline"
                     onClick={() =>
-                      removeItem(originalIndex, product.id2, false, false)
+                      removeItem(
+                        originalIndex,
+                        { id: product.id2, source: product.source2 },
+                        false,
+                        false
+                      )
                     }
                   >
                     Ignorar
                   </Button>
                   <Button
                     onClick={() =>
-                      removeItem(originalIndex, product.id2, true, false)
+                      removeItem(
+                        originalIndex,
+                        { id: product.id2, source: product.source2 },
+                        true,
+                        false
+                      )
                     }
                   >
                     Ignorar DB
@@ -378,7 +469,12 @@ export default function MergeProducts({
                   <Button
                     variant="destructive"
                     onClick={() =>
-                      removeItem(originalIndex, product.id1, false, true)
+                      removeItem(
+                        originalIndex,
+                        { id: product.id1, source: product.source1 },
+                        false,
+                        true
+                      )
                     }
                   >
                     Ignorar Base
@@ -418,6 +514,60 @@ export default function MergeProducts({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SimilarProductCard({
+  id,
+  name,
+  image,
+  unit,
+  brandName,
+  deleted,
+  source,
+}: {
+  id: number;
+  name: string;
+  image: string | null;
+  unit: string;
+  brandName: string;
+  deleted: boolean | null;
+  source: ProductSource;
+}) {
+  const content = (
+    <>
+      <div className="flex justify-between gap-2">
+        <div>
+          <div>{brandName}</div>
+          <div className="font-semibold">{id}</div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Badge variant={source === "products" ? "default" : "secondary"}>
+            {SOURCE_LABEL[source]}
+          </Badge>
+          {deleted ? <span className="text-red-500 font-bold">Eliminado</span> : null}
+        </div>
+      </div>
+      <div className="flex justify-center">
+        {image ? (
+          <Image src={image} width={200} height={200} alt={name} unoptimized />
+        ) : null}
+      </div>
+      <Badge>{unit}</Badge>
+      <div className="font-semibold">{name}</div>
+    </>
+  );
+
+  return (
+    <div className="p-4 border border-[#eeeeee] mb-[-1px] ml-[-1px]">
+      {source === "products" ? (
+        <Link href={`/productos/${toSlug(name)}/${id}`} className="flex flex-col gap-2">
+          {content}
+        </Link>
+      ) : (
+        <div className="flex flex-col gap-2">{content}</div>
+      )}
     </div>
   );
 }

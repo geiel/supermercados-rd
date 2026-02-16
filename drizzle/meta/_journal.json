@@ -351,6 +351,13 @@
       "when": 1770165809701,
       "tag": "0049_typical_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1771281512100,
+      "tag": "0050_wet_master_mold",
+      "breakpoints": true
     }
   ]
 }

@@ -10,10 +10,15 @@ import {
   unitTrackerInsert,
 } from "@/db/schema";
 import * as cheerio from "cheerio";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { formatUnit } from "./utils";
 import { fetchWithBrowser } from "./http-client";
+import {
+  findExistingProductAcrossTables,
+  findSourceReferenceAcrossTables,
+  insertProductIntoUnverified,
+} from "./unverified-products";
 
 async function getHtml(url: string) {
   // Use browser-based fetch to bypass Cloudflare
@@ -81,61 +86,72 @@ export async function getProductListJumbo(categoryId: number, url: string) {
     console.log(
       `[INFO] start process product=${product.name} ${product.unit} url=${product.price.url}`
     );
-    const exist = await db.query.products.findFirst({
-      where: and(
-        eq(products.name, product.name),
-        eq(products.unit, product.unit)
-      ),
-      with: {
-        shopCurrentPrices: true,
+    const existingProduct = await findExistingProductAcrossTables(
+      {
+        name: product.name,
+        unit: product.unit,
+        brandId: product.brandId,
       },
-    });
+      { matchBrand: false }
+    );
 
-    if (!exist) {
-      product.image = await getImageUrl(product.price.url);
+    if (existingProduct?.source === "products") {
+      product.price.productId = existingProduct.product.id;
+      await db
+        .insert(productsShopsPrices)
+        .values(product.price)
+        .onConflictDoNothing();
 
-      const priceExist = await db.query.productsShopsPrices.findFirst({
-        where: (prices, { eq }) => eq(prices.url, product.price.url),
-      });
-
-      if (priceExist) {
-        console.log(`[INFO] product price exist continue with next product`);
-        continue;
+      if (existingProduct.product.brandId === 53) {
+        console.log(
+          `[INFO] product is from nacional update to Centro Cuesta Nacional`
+        );
+        await db
+          .update(products)
+          .set({
+            brandId: 81,
+          })
+          .where(eq(products.id, existingProduct.product.id));
       }
-
-      try {
-        const insertedProduct = await db
-          .insert(products)
-          .values(product)
-          .returning();
-        product.price.productId = insertedProduct[0].id;
-
-        await db.insert(productsShopsPrices).values(product.price);
-        console.log(`[INFO] product don't exist inserted`);
-      } catch (err) {
-        console.log("[ERROR] Error when trying insert a new product", err);
-      }
+      console.log(`[INFO] product exists in products updated`);
       continue;
     }
 
-    product.price.productId = exist.id;
-    await db
-      .insert(productsShopsPrices)
-      .values(product.price)
-      .onConflictDoNothing();
-
-    if (exist.brandId === 53) {
+    if (existingProduct?.source === "unverified_products") {
       console.log(
-        `[INFO] product is from nacional update to Centro Cuesta Nacional`
+        `[INFO] product already exists in unverified_products, skipping`
       );
-      await db
-        .update(products)
-        .set({
-          brandId: 81,
-        })
-        .where(eq(products.id, exist.id));
+      continue;
     }
-    console.log(`[INFO] product 'exist' updated`);
+
+    product.image = await getImageUrl(product.price.url);
+
+    const sourceReferenceExist = await findSourceReferenceAcrossTables({
+      shopId: product.price.shopId,
+      url: product.price.url,
+      api: product.price.api,
+    });
+
+    if (sourceReferenceExist) {
+      console.log(
+        `[INFO] product source reference exists in ${sourceReferenceExist.source}, skipping`
+      );
+      continue;
+    }
+
+    try {
+      await insertProductIntoUnverified(product, {
+        shopId: product.price.shopId,
+        url: product.price.url,
+        api: product.price.api,
+      });
+      console.log(`[INFO] product inserted into unverified_products`);
+    } catch (err) {
+      console.log(
+        "[ERROR] Error when trying insert a new unverified product",
+        err
+      );
+    }
   }
 
   await db.insert(unitTracker).values(unitTrackers).onConflictDoNothing();

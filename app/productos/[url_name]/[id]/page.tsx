@@ -661,51 +661,51 @@ async function getProductData(id: number) {
   cacheLife("product");
 
   return await db.query.products.findFirst({
-    columns: {
-      id: true,
-      name: true,
-      image: true,
-      unit: true,
-      categoryId: true,
-    },
-    where: (products, { eq }) => eq(products.id, id),
-    with: {
-      shopCurrentPrices: {
-        columns: {
-          productId: true,
-          shopId: true,
-          url: true,
-          api: true,
-          currentPrice: true,
-          regularPrice: true,
-          updateAt: true,
-          hidden: true,
-        },
-        where: (scp, { isNull, eq, or }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+      columns: {
+        id: true,
+        name: true,
+        image: true,
+        unit: true,
+        categoryId: true,
       },
-      brand: {
-        columns: {
-          id: true,
-          name: true,
+      where: (products, { eq }) => eq(products.id, id),
+      with: {
+        shopCurrentPrices: {
+          columns: {
+            productId: true,
+            shopId: true,
+            url: true,
+            api: true,
+            currentPrice: true,
+            regularPrice: true,
+            updateAt: true,
+            hidden: true,
+          },
+          where: (scp, { isNull, eq, or }) =>
+            or(isNull(scp.hidden), eq(scp.hidden, false)),
+          orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+        },
+        brand: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+        possibleBrand: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+        pricesHistory: true,
+        visibilityHistory: true,
+        groupProduct: {
+          columns: {
+            groupId: true,
+          },
         },
       },
-      possibleBrand: {
-        columns: {
-          id: true,
-          name: true,
-        },
-      },
-      pricesHistory: true,
-      visibilityHistory: true,
-      groupProduct: {
-        columns: {
-          groupId: true,
-        },
-      },
-    },
-  });
+    });
 }
 
 async function getProductMetadata(id: number) {
@@ -714,31 +714,31 @@ async function getProductMetadata(id: number) {
   cacheLife("product");
 
   return await db.query.products.findFirst({
-    columns: { name: true, unit: true, image: true },
-    where: (products, { eq }) => eq(products.id, id),
-    with: {
-      shopCurrentPrices: {
-        columns: { currentPrice: true },
-        where: (scp, { isNull, eq, or }) =>
-          or(isNull(scp.hidden), eq(scp.hidden, false)),
-        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
-        limit: 1,
+      columns: { name: true, unit: true, image: true },
+      where: (products, { eq }) => eq(products.id, id),
+      with: {
+        shopCurrentPrices: {
+          columns: { currentPrice: true },
+          where: (scp, { isNull, eq, or }) =>
+            or(isNull(scp.hidden), eq(scp.hidden, false)),
+          orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+          limit: 1,
+        },
+        brand: { columns: { name: true } },
       },
-      brand: { columns: { name: true } },
-    },
-  });
+    });
 }
 
 async function getShops() {
   "use cache";
   cacheLife("days");
   return await db.query.shops.findMany({
-    columns: {
-      id: true,
-      name: true,
-      logo: true,
-    },
-  });
+      columns: {
+        id: true,
+        name: true,
+        logo: true,
+      },
+    });
 }
 
 function getRelatedProductsCategoryLink(
@@ -809,46 +809,46 @@ async function getRelatedProductsByIds(productIds: number[]) {
   }
 
   const productsRows = await db.query.products.findMany({
-    columns: {
-      id: true,
-      name: true,
-      image: true,
-      unit: true,
-      categoryId: true,
-    },
-    where: (products, { inArray }) => inArray(products.id, productIds),
-    with: {
-      brand: {
-        columns: {
-          id: true,
-          name: true,
+      columns: {
+        id: true,
+        name: true,
+        image: true,
+        unit: true,
+        categoryId: true,
+      },
+      where: (products, { inArray }) => inArray(products.id, productIds),
+      with: {
+        brand: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+        possibleBrand: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+        shopCurrentPrices: {
+          columns: {
+            shopId: true,
+            currentPrice: true,
+          },
+          where: (scp, { and, isNotNull, isNull, eq, or }) =>
+            and(
+              isNotNull(scp.currentPrice),
+              or(isNull(scp.hidden), eq(scp.hidden, false))
+            ),
+          orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
+        },
+        productDeal: {
+          columns: {
+            dropPercentage: true,
+          },
         },
       },
-      possibleBrand: {
-        columns: {
-          id: true,
-          name: true,
-        },
-      },
-      shopCurrentPrices: {
-        columns: {
-          shopId: true,
-          currentPrice: true,
-        },
-        where: (scp, { and, isNotNull, isNull, eq, or }) =>
-          and(
-            isNotNull(scp.currentPrice),
-            or(isNull(scp.hidden), eq(scp.hidden, false))
-          ),
-        orderBy: (prices, { asc }) => [asc(prices.currentPrice)],
-      },
-      productDeal: {
-        columns: {
-          dropPercentage: true,
-        },
-      },
-    },
-  });
+    });
 
   const productById = new Map(productsRows.map((item) => [item.id, item]));
   return productIds
@@ -890,47 +890,47 @@ async function getSupermarketAlternatives({
   const similarityScore = sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${currentProductName})))`;
 
   const candidateRows = await db
-    .select({
-      productId: products.id,
-      productName: products.name,
-      productUnit: products.unit,
-      brandId: products.brandId,
-      possibleBrandId: products.possibleBrandId,
-      shopIds: sql<number[]>`array_agg(distinct ${productsShopsPrices.shopId})`,
-      similarityScore,
-      rankScore,
-    })
-    .from(productsGroups)
-    .innerJoin(
-      products,
-      and(
-        eq(products.id, productsGroups.productId),
-        or(isNull(products.deleted), eq(products.deleted, false))
+      .select({
+        productId: products.id,
+        productName: products.name,
+        productUnit: products.unit,
+        brandId: products.brandId,
+        possibleBrandId: products.possibleBrandId,
+        shopIds: sql<number[]>`array_agg(distinct ${productsShopsPrices.shopId})`,
+        similarityScore,
+        rankScore,
+      })
+      .from(productsGroups)
+      .innerJoin(
+        products,
+        and(
+          eq(products.id, productsGroups.productId),
+          or(isNull(products.deleted), eq(products.deleted, false))
+        )
       )
-    )
-    .innerJoin(
-      productsShopsPrices,
-      and(
-        eq(productsShopsPrices.productId, products.id),
-        isNotNull(productsShopsPrices.currentPrice),
-        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      .innerJoin(
+        productsShopsPrices,
+        and(
+          eq(productsShopsPrices.productId, products.id),
+          isNotNull(productsShopsPrices.currentPrice),
+          or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+        )
       )
-    )
-    .where(
-      and(
-        eq(productsGroups.groupId, groupId),
-        ne(products.id, currentProductId)
+      .where(
+        and(
+          eq(productsGroups.groupId, groupId),
+          ne(products.id, currentProductId)
+        )
       )
-    )
-    .groupBy(
-      products.id,
-      products.name,
-      products.brandId,
-      products.possibleBrandId,
-      products.rank
-    )
-    .orderBy(desc(similarityScore), desc(rankScore), desc(products.id))
-    .limit(MAX_SUPERMARKET_ALTERNATIVE_CANDIDATES);
+      .groupBy(
+        products.id,
+        products.name,
+        products.brandId,
+        products.possibleBrandId,
+        products.rank
+      )
+      .orderBy(desc(similarityScore), desc(rankScore), desc(products.id))
+      .limit(MAX_SUPERMARKET_ALTERNATIVE_CANDIDATES);
 
   if (candidateRows.length === 0) {
     return [];
@@ -1267,35 +1267,35 @@ async function getHighRankingRelatedProductsByCategory(
   const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
 
   const productIdsRows = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(
-      and(
-        or(isNull(products.deleted), eq(products.deleted, false)),
-        ne(products.id, currentProductId),
-        sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${name}))) >= ${HIGH_SIMILARITY_SIM_SCORE_THRESHOLD}`,
-        sql`EXISTS (
-          SELECT 1
-          FROM ${productsGroups}
-          INNER JOIN ${categoriesGroups}
-            ON ${categoriesGroups.groupId} = ${productsGroups.groupId}
-          WHERE ${productsGroups.productId} = ${products.id}
-            AND ${categoriesGroups.categoryId} = ${categoryId}
-        )`,
-        sql`EXISTS (
-          SELECT 1
-          FROM ${productsShopsPrices}
-          WHERE ${productsShopsPrices.productId} = ${products.id}
-            AND ${productsShopsPrices.currentPrice} IS NOT NULL
-            AND (
-              ${productsShopsPrices.hidden} IS NULL
-              OR ${productsShopsPrices.hidden} = FALSE
-            )
-        )`
+      .select({ id: products.id })
+      .from(products)
+      .where(
+        and(
+          or(isNull(products.deleted), eq(products.deleted, false)),
+          ne(products.id, currentProductId),
+          sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${name}))) >= ${HIGH_SIMILARITY_SIM_SCORE_THRESHOLD}`,
+          sql`EXISTS (
+            SELECT 1
+            FROM ${productsGroups}
+            INNER JOIN ${categoriesGroups}
+              ON ${categoriesGroups.groupId} = ${productsGroups.groupId}
+            WHERE ${productsGroups.productId} = ${products.id}
+              AND ${categoriesGroups.categoryId} = ${categoryId}
+          )`,
+          sql`EXISTS (
+            SELECT 1
+            FROM ${productsShopsPrices}
+            WHERE ${productsShopsPrices.productId} = ${products.id}
+              AND ${productsShopsPrices.currentPrice} IS NOT NULL
+              AND (
+                ${productsShopsPrices.hidden} IS NULL
+                OR ${productsShopsPrices.hidden} = FALSE
+              )
+          )`
+        )
       )
-    )
-    .orderBy(desc(rankOrder), desc(products.id))
-    .limit(limit);
+      .orderBy(desc(rankOrder), desc(products.id))
+      .limit(limit);
 
   const productIds = productIdsRows.map((row) => row.id);
   return getRelatedProductsByIds(productIds);
@@ -1312,27 +1312,27 @@ async function getRelatedProductsBySimilarityNoGroup(
   const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
 
   const productIdsRows = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(
-      and(
-        or(isNull(products.deleted), eq(products.deleted, false)),
-        ne(products.id, currentProductId),
-        sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${name}))) > ${NO_GROUP_SIMILARITY_MIN_THRESHOLD}`,
-        sql`EXISTS (
-          SELECT 1
-          FROM ${productsShopsPrices}
-          WHERE ${productsShopsPrices.productId} = ${products.id}
-            AND ${productsShopsPrices.currentPrice} IS NOT NULL
-            AND (
-              ${productsShopsPrices.hidden} IS NULL
-              OR ${productsShopsPrices.hidden} = FALSE
-            )
-        )`
+      .select({ id: products.id })
+      .from(products)
+      .where(
+        and(
+          or(isNull(products.deleted), eq(products.deleted, false)),
+          ne(products.id, currentProductId),
+          sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${name}))) > ${NO_GROUP_SIMILARITY_MIN_THRESHOLD}`,
+          sql`EXISTS (
+            SELECT 1
+            FROM ${productsShopsPrices}
+            WHERE ${productsShopsPrices.productId} = ${products.id}
+              AND ${productsShopsPrices.currentPrice} IS NOT NULL
+              AND (
+                ${productsShopsPrices.hidden} IS NULL
+                OR ${productsShopsPrices.hidden} = FALSE
+              )
+          )`
+        )
       )
-    )
-    .orderBy(desc(rankOrder), desc(products.id))
-    .limit(limit);
+      .orderBy(desc(rankOrder), desc(products.id))
+      .limit(limit);
 
   const productIds = productIdsRows.map((row) => row.id);
   return getRelatedProductsByIds(productIds);
@@ -1356,27 +1356,27 @@ async function getRelatedProductsFromSameGroup({
   const rankOrder = sql<number>`coalesce(${products.rank}, 0)`;
 
   const productIdsRows = await db
-    .select({ id: products.id })
-    .from(productsGroups)
-    .innerJoin(
-      products,
-      and(
-        eq(products.id, productsGroups.productId),
-        or(isNull(products.deleted), eq(products.deleted, false))
+      .select({ id: products.id })
+      .from(productsGroups)
+      .innerJoin(
+        products,
+        and(
+          eq(products.id, productsGroups.productId),
+          or(isNull(products.deleted), eq(products.deleted, false))
+        )
       )
-    )
-    .innerJoin(
-      productsShopsPrices,
-      and(
-        eq(productsShopsPrices.productId, products.id),
-        isNotNull(productsShopsPrices.currentPrice),
-        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      .innerJoin(
+        productsShopsPrices,
+        and(
+          eq(productsShopsPrices.productId, products.id),
+          isNotNull(productsShopsPrices.currentPrice),
+          or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+        )
       )
-    )
-    .where(eq(productsGroups.groupId, groupId))
-    .groupBy(products.id, products.rank)
-    .orderBy(desc(rankOrder), desc(products.id))
-    .limit(100);
+      .where(eq(productsGroups.groupId, groupId))
+      .groupBy(products.id, products.rank)
+      .orderBy(desc(rankOrder), desc(products.id))
+      .limit(100);
 
   const excludedIds = new Set([currentProductId, ...excludedProductIds]);
   const productIds = productIdsRows
@@ -1414,32 +1414,32 @@ async function getRelatedProductsFromGroupByNameSimilarity({
   const similarityScore = sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${currentProductName})))`;
 
   const productIdsRows = await db
-    .select({ id: products.id })
-    .from(productsGroups)
-    .innerJoin(
-      products,
-      and(
-        eq(products.id, productsGroups.productId),
-        or(isNull(products.deleted), eq(products.deleted, false))
+      .select({ id: products.id })
+      .from(productsGroups)
+      .innerJoin(
+        products,
+        and(
+          eq(products.id, productsGroups.productId),
+          or(isNull(products.deleted), eq(products.deleted, false))
+        )
       )
-    )
-    .innerJoin(
-      productsShopsPrices,
-      and(
-        eq(productsShopsPrices.productId, products.id),
-        isNotNull(productsShopsPrices.currentPrice),
-        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      .innerJoin(
+        productsShopsPrices,
+        and(
+          eq(productsShopsPrices.productId, products.id),
+          isNotNull(productsShopsPrices.currentPrice),
+          or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+        )
       )
-    )
-    .where(
-      and(
-        eq(productsGroups.groupId, groupId),
-        sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${currentProductName}))) >= ${minimumSimilarity}`
+      .where(
+        and(
+          eq(productsGroups.groupId, groupId),
+          sql`similarity(unaccent(lower(${products.name})), unaccent(lower(${currentProductName}))) >= ${minimumSimilarity}`
+        )
       )
-    )
-    .groupBy(products.id, products.rank)
-    .orderBy(desc(similarityScore), desc(rankOrder), desc(products.id))
-    .limit(100);
+      .groupBy(products.id, products.rank)
+      .orderBy(desc(similarityScore), desc(rankOrder), desc(products.id))
+      .limit(100);
 
   const excludedIds = new Set([currentProductId, ...excludedProductIds]);
   const productIds = productIdsRows
@@ -1490,28 +1490,28 @@ async function getVisibleProductsCountByGroupIds(groupIds: number[]) {
   }
 
   const rows = await db
-    .select({
-      groupId: productsGroups.groupId,
-      count: sql<number>`count(distinct ${products.id})`,
-    })
-    .from(productsGroups)
-    .innerJoin(
-      products,
-      and(
-        eq(products.id, productsGroups.productId),
-        or(isNull(products.deleted), eq(products.deleted, false))
+      .select({
+        groupId: productsGroups.groupId,
+        count: sql<number>`count(distinct ${products.id})`,
+      })
+      .from(productsGroups)
+      .innerJoin(
+        products,
+        and(
+          eq(products.id, productsGroups.productId),
+          or(isNull(products.deleted), eq(products.deleted, false))
+        )
       )
-    )
-    .innerJoin(
-      productsShopsPrices,
-      and(
-        eq(productsShopsPrices.productId, products.id),
-        isNotNull(productsShopsPrices.currentPrice),
-        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      .innerJoin(
+        productsShopsPrices,
+        and(
+          eq(productsShopsPrices.productId, products.id),
+          isNotNull(productsShopsPrices.currentPrice),
+          or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+        )
       )
-    )
-    .where(inArray(productsGroups.groupId, groupIds))
-    .groupBy(productsGroups.groupId);
+      .where(inArray(productsGroups.groupId, groupIds))
+      .groupBy(productsGroups.groupId);
 
   return new Map(rows.map((row) => [row.groupId, Number(row.count)]));
 }
