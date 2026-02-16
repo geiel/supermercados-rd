@@ -13,7 +13,10 @@ interface ScrollPeekProps {
   gutterLeft?: string;
   endPadding?: string;
   itemWidth?: string;
+  itemWidthSm?: string;
   itemWidthMd?: string;
+  itemWidthLg?: string;
+  itemWidthXl?: string;
   showNavButtons?: boolean;
 }
 
@@ -26,7 +29,10 @@ export default function ScrollPeek({
   gutterLeft = "0px",
   endPadding = "0px",
   itemWidth,
+  itemWidthSm,
   itemWidthMd,
+  itemWidthLg,
+  itemWidthXl,
   showNavButtons = true
 }: ScrollPeekProps) {
   const id = useId();
@@ -35,7 +41,8 @@ export default function ScrollPeek({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const baseItemWidth = itemWidth ?? itemWidthMd;
+  const baseItemWidth =
+    itemWidth ?? itemWidthSm ?? itemWidthMd ?? itemWidthLg ?? itemWidthXl;
   const hasItemWidth = Boolean(baseItemWidth);
 
   const checkScrollPosition = useCallback(() => {
@@ -83,11 +90,31 @@ export default function ScrollPeek({
   const baseCss = baseItemWidth
     ? `[data-scroll-peek-id="${id}"] { --scroll-peek-item-width: ${baseItemWidth}; }`
     : "";
-  const responsiveCss =
-    itemWidthMd && baseItemWidth !== itemWidthMd
+  const responsiveSmCss =
+    itemWidthSm
+      ? `@media (min-width: 640px) { [data-scroll-peek-id="${id}"] { --scroll-peek-item-width: ${itemWidthSm}; } }`
+      : "";
+  const responsiveMdCss =
+    itemWidthMd
       ? `@media (min-width: 768px) { [data-scroll-peek-id="${id}"] { --scroll-peek-item-width: ${itemWidthMd}; } }`
       : "";
-  const widthCss = [baseCss, responsiveCss].filter(Boolean).join("\n");
+  const responsiveLgCss =
+    itemWidthLg
+      ? `@media (min-width: 1024px) { [data-scroll-peek-id="${id}"] { --scroll-peek-item-width: ${itemWidthLg}; } }`
+      : "";
+  const responsiveXlCss =
+    itemWidthXl
+      ? `@media (min-width: 1280px) { [data-scroll-peek-id="${id}"] { --scroll-peek-item-width: ${itemWidthXl}; } }`
+      : "";
+  const widthCss = [
+    baseCss,
+    responsiveSmCss,
+    responsiveMdCss,
+    responsiveLgCss,
+    responsiveXlCss,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return (
     <div 
@@ -146,7 +173,7 @@ export default function ScrollPeek({
         className={cn(
           hideScrollbar &&
             "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
-          "w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory [&>*]:min-w-full [&>*]:w-max [&>*]:snap-start [&>*]:shrink-0 [&>*>*]:snap-start [&>*>*]:shrink-0",
+          "w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory [container-type:inline-size] [&>*]:min-w-full [&>*]:w-max [&>*]:snap-start [&>*]:shrink-0 [&>*>*]:snap-start [&>*>*]:shrink-0",
           hasItemWidth && "[&>*>*]:w-[var(--scroll-peek-item-width)]",
           className
         )}

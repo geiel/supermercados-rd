@@ -10,8 +10,16 @@ export function RelatedProducts({
   relatedProducts: RelatedProductCardProduct[];
 }) {
   return (
-    <ScrollPeek itemWidth="150px">
-      <div className="flex space-x-4 p-2">
+    <ScrollPeek
+      itemWidth="136px"
+      itemWidthSm="144px"
+      itemWidthMd="152px"
+      itemWidthLg="164px"
+      itemWidthXl="176px"
+      gutter="8px"
+      peek="24%"
+    >
+      <div className="flex space-x-2 p-2">
         {relatedProducts.map((relatedProduct) => (
           <RelatedProductCard key={relatedProduct.id} product={relatedProduct} />
         ))}
