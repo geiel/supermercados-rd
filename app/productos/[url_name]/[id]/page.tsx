@@ -7,6 +7,7 @@ import { ProductFeedbackSection } from "@/components/product-feedback-section";
 import { ProductImage } from "@/components/product-image";
 import { RelatedProducts } from "@/components/related-products";
 import { ShopPriceRowActions } from "@/components/shop-price-row";
+import { SupermarketAlternatives } from "@/components/supermarket-alternatives";
 import { ScrollToSection } from "@/components/scroll-to-section";
 import { Button } from "@/components/ui/button";
 import { Unit } from "@/components/unit";
@@ -15,6 +16,8 @@ import { db } from "@/db";
 import { categoriesGroups, products, productsGroups, productsShopsPrices } from "@/db/schema";
 import { getGroupBreadcrumbPaths, type GroupBreadcrumbItem } from "@/lib/group-breadcrumbs";
 import { formatPriceValue } from "@/lib/price-format";
+import { parseUnit } from "@/lib/unit-utils";
+import { sanitizeForTsQuery } from "@/lib/utils";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import {
   ChartNoAxesColumnDecreasing,
@@ -34,6 +37,57 @@ const MAX_ALLOWED_RELATED_PRODUCTS = 16;
 const HIGH_SIMILARITY_SIM_SCORE_THRESHOLD = 0.5;
 const NO_GROUP_SIMILARITY_MIN_THRESHOLD = 0.3;
 const PARENT_GROUP_FALLBACK_SIMILARITY_MIN_THRESHOLD = 0.1;
+const MAX_SUPERMARKET_ALTERNATIVE_CANDIDATES = 400;
+const SUPERMARKET_ALTERNATIVE_PRIORITY_SIMILARITY_THRESHOLD = 0.12;
+const SUPERMARKET_ALTERNATIVE_CLOSE_UNIT_RATIO_THRESHOLD = 0.65;
+const STRICT_STORE_BRAND_IDENTITY_IDS = new Set([30, 69, 80]);
+
+type SupermarketAlternativeTargetKey =
+  | "nacional-jumbo"
+  | "sirena"
+  | "bravo"
+  | "plaza-lama"
+  | "pricesmart";
+
+type SupermarketAlternativeTarget = {
+  key: SupermarketAlternativeTargetKey;
+  shopIds: number[];
+  brandIds: number[];
+  fallbackKeywords: string[];
+};
+
+const SUPERMARKET_ALTERNATIVE_TARGETS: SupermarketAlternativeTarget[] = [
+  {
+    key: "nacional-jumbo",
+    shopIds: [2, 3],
+    brandIds: [28, 53, 54, 55, 233],
+    fallbackKeywords: ["lider", "nacional", "origen nacional"],
+  },
+  {
+    key: "sirena",
+    shopIds: [1],
+    brandIds: [9, 30, 2527],
+    fallbackKeywords: ["wala", "zerca"],
+  },
+  {
+    key: "bravo",
+    shopIds: [6],
+    brandIds: [80, 195, 2532],
+    fallbackKeywords: ["bravo", "mubravo", "ia", "gourmet"],
+  },
+  {
+    key: "plaza-lama",
+    shopIds: [4],
+    brandIds: [69],
+    fallbackKeywords: ["gold select", "gold"],
+  },
+  {
+    key: "pricesmart",
+    shopIds: [5],
+    brandIds: [77, 78],
+    fallbackKeywords: ["members selection", "member selection", "member's selection"],
+  },
+];
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, url_name } = await params;
@@ -98,6 +152,14 @@ export default async function Page({ params }: Props) {
     relatedProductsGroupData?.parentGroup ?? null;
 
   const shopsPromise = getShops();
+  const supermarketAlternativesPromise = relatedProductsPrimaryGroup
+    ? getSupermarketAlternatives({
+        groupId: relatedProductsPrimaryGroup.id,
+        currentProductId: product.id,
+        currentProductName: product.name,
+        currentProductUnit: product.unit,
+      })
+    : Promise.resolve([]);
   let relatedProducts = !relatedProductsPrimaryGroup
     ? await getRelatedProductsBySimilarityNoGroup(
         product.name,
@@ -151,8 +213,12 @@ export default async function Page({ params }: Props) {
       MAX_ALLOWED_RELATED_PRODUCTS
     );
   }
-  const shops = await shopsPromise;
+  const [shops, supermarketAlternatives] = await Promise.all([
+    shopsPromise,
+    supermarketAlternativesPromise,
+  ]);
   const shopLogoById = new Map(shops.map((shop) => [shop.id, shop.logo]));
+  const shopNameById = new Map(shops.map((shop) => [shop.id, shop.name]));
 
   const badgeType = getPriceBadgeType(product);
 
@@ -193,7 +259,7 @@ export default async function Page({ params }: Props) {
           __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-10 py-4 px-4 md:px-10">
+      <div className="grid grid-cols-1 xl:grid-cols-2 xl:gap-10 py-4 px-4 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
           <GroupBreadcrumbs paths={groupBreadcrumbs} compactMobileMode="last" />
@@ -303,6 +369,17 @@ export default async function Page({ params }: Props) {
             </small>
           </div>
         </section>
+
+        {supermarketAlternatives.length > 0 ? (
+          <section className="flex flex-col gap-2">
+            <div className="font-bold text-2xl">Alternativas del supermercado</div>
+            <SupermarketAlternatives
+              products={supermarketAlternatives}
+              shopLogoById={shopLogoById}
+              shopNameById={shopNameById}
+            />
+          </section>
+        ) : null}
 
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
@@ -755,6 +832,7 @@ async function getRelatedProductsByIds(productIds: number[]) {
       },
       shopCurrentPrices: {
         columns: {
+          shopId: true,
           currentPrice: true,
         },
         where: (scp, { and, isNotNull, isNull, eq, or }) =>
@@ -778,6 +856,403 @@ async function getRelatedProductsByIds(productIds: number[]) {
     .filter(
       (product): product is (typeof productsRows)[number] => product !== undefined
     );
+}
+
+type SupermarketAlternativeProduct = Awaited<
+  ReturnType<typeof getRelatedProductsByIds>
+>[number] & {
+  alternativeShopId: number;
+};
+
+type SupermarketAlternativeCandidate = {
+  productId: number;
+  productName: string;
+  productUnit: string;
+  brandId: number;
+  possibleBrandId: number | null;
+  shopIds: number[];
+  similarityScore: number;
+  rankScore: number;
+};
+
+async function getSupermarketAlternatives({
+  groupId,
+  currentProductId,
+  currentProductName,
+  currentProductUnit,
+}: {
+  groupId: number;
+  currentProductId: number;
+  currentProductName: string;
+  currentProductUnit: string;
+}): Promise<SupermarketAlternativeProduct[]> {
+  const rankScore = sql<number>`coalesce(${products.rank}, 0)`;
+  const similarityScore = sql<number>`similarity(unaccent(lower(${products.name})), unaccent(lower(${currentProductName})))`;
+
+  const candidateRows = await db
+    .select({
+      productId: products.id,
+      productName: products.name,
+      productUnit: products.unit,
+      brandId: products.brandId,
+      possibleBrandId: products.possibleBrandId,
+      shopIds: sql<number[]>`array_agg(distinct ${productsShopsPrices.shopId})`,
+      similarityScore,
+      rankScore,
+    })
+    .from(productsGroups)
+    .innerJoin(
+      products,
+      and(
+        eq(products.id, productsGroups.productId),
+        or(isNull(products.deleted), eq(products.deleted, false))
+      )
+    )
+    .innerJoin(
+      productsShopsPrices,
+      and(
+        eq(productsShopsPrices.productId, products.id),
+        isNotNull(productsShopsPrices.currentPrice),
+        or(isNull(productsShopsPrices.hidden), eq(productsShopsPrices.hidden, false))
+      )
+    )
+    .where(
+      and(
+        eq(productsGroups.groupId, groupId),
+        ne(products.id, currentProductId)
+      )
+    )
+    .groupBy(
+      products.id,
+      products.name,
+      products.brandId,
+      products.possibleBrandId,
+      products.rank
+    )
+    .orderBy(desc(similarityScore), desc(rankScore), desc(products.id))
+    .limit(MAX_SUPERMARKET_ALTERNATIVE_CANDIDATES);
+
+  if (candidateRows.length === 0) {
+    return [];
+  }
+
+  const candidates = candidateRows.map((row) => normalizeCandidate(row));
+
+  const selectedByTarget = new Map<
+    SupermarketAlternativeTargetKey,
+    SupermarketAlternativeCandidate
+  >();
+
+  for (const target of SUPERMARKET_ALTERNATIVE_TARGETS) {
+    const candidatesOnlyForTarget = candidates.filter((candidate) =>
+      isCandidateExclusiveToSupermarket(candidate.shopIds, target.shopIds)
+    );
+
+    if (candidatesOnlyForTarget.length === 0) {
+      continue;
+    }
+
+    // 1) Brand match + same/close unit.
+    const stage1 = candidatesOnlyForTarget.filter(
+      (candidate) =>
+        isCandidateBrandMatchForTarget(candidate, target) &&
+        hasSameOrCloseUnit(currentProductUnit, candidate.productUnit)
+    );
+
+    // 2) Fallback text + same/close unit.
+    const stage2 = candidatesOnlyForTarget.filter(
+      (candidate) =>
+        matchesFallbackKeyword(candidate.productName, target.fallbackKeywords) &&
+        hasSameOrCloseUnit(currentProductUnit, candidate.productUnit)
+    );
+
+    // 3) Brand match OR fallback text (without unit requirement).
+    const stage3 = candidatesOnlyForTarget.filter(
+      (candidate) =>
+        isCandidateBrandMatchForTarget(candidate, target) ||
+        matchesFallbackKeyword(candidate.productName, target.fallbackKeywords)
+    );
+
+    // 4) Any product sold only in that shop.
+    const stage4 = candidatesOnlyForTarget;
+
+    const selectedCandidate =
+      pickBestSupermarketAlternativeCandidate(stage1, currentProductUnit) ??
+      pickBestSupermarketAlternativeCandidate(stage2, currentProductUnit) ??
+      pickBestSupermarketAlternativeCandidate(stage3, currentProductUnit) ??
+      pickBestSupermarketAlternativeCandidate(stage4, currentProductUnit);
+
+    if (selectedCandidate) {
+      selectedByTarget.set(target.key, selectedCandidate);
+    }
+  }
+
+  const selectedProductIds = SUPERMARKET_ALTERNATIVE_TARGETS
+    .map((target) => selectedByTarget.get(target.key)?.productId)
+    .filter((productId): productId is number => productId !== undefined);
+
+  if (selectedProductIds.length === 0) {
+    return [];
+  }
+
+  const selectedProducts = await getRelatedProductsByIds(selectedProductIds);
+  const productById = new Map(selectedProducts.map((product) => [product.id, product]));
+
+  const alternatives: SupermarketAlternativeProduct[] = [];
+
+  for (const target of SUPERMARKET_ALTERNATIVE_TARGETS) {
+    const selected = selectedByTarget.get(target.key);
+    if (!selected) {
+      continue;
+    }
+
+    const selectedProduct = productById.get(selected.productId);
+    if (!selectedProduct) {
+      continue;
+    }
+
+    const alternativeShopId = pickAlternativeShopId(
+      selectedProduct.shopCurrentPrices,
+      target.shopIds
+    );
+    if (!alternativeShopId) {
+      continue;
+    }
+
+    alternatives.push({
+      ...selectedProduct,
+      alternativeShopId,
+    });
+  }
+
+  return alternatives;
+}
+
+function normalizeCandidate(row: {
+  productId: number;
+  productName: string;
+  productUnit: string;
+  brandId: number;
+  possibleBrandId: number | null;
+  shopIds: unknown;
+  similarityScore: unknown;
+  rankScore: unknown;
+}): SupermarketAlternativeCandidate {
+  const normalizedShopIds = Array.isArray(row.shopIds)
+    ? row.shopIds
+        .map((shopId) => Number(shopId))
+        .filter((shopId) => Number.isFinite(shopId))
+    : [];
+  const normalizedSimilarity = Number(row.similarityScore);
+  const normalizedRank = Number(row.rankScore);
+
+  return {
+    productId: row.productId,
+    productName: row.productName,
+    productUnit: row.productUnit,
+    brandId: row.brandId,
+    possibleBrandId: row.possibleBrandId,
+    shopIds: normalizedShopIds,
+    similarityScore: Number.isFinite(normalizedSimilarity)
+      ? normalizedSimilarity
+      : 0,
+    rankScore: Number.isFinite(normalizedRank) ? normalizedRank : 0,
+  };
+}
+
+function isCandidateBrandMatchForTarget(
+  candidate: SupermarketAlternativeCandidate,
+  target: SupermarketAlternativeTarget
+) {
+  return target.brandIds.some((brandId) =>
+    isCandidateBrandMatchForBrandId(candidate, brandId)
+  );
+}
+
+function isCandidateBrandMatchForBrandId(
+  candidate: SupermarketAlternativeCandidate,
+  brandId: number
+) {
+  if (STRICT_STORE_BRAND_IDENTITY_IDS.has(brandId)) {
+    return (
+      candidate.brandId === brandId &&
+      candidate.possibleBrandId === brandId
+    );
+  }
+
+  return candidate.brandId === brandId || candidate.possibleBrandId === brandId;
+}
+
+function hasSameOrCloseUnit(currentProductUnit: string, candidateUnit: string) {
+  return getUnitPriorityScore(currentProductUnit, candidateUnit) > 0;
+}
+
+function pickBestSupermarketAlternativeCandidate(
+  candidates: SupermarketAlternativeCandidate[],
+  currentProductUnit: string
+) {
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  let bestCandidate = candidates[0];
+
+  for (const candidate of candidates.slice(1)) {
+    if (
+      isBetterSupermarketAlternativeCandidate(
+        candidate,
+        bestCandidate,
+        currentProductUnit
+      )
+    ) {
+      bestCandidate = candidate;
+    }
+  }
+
+  return bestCandidate;
+}
+
+function isBetterSupermarketAlternativeCandidate(
+  candidate: SupermarketAlternativeCandidate,
+  current: SupermarketAlternativeCandidate,
+  currentProductUnit: string
+) {
+  const candidateUnitPriorityScore = getUnitPriorityScore(
+    currentProductUnit,
+    candidate.productUnit
+  );
+  const currentUnitPriorityScore = getUnitPriorityScore(
+    currentProductUnit,
+    current.productUnit
+  );
+  const candidateHasCloseUnit = candidateUnitPriorityScore > 0;
+  const currentHasCloseUnit = currentUnitPriorityScore > 0;
+
+  if (candidateHasCloseUnit !== currentHasCloseUnit) {
+    return candidateHasCloseUnit;
+  }
+
+  if (candidateUnitPriorityScore !== currentUnitPriorityScore) {
+    return candidateUnitPriorityScore > currentUnitPriorityScore;
+  }
+
+  const candidateHasPrioritySimilarity =
+    candidate.similarityScore >=
+    SUPERMARKET_ALTERNATIVE_PRIORITY_SIMILARITY_THRESHOLD;
+  const currentHasPrioritySimilarity =
+    current.similarityScore >=
+    SUPERMARKET_ALTERNATIVE_PRIORITY_SIMILARITY_THRESHOLD;
+
+  if (candidateHasPrioritySimilarity !== currentHasPrioritySimilarity) {
+    return candidateHasPrioritySimilarity;
+  }
+
+  if (candidate.similarityScore !== current.similarityScore) {
+    return candidate.similarityScore > current.similarityScore;
+  }
+
+  if (candidate.rankScore !== current.rankScore) {
+    return candidate.rankScore > current.rankScore;
+  }
+
+  return candidate.productId > current.productId;
+}
+
+function isCandidateExclusiveToSupermarket(
+  candidateShopIds: number[],
+  targetShopIds: number[]
+) {
+  if (candidateShopIds.length === 0) {
+    return false;
+  }
+
+  const allowedShopIds = new Set(targetShopIds);
+  return candidateShopIds.every((shopId) => allowedShopIds.has(shopId));
+}
+
+function getUnitPriorityScore(currentUnit: string, candidateUnit: string): number {
+  const parsedCurrent = parseUnit(currentUnit);
+  const parsedCandidate = parseUnit(candidateUnit);
+
+  if (!parsedCurrent || !parsedCandidate) {
+    return 0;
+  }
+
+  if (parsedCurrent.measurement !== parsedCandidate.measurement) {
+    return 0;
+  }
+
+  const maxBase = Math.max(parsedCurrent.base, parsedCandidate.base);
+  const minBase = Math.min(parsedCurrent.base, parsedCandidate.base);
+
+  if (!Number.isFinite(maxBase) || !Number.isFinite(minBase) || maxBase <= 0) {
+    return 0;
+  }
+
+  const ratio = minBase / maxBase;
+  if (ratio < SUPERMARKET_ALTERNATIVE_CLOSE_UNIT_RATIO_THRESHOLD) {
+    return 0;
+  }
+
+  const isSameNormalizedUnit =
+    parsedCurrent.normalizedUnit === parsedCandidate.normalizedUnit;
+  const normalizedUnitBonus = isSameNormalizedUnit ? 0.2 : 0;
+  return ratio + normalizedUnitBonus;
+}
+
+function pickAlternativeShopId(
+  shopPrices: Array<{ shopId: number; currentPrice: string | null }>,
+  targetShopIds: number[]
+) {
+  const allowedShopIds = new Set(targetShopIds);
+  let cheapestShopId: number | null = null;
+  let cheapestPrice: number | null = null;
+
+  for (const shopPrice of shopPrices) {
+    if (!allowedShopIds.has(shopPrice.shopId) || shopPrice.currentPrice === null) {
+      continue;
+    }
+
+    const numericPrice = Number(shopPrice.currentPrice);
+    if (!Number.isFinite(numericPrice)) {
+      continue;
+    }
+
+    if (cheapestPrice === null || numericPrice < cheapestPrice) {
+      cheapestPrice = numericPrice;
+      cheapestShopId = shopPrice.shopId;
+    }
+  }
+
+  return cheapestShopId;
+}
+
+function matchesFallbackKeyword(productName: string, keywords: string[]) {
+  const normalizedName = normalizeKeywordText(productName);
+
+  return keywords.some((keyword) => {
+    const normalizedKeyword = normalizeKeywordText(keyword);
+    if (!normalizedKeyword) {
+      return false;
+    }
+
+    if (normalizedKeyword.length <= 3) {
+      const keywordPattern = new RegExp(
+        `(^|\\s)${escapeRegExp(normalizedKeyword)}(\\s|$)`
+      );
+      return keywordPattern.test(normalizedName);
+    }
+
+    return normalizedName.includes(normalizedKeyword);
+  });
+}
+
+function normalizeKeywordText(value: string) {
+  return sanitizeForTsQuery(value).replace(/\s+/g, " ").trim();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function getHighRankingRelatedProductsByCategory(
