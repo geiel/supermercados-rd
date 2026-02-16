@@ -351,6 +351,13 @@
       "when": 1770165809701,
       "tag": "0049_typical_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1770912672800,
+      "tag": "0050_aromatic_talos",
+      "breakpoints": true
     }
   ]
 }

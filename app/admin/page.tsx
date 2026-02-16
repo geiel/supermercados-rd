@@ -53,10 +53,6 @@ async function AdminPage() {
             label="Unir productos por marca"
           />
           <AdminNavLink
-            href="/admin/possible-brands"
-            label="Posibles marcas"
-          />
-          <AdminNavLink
             href="/admin/refresh-phrases"
             label="Actualizar frases de búsqueda"
           />

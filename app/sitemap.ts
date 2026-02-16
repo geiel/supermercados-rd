@@ -5,7 +5,7 @@ import { toSlug } from "@/lib/utils";
 const BASE_URL = "https://supermercadosrd.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, groups, categories] = await Promise.all([
+  const [products, groups, categories, brands] = await Promise.all([
     // Fetch all products with prices (only products that are available)
     db.query.products.findMany({
       columns: {
@@ -35,6 +35,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       columns: {
         humanNameId: true,
       },
+    }),
+    db.query.productsBrands.findMany({
+      columns: {
+        id: true,
+        name: true,
+      },
+      where: (brands, { eq }) => eq(brands.pageVisible, true),
     }),
   ]);
 
@@ -93,5 +100,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...groupPages, ...categoryPages, ...productPages];
+  const brandPages: MetadataRoute.Sitemap = brands.map((brand) => ({
+    url: `${BASE_URL}/marcas/${brand.id}/${toSlug(brand.name)}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  return [
+    ...staticPages,
+    ...groupPages,
+    ...categoryPages,
+    ...brandPages,
+    ...productPages,
+  ];
 }

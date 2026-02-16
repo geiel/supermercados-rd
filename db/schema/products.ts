@@ -73,6 +73,8 @@ export const productsRelations = relations(products, ({ many, one }) => ({
 export const productsBrands = pgTable("products_brands", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull().unique(),
+  pageVisible: boolean().notNull().default(false),
+  brandImage: text(),
 });
 
 export const productsBrandsRelations = relations(
