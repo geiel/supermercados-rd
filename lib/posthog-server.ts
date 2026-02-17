@@ -1,7 +1,6 @@
 import "server-only";
 
 import * as Sentry from "@sentry/nextjs";
-import { createHash } from "crypto";
 
 type TrackGroupVisitInput = {
   groupId: number;
@@ -47,28 +46,102 @@ function isLocalhostRequest(requestHeaders: Headers): boolean {
   );
 }
 
-function getClientIp(requestHeaders: Headers): string {
-  const forwardedFor = requestHeaders.get("x-forwarded-for");
-  if (forwardedFor) {
-    const firstIp = forwardedFor.split(",")[0]?.trim();
-    if (firstIp) return firstIp;
+function parseCookieHeader(cookieHeader: string | null): Map<string, string> {
+  const cookies = new Map<string, string>();
+  if (!cookieHeader) return cookies;
+
+  for (const item of cookieHeader.split(";")) {
+    const trimmed = item.trim();
+    if (!trimmed) continue;
+
+    const separatorIndex = trimmed.indexOf("=");
+    if (separatorIndex <= 0) continue;
+
+    const name = trimmed.slice(0, separatorIndex).trim();
+    const value = trimmed.slice(separatorIndex + 1).trim();
+    if (!name || !value) continue;
+
+    cookies.set(name, value);
   }
 
-  const realIp = requestHeaders.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
-
-  return "unknown";
+  return cookies;
 }
 
-function getDistinctId(requestHeaders: Headers): string {
-  const ip = getClientIp(requestHeaders);
-  const userAgent = requestHeaders.get("user-agent") ?? "unknown";
-  const acceptLanguage = requestHeaders.get("accept-language") ?? "unknown";
+function decodeCookieValue(rawValue: string): string {
+  let decoded = rawValue;
 
-  const raw = `${ip}|${userAgent}|${acceptLanguage}`;
-  const hash = createHash("sha256").update(raw).digest("hex");
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
 
-  return `anon_${hash.slice(0, 32)}`;
+  return decoded;
+}
+
+function extractDistinctIdFromPosthogCookie(cookieValue: string): string | null {
+  const decoded = decodeCookieValue(cookieValue);
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const record = parsed as Record<string, unknown>;
+  const distinctId = record.distinct_id;
+  if (typeof distinctId === "string" && distinctId.trim().length > 0) {
+    return distinctId;
+  }
+
+  const deviceId = record.$device_id;
+  if (typeof deviceId === "string" && deviceId.trim().length > 0) {
+    return deviceId;
+  }
+
+  return null;
+}
+
+function sanitizeTokenForCookieName(token: string): string {
+  return token.replace(/\+/g, "PL").replace(/\//g, "SL").replace(/=/g, "EQ");
+}
+
+function getPosthogCookieNameCandidates(apiKey?: string): string[] {
+  const keys = new Set<string>();
+  if (apiKey) keys.add(apiKey);
+  if (process.env.NEXT_PUBLIC_POSTHOG_KEY) keys.add(process.env.NEXT_PUBLIC_POSTHOG_KEY);
+
+  return Array.from(keys).map((key) => `ph_${sanitizeTokenForCookieName(key)}_posthog`);
+}
+
+function getDistinctIdFromPosthogCookies(requestHeaders: Headers, apiKey?: string): string | null {
+  const cookies = parseCookieHeader(requestHeaders.get("cookie"));
+  if (cookies.size === 0) return null;
+
+  const preferredCookieNames = getPosthogCookieNameCandidates(apiKey);
+  for (const cookieName of preferredCookieNames) {
+    const value = cookies.get(cookieName);
+    if (!value) continue;
+
+    const distinctId = extractDistinctIdFromPosthogCookie(value);
+    if (distinctId) return distinctId;
+  }
+
+  for (const [cookieName, value] of cookies.entries()) {
+    if (!/^ph_.+_posthog$/.test(cookieName)) continue;
+
+    const distinctId = extractDistinctIdFromPosthogCookie(value);
+    if (distinctId) return distinctId;
+  }
+
+  return null;
 }
 
 export async function trackGroupVisit({
@@ -85,6 +158,9 @@ export async function trackGroupVisit({
   if (isPrefetchRequest(requestHeaders)) return;
   if (isBotRequest(requestHeaders)) return;
 
+  const distinctId = getDistinctIdFromPosthogCookies(requestHeaders, apiKey);
+  if (!distinctId) return;
+
   const endpoint = `${host.replace(/\/$/, "")}/capture/`;
 
   try {
@@ -99,7 +175,7 @@ export async function trackGroupVisit({
         api_key: apiKey,
         event: "group_visit",
         properties: {
-          distinct_id: getDistinctId(requestHeaders),
+          distinct_id: distinctId,
           captureSource: "server",
           groupId,
           groupName,

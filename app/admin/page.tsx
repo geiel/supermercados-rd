@@ -53,6 +53,10 @@ async function AdminPage() {
             label="Unir productos por marca"
           />
           <AdminNavLink
+            href="/admin/merge-products/unverified"
+            label="Unir no verificados a products"
+          />
+          <AdminNavLink
             href="/admin/unverified-products"
             label="Aprobar productos no verificados"
           />
