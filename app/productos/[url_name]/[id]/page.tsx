@@ -9,7 +9,14 @@ import { RelatedProducts } from "@/components/related-products";
 import { ShopPriceRowActions } from "@/components/shop-price-row";
 import { SupermarketAlternatives } from "@/components/supermarket-alternatives";
 import { ScrollToSection } from "@/components/scroll-to-section";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Unit } from "@/components/unit";
 import { GroupBreadcrumbs } from "@/components/group-breadcrumbs";
 import { db } from "@/db";
@@ -22,6 +29,7 @@ import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-
 import {
   ChartNoAxesColumnDecreasing,
   MessageCircleWarning,
+  ShoppingBasket,
   TrendingDown,
 } from "lucide-react";
 import { Metadata } from "next";
@@ -219,6 +227,9 @@ export default async function Page({ params }: Props) {
   ]);
   const shopLogoById = new Map(shops.map((shop) => [shop.id, shop.logo]));
   const shopNameById = new Map(shops.map((shop) => [shop.id, shop.name]));
+  const visibleShopPrices = product.shopCurrentPrices.filter(
+    (shopPrice) => shopPrice.currentPrice !== null && !shopPrice.hidden
+  );
 
   const badgeType = getPriceBadgeType(product);
 
@@ -323,9 +334,8 @@ export default async function Page({ params }: Props) {
             </ScrollToSection>
           ) : null}
           <div className="font-bold text-2xl">Donde comprar</div>
-          {product.shopCurrentPrices
-            .filter((shopPrice) => shopPrice.currentPrice !== null)
-            .map((shopPrice, i) => {
+          {visibleShopPrices.length > 0 ? (
+            visibleShopPrices.map((shopPrice, i) => {
               const logo = shopLogoById.get(shopPrice.shopId);
               if (!logo) {
                 return null;
@@ -335,7 +345,6 @@ export default async function Page({ params }: Props) {
                 <div
                   key={i}
                   className="grid grid-cols-4 items-center py-4"
-                  hidden={Boolean(shopPrice.hidden)}
                 >
                   <Image
                     src={`/supermarket-logo/${logo}`}
@@ -360,14 +369,36 @@ export default async function Page({ params }: Props) {
                   />
                 </div>
               );
-            })}
+            })
+          ) : (
+            <Empty className="mt-4 border">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <ShoppingBasket />
+                </EmptyMedia>
+                <EmptyTitle>No hay precios disponibles ahora mismo</EmptyTitle>
+                <EmptyDescription>
+                  No hay un precio disponible actualmente en supermercados para este
+                  producto.
+                </EmptyDescription>
+              </EmptyHeader>
+              <ScrollToSection
+                targetId="productos-relacionados"
+                className={buttonVariants({ size: "sm" })}
+              >
+                Ver productos relacionados
+              </ScrollToSection>
+            </Empty>
+          )}
 
-          <div className="mt-4 flex items-center space-x-2">
-            <MessageCircleWarning size={20} />
-            <small className="text-sm leading-none font-medium">
-              Estos precios están disponibles online y pueden variar en la tienda.
-            </small>
-          </div>
+          {visibleShopPrices.length > 0 ? (
+            <div className="mt-4 flex items-center space-x-2">
+              <MessageCircleWarning size={20} />
+              <small className="text-sm leading-none font-medium">
+                Estos precios están disponibles online y pueden variar en la tienda.
+              </small>
+            </div>
+          ) : null}
         </section>
 
         {supermarketAlternatives.length > 0 ? (
@@ -381,7 +412,7 @@ export default async function Page({ params }: Props) {
           </section>
         ) : null}
 
-        <section className="flex flex-col gap-2">
+        <section id="productos-relacionados" className="flex flex-col gap-2 scroll-mt-4">
           <div className="flex items-center justify-between gap-2">
             <div className="font-bold text-2xl">Productos relacionados</div>
             {relatedProductsGroupLink ? (
