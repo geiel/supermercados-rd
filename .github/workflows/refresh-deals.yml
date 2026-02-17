@@ -11,6 +11,7 @@ jobs:
     environment: Production
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      POSTGRES_MAX_CONNECTIONS: "1"
       REVALIDATION_SECRET: ${{ secrets.REVALIDATION_SECRET }}
       NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
