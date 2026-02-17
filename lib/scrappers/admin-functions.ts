@@ -16,6 +16,12 @@ import { eq, sql, and, inArray, notInArray, type SQL } from "drizzle-orm";
 import { searchProducts } from "@/lib/search-query";
 import { sanitizeForTsQuery } from "@/lib/utils";
 import { validateAdminUser } from "../authentication";
+import { sirena } from "./sirena";
+import { nacional } from "./nacional";
+import { jumbo } from "./jumbo";
+import { plazaLama } from "./plaza-lama";
+import { pricesmart } from "./pricesmart";
+import { bravo } from "./bravo";
 
 const DEFAULT_BRAND_SEARCH_LIMIT = 600;
 const DEFAULT_BRAND_SEARCH_PAGE_SIZE = 200;
@@ -30,6 +36,65 @@ export type SimilarProductsIgnoredIds = {
   unverifiedProducts: number[];
   baseUnverifiedProducts: number[];
 };
+
+export type SimilarUnverifiedProductsIgnoredIds = {
+  products: number[];
+  unverifiedProducts: number[];
+};
+
+export type SimilarUnverifiedToVerifiedPair = {
+  productId: number;
+  productName: string;
+  productImage: string | null;
+  productUnit: string;
+  productBrandName: string;
+  productDeleted: boolean | null;
+  unverifiedId: number;
+  unverifiedName: string;
+  unverifiedImage: string | null;
+  unverifiedUnit: string;
+  unverifiedBrandName: string;
+  unverifiedDeleted: boolean | null;
+  unverifiedUrl: string | null;
+  sml: number;
+  totalSimilar: number;
+};
+
+type ShopPriceRow = {
+  productId: number;
+  shopId: number;
+  url: string;
+  api: string | null;
+  currentPrice: string | null;
+  regularPrice: string | null;
+  updateAt: Date | null;
+  hidden: boolean | null;
+};
+
+async function refreshShopPriceForMergedProduct(shopPrice: ShopPriceRow) {
+  switch (shopPrice.shopId) {
+    case 1:
+      await sirena.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 2:
+      await nacional.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 3:
+      await jumbo.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 4:
+      await plazaLama.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 5:
+      await pricesmart.processByProductShopPrice(shopPrice, false, true);
+      break;
+    case 6:
+      await bravo.processByProductShopPrice(shopPrice, false, true);
+      break;
+    default:
+      break;
+  }
+}
 
 async function getBrandCandidateIds(
   brandName: string,
@@ -271,6 +336,113 @@ export async function getSimilarProducts(
     .map((row) => ({ ...row, totalSimilar }));
 }
 
+export async function getSimilarUnverifiedToVerifiedProducts(
+  categoryId: number,
+  shopId: number,
+  ignoredIds: SimilarUnverifiedProductsIgnoredIds,
+  ignoredWords: string[] = [],
+  threshold = 0.1
+) {
+  await validateAdminUser();
+
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    return [] as SimilarUnverifiedToVerifiedPair[];
+  }
+
+  if (!Number.isInteger(shopId) || shopId <= 0) {
+    return [] as SimilarUnverifiedToVerifiedPair[];
+  }
+
+  const normalize = (word: string) =>
+    word
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+
+  const sanitizedIgnoredWords = ignoredWords
+    .map(normalize)
+    .filter((word) => word.length > 0);
+
+  const ignoredProducts = Array.from(new Set(ignoredIds.products));
+  const ignoredUnverifiedProducts = Array.from(
+    new Set(ignoredIds.unverifiedProducts)
+  );
+
+  const ignoredWordConditions = sanitizedIgnoredWords.map(
+    (word) =>
+      and(
+        sql`unaccent(lower(${unverfiedProducts.name})) NOT LIKE ${`%${word}%`}`,
+        sql`unaccent(lower(p2.name)) NOT LIKE ${`%${word}%`}`
+      ) as SQL
+  );
+
+  const conditions: SQL[] = [
+    eq(unverfiedProducts.categoryId, categoryId),
+    eq(sql`p2."categoryId"`, categoryId),
+    eq(unverfiedProducts.shopId, shopId),
+    ...ignoredWordConditions,
+  ];
+
+  if (ignoredProducts.length > 0) {
+    conditions.push(notInArray(sql`p2.id`, ignoredProducts));
+  }
+
+  if (ignoredUnverifiedProducts.length > 0) {
+    conditions.push(notInArray(unverfiedProducts.id, ignoredUnverifiedProducts));
+  }
+
+  const similarPairs = await db
+    .select({
+      productId: sql`p2.id`.as<number>(),
+      productName: sql`p2.name`.as<string>(),
+      productImage: sql`p2.image`.as<string | null>(),
+      productUnit: sql`p2.unit`.as<string>(),
+      productBrandName: sql`b2.name`.as<string>(),
+      productDeleted: sql`p2.deleted`.as<boolean | null>(),
+      unverifiedId: unverfiedProducts.id,
+      unverifiedName: unverfiedProducts.name,
+      unverifiedImage: unverfiedProducts.image,
+      unverifiedUnit: unverfiedProducts.unit,
+      unverifiedBrandName: sql`b1.name`.as<string>(),
+      unverifiedDeleted: unverfiedProducts.deleted,
+      unverifiedUrl: unverfiedProducts.url,
+      sml: sql<number>`
+        similarity(
+          unaccent(lower(${unverfiedProducts.name})),
+          unaccent(lower(p2.name))
+        )
+      `.as("sml"),
+      totalSimilar: sql<number>`COUNT(*) OVER ()`.as("totalSimilar"),
+    })
+    .from(unverfiedProducts)
+    .innerJoin(
+      sql`${products} AS p2`,
+      sql`
+        similarity(
+          unaccent(lower(${unverfiedProducts.name})),
+          unaccent(lower(p2.name))
+        ) > ${threshold}
+      `
+    )
+    .innerJoin(
+      sql`${productsBrands} AS b1`,
+      sql`${unverfiedProducts}."brandId" = b1.id`
+    )
+    .innerJoin(sql`${productsBrands} AS b2`, sql`p2."brandId" = b2.id`)
+    .where(and(...conditions))
+    .limit(DEFAULT_SIMILAR_PRODUCTS_QUERY_LIMIT)
+    .orderBy(sql`"sml" DESC`);
+
+  return similarPairs
+    .slice(0, DEFAULT_SIMILAR_PRODUCTS_PAIR_LIMIT)
+    .map((row) => ({
+      ...row,
+      sml: Number(row.sml),
+      totalSimilar: Number(row.totalSimilar),
+    }));
+}
+
 export async function adminMergeProduct(
   parentProductId: number,
   childProductId: number
@@ -297,7 +469,72 @@ export async function adminMergeProductBySource(
   }
 
   if (parentSource === "products" && childSource === "unverified_products") {
-    await db.delete(unverfiedProducts).where(eq(unverfiedProducts.id, childProductId));
+    const shopPriceRow = await db.transaction(async (tx) => {
+      const unverifiedProduct = await tx.query.unverfiedProducts.findFirst({
+        where: eq(unverfiedProducts.id, childProductId),
+        columns: {
+          id: true,
+          shopId: true,
+          url: true,
+          api: true,
+        },
+      });
+
+      if (!unverifiedProduct) {
+        return;
+      }
+
+      if (!unverifiedProduct.shopId || !unverifiedProduct.url?.trim()) {
+        throw new Error(
+          "Cannot merge unverified product without shopId and url."
+        );
+      }
+
+      await tx
+        .insert(productsShopsPrices)
+        .values({
+          productId: parentProductId,
+          shopId: unverifiedProduct.shopId,
+          url: unverifiedProduct.url,
+          api: unverifiedProduct.api,
+        })
+        .onConflictDoNothing();
+
+      await tx
+        .delete(unverfiedProducts)
+        .where(eq(unverfiedProducts.id, childProductId));
+
+      const productsShopPrice = await tx.query.productsShopsPrices.findFirst({
+        where: and(
+          eq(productsShopsPrices.productId, parentProductId),
+          eq(productsShopsPrices.shopId, unverifiedProduct.shopId)
+        ),
+        columns: {
+          productId: true,
+          shopId: true,
+          url: true,
+          api: true,
+          currentPrice: true,
+          regularPrice: true,
+          updateAt: true,
+          hidden: true,
+        },
+      });
+
+      return productsShopPrice ?? null;
+    });
+
+    if (shopPriceRow) {
+      try {
+        await refreshShopPriceForMergedProduct(shopPriceRow);
+      } catch (error) {
+        console.error(
+          "[Merge] Failed to initialize merged product shop price",
+          error
+        );
+      }
+    }
+
     return;
   }
 
