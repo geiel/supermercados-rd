@@ -225,6 +225,12 @@ export default async function Page({ params }: Props) {
     shopsPromise,
     supermarketAlternativesPromise,
   ]);
+  const supermarketAlternativeProductIds = new Set(
+    supermarketAlternatives.map((alternative) => alternative.id)
+  );
+  relatedProducts = relatedProducts.filter(
+    (relatedProduct) => !supermarketAlternativeProductIds.has(relatedProduct.id)
+  );
   const shopLogoById = new Map(shops.map((shop) => [shop.id, shop.logo]));
   const shopNameById = new Map(shops.map((shop) => [shop.id, shop.name]));
   const visibleShopPrices = product.shopCurrentPrices.filter(

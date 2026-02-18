@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
+import { connection } from "next/server";
 
 import { CategoryIcon } from "@/components/category-icon";
 import { CategoryTopProducts } from "@/components/category-top-products";
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await connection();
   const { slug } = await params;
   const data = await getGroupCategoryWithGroups(slug);
 
@@ -39,6 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params }: Props) {
+  await connection();
   const { slug } = await params;
   const categoryData = await getGroupCategoryWithGroups(slug);
 
