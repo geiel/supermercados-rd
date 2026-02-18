@@ -104,6 +104,7 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
             <GroupBreadcrumbs
                 paths={breadcrumbs.length > 0 ? [breadcrumbs] : []}
                 compactMobileMode="last"
+                includeHome
             />
             <div className="flex gap-2 items-center justify-between">
                 <div className="flex items-baseline gap-2">

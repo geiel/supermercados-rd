@@ -18,6 +18,7 @@ type GroupBreadcrumbsProps = {
   paths: GroupBreadcrumbItem[][];
   className?: string;
   compactMobileMode?: "current" | "parent" | "last";
+  includeHome?: boolean;
 };
 
 type ResponsiveBreadcrumbProps = {
@@ -499,12 +500,28 @@ export function GroupBreadcrumbs({
   paths,
   className,
   compactMobileMode = "current",
+  includeHome = false,
 }: GroupBreadcrumbsProps) {
   if (paths.length === 0) return null;
 
+  const homeItem: GroupBreadcrumbItem = {
+    id: 0,
+    name: "Inicio",
+    href: "/",
+  };
+
+  const pathsWithHome = includeHome
+    ? paths.map((path) => {
+        if (path[0]?.href === homeItem.href) {
+          return path;
+        }
+        return [homeItem, ...path];
+      })
+    : paths;
+
   return (
     <div className={cn("flex flex-col gap-2 overflow-hidden", className)}>
-      {paths.map((path, pathIndex) => {
+      {pathsWithHome.map((path, pathIndex) => {
         const key = `${pathIndex}-${path
           .map((item) => `${item.id}-${item.href}`)
           .join("|")}`;

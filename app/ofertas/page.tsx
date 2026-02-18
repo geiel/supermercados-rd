@@ -1,8 +1,17 @@
 import { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { Suspense } from "react";
 import { BadgePercent } from "lucide-react";
 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { DealsFilters } from "@/components/deals-filters";
 import { DealsList } from "@/components/deals-list";
 import { TypographyH3 } from "@/components/typography-h3";
@@ -15,6 +24,8 @@ import { DEALS_DESKTOP_PAGE_SIZE, type DealsFilters as DealsFiltersType } from "
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
+
+const SITE_URL = "https://supermercadosrd.com";
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const resolvedSearchParams = await searchParams;
@@ -134,10 +145,27 @@ async function DealsContent({ searchParams }: Props) {
     ? `No hay ofertas disponibles para ${shop.name} en este momento.`
     : "No hay ofertas disponibles por ahora.";
   const hasDeals = dealsResult.total > 0;
+  const breadcrumbItems = buildOffersBreadcrumbItems(shop);
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.href,
+    })),
+  };
 
   return (
     <>
-      <DealsHero />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <DealsHero shop={shop} />
       <main className="container mx-auto pb-4 pt-4">
         <div className="flex flex-1 flex-col gap-4">
           <div className="px-2 md:px-0">
@@ -261,23 +289,41 @@ function parseFiltersFromSearchParams(
   return filters;
 }
 
-async function getShop(shopId: number) {
+async function getShop(shopId: number): Promise<{ id: number; name: string } | null> {
   "use cache";
 
-  return await db.query.shops.findFirst({
+  const shop = await db.query.shops.findFirst({
     columns: {
       id: true,
       name: true,
     },
     where: (shops, { eq }) => eq(shops.id, shopId),
   });
+
+  return shop ?? null;
+}
+
+function buildOffersBreadcrumbItems(shop: { id: number; name: string } | null) {
+  const items = [
+    { name: "Inicio", href: `${SITE_URL}/` },
+    { name: "Ofertas", href: `${SITE_URL}/ofertas` },
+  ];
+
+  if (shop) {
+    items.push({
+      name: shop.name,
+      href: `${SITE_URL}/ofertas?shop_id=${shop.id}`,
+    });
+  }
+
+  return items;
 }
 
 
 function DealsSkeleton() {
   return (
     <>
-      <DealsHero />
+      <DealsHero shop={null} />
       <main className="container mx-auto pb-4">
         <div className="flex flex-1 flex-col gap-4">
           <div className="px-2 md:px-0">
@@ -305,11 +351,40 @@ function DealsSkeleton() {
   );
 }
 
-function DealsHero() {
+function DealsHero({ shop }: { shop: { id: number; name: string } | null }) {
   return (
     <section className="relative isolate w-full max-h-[38vh] overflow-hidden bg-[#0b0812] lg:max-h-[28vh]">
       <div className="absolute inset-0 bg-gradient-to-l from-black/80 via-black/50 to-transparent z-10 lg:hidden" />
-      <div className="relative container mx-auto flex max-h-[38vh] w-full flex-col justify-center gap-8 px-4 md:px-0 py-12 lg:max-h-[28vh] lg:flex-row lg:items-center lg:justify-between lg:pb-8 lg:pt-10">
+      <div className="relative container mx-auto flex max-h-[38vh] w-full flex-col justify-center gap-8 px-4 py-12 md:px-0 lg:max-h-[28vh] lg:flex-row lg:items-center lg:justify-between lg:pb-8 lg:pt-10">
+        <div className="absolute top-2 left-4 z-20 md:left-0">
+          <Breadcrumb>
+            <BreadcrumbList className="text-sm text-white/80">
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild className="text-white/80 hover:text-white">
+                  <Link href="/">Inicio</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="text-white/60" />
+              {shop ? (
+                <>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-white/80 hover:text-white">
+                      <Link href="/ofertas">Ofertas</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-white/60" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="text-white">{shop.name}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </>
+              ) : (
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-white">Ofertas</BreadcrumbPage>
+                </BreadcrumbItem>
+              )}
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
         <div className="relative z-10 max-w-2xl space-y-4 lg:max-w-xl">
           <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
             Encuentra el mejor precio

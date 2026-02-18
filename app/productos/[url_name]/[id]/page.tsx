@@ -225,6 +225,12 @@ export default async function Page({ params }: Props) {
     shopsPromise,
     supermarketAlternativesPromise,
   ]);
+  const supermarketAlternativeProductIds = new Set(
+    supermarketAlternatives.map((alternative) => alternative.id)
+  );
+  relatedProducts = relatedProducts.filter(
+    (relatedProduct) => !supermarketAlternativeProductIds.has(relatedProduct.id)
+  );
   const shopLogoById = new Map(shops.map((shop) => [shop.id, shop.logo]));
   const shopNameById = new Map(shops.map((shop) => [shop.id, shop.name]));
   const visibleShopPrices = product.shopCurrentPrices.filter(
@@ -273,7 +279,11 @@ export default async function Page({ params }: Props) {
       <div className="grid grid-cols-1 xl:grid-cols-2 xl:gap-10 py-4 px-4 md:px-10">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
-          <GroupBreadcrumbs paths={groupBreadcrumbs} compactMobileMode="last" />
+          <GroupBreadcrumbs
+            paths={groupBreadcrumbs}
+            compactMobileMode="last"
+            includeHome
+          />
           <div>
             <ProductBrand brand={product.brand} possibleBrand={product.possibleBrand} type="product" />
             <div className="flex items-center gap-2">
