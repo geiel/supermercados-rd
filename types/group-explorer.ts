@@ -48,6 +48,7 @@ export type GroupExplorerProduct = {
 export type GroupExplorerGroup = {
   id: number;
   name: string;
+  description: string | null;
   humanId: string;
   cheaperProductId: number | null;
   isComparable: boolean;

@@ -1,9 +1,10 @@
 import { AddGroupToListButton } from "@/components/add-group-to-list-button";
 import { CategoryBadge } from "@/components/category-badge";
 import { GroupBreadcrumbs } from "@/components/group-breadcrumbs";
+import { GroupDescription } from "@/components/group-description";
 import { GroupExplorerFilters } from "@/components/group-explorer-filters";
 import { GroupExplorerList } from "@/components/group-explorer-list";
-import { TypographyH3 } from "@/components/typography-h3";
+import { TypographyH1 } from "@/components/typography-h1";
 import {
     Empty,
     EmptyDescription,
@@ -108,7 +109,7 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
             />
             <div className="flex gap-2 items-center justify-between">
                 <div className="flex items-baseline gap-2">
-                    <TypographyH3>{result.group.name}</TypographyH3>
+                    <TypographyH1>{result.group.name}</TypographyH1>
                     <span className="text-sm text-muted-foreground">
                         ({result.total})
                     </span>
@@ -120,6 +121,9 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
                     />
                 )}
             </div>
+            {result.group.description?.trim() ? (
+                <GroupDescription description={result.group.description} />
+            ) : null}
             {result.childGroups.length > 0 && (
                 <div className="space-y-2">
                     <span className="text-sm text-muted-foreground">Categorías</span>
