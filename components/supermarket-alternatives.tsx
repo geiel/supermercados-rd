@@ -39,6 +39,9 @@ export function SupermarketAlternatives({
   return (
     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
       {products.map((product) => {
+        const displayUnit =
+          product.unit.trim().toUpperCase() === "PAQ" ? "" : product.unit;
+        const productLabel = [product.name, displayUnit].filter(Boolean).join(" ");
         const selectedPrice = product.shopCurrentPrices.find(
           (shopPrice) => shopPrice.shopId === product.alternativeShopId
         );
@@ -65,7 +68,7 @@ export function SupermarketAlternatives({
                   src={product.image}
                   productId={product.id}
                   fill
-                  alt={product.name + product.unit}
+                  alt={productLabel}
                   sizes="64px"
                   style={{ objectFit: "contain" }}
                   className="max-w-none"
@@ -93,7 +96,7 @@ export function SupermarketAlternatives({
                 unoptimized
               />
               <div className="line-clamp-2 text-sm">
-                {`${product.name} ${product.unit}`}
+                {productLabel}
               </div>
               <Price value={selectedPrice.currentPrice} className="font-bold" />
               {Number.isFinite(numericPrice) ? (
