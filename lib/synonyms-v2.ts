@@ -122,6 +122,7 @@ const base: Array<Synonym> = [
     { synonyms: ["hazelnut", "avellana", "noisette"], query: ["hazelnut:*", "avellana:*"]},
     { synonyms: ["shelled", "pelado", "pelada"], query: ["shelled:*", "pelad:*"]},
     { synonyms: ["mix", "mixed", "mixto", "mixta", "mezcla", "surtido", "surtida"], query: ["mix:*", "mezcl:*", "surtid:*"]},
+    { synonyms: ["mezcla betty crocker", "super mix cake"], query: ["mezcla & betty & crocker", "super & mix & cake"]},
     { synonyms: ["ring", "anilla", "anillo", "aro"], query: ["ring", "anill:*", "aro"]},
     { synonyms: ["mandarina", "clementina"], query: ["mandarina", "clementina"]},
     { synonyms: ["carnation", "evaporada"], query: ["carnation", "evaporad:*"]},
