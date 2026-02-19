@@ -34,6 +34,7 @@ type GetGroupProductsOptions = {
 type GroupRow = {
   id: number;
   name: string;
+  description: string | null;
   humanNameId: string;
   cheaperProductId: number | null;
   compareBy: string | null;
@@ -54,6 +55,7 @@ export async function getGroupProducts({
     columns: {
       id: true,
       name: true,
+      description: true,
       humanNameId: true,
       cheaperProductId: true,
       compareBy: true,
@@ -388,6 +390,7 @@ export async function getGroupProducts({
     group: {
       id: group.id,
       name: group.name,
+      description: group.description,
       humanId: group.humanNameId,
       cheaperProductId: group.cheaperProductId,
       isComparable: group.isComparable,

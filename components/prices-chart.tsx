@@ -19,7 +19,6 @@ import {
 } from "@/db/schema";
 import { ChevronDown } from "lucide-react";
 import { isToday } from "@/lib/utils";
-import { Card, CardAction, CardContent, CardFooter, CardHeader } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -525,135 +524,134 @@ export function PricesChart({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
-          <DropdownMenu open={isShopMenuOpen} onOpenChange={setIsShopMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onPointerDown={(event) => {
-                  lastPointerTypeRef.current = event.pointerType;
-                  if (event.pointerType === "touch") {
-                    event.preventDefault();
-                  }
-                }}
-                onClick={() => {
-                  if (lastPointerTypeRef.current === "touch") {
-                    setIsShopMenuOpen((prev) => !prev);
-                  }
-                }}
-              >
-                Supermercados
-                {selectedShops.length > 0 ? (
-                  <Badge variant="secondary" className="ml-1">
-                    {selectedShops.length}
-                  </Badge>
-                ) : null}
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[150px]">
-              <DropdownMenuLabel>Supermercados</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {shops.map((shop) => {
-                const hasData =
-                  (shopHistories.get(shop.id)?.length ?? 0) > 0;
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={shop.id}
-                    checked={selectedShopIds.includes(shop.id)}
-                    onCheckedChange={(value) =>
-                      handleCheckedChange(value, shop.id)
-                    }
-                    disabled={!hasData}
-                  >
-                    {shop.name}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="px-1">
-        <ChartContainer config={chartConfig}>
-          <ComposedChart
-            accessibilityLayer
-            data={filteredChartData}
-            margin={{
-              left: 12,
-              right: 12,
-              top: 10,
-            }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("es-ES", {
-                  month: "short",
-                  day: "numeric",
-                });
+    <div className="space-y-8">
+      <div className="flex justify-end">
+        <DropdownMenu open={isShopMenuOpen} onOpenChange={setIsShopMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onPointerDown={(event) => {
+                lastPointerTypeRef.current = event.pointerType;
+                if (event.pointerType === "touch") {
+                  event.preventDefault();
+                }
               }}
-            />
-            <YAxis
-              type="number"
-              domain={[lower5th(minPrice), maxPrice]}
-              hide
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  formatter={tooltipFormatter}
-                  labelFormatter={(value) => {
-                    return new Date(String(value)).toLocaleDateString(
-                      "es-ES",
-                      {
-                        month: "short",
-                        day: "numeric",
-                      }
-                    );
-                  }}
-                />
-              }
-            />
-            <Area
-              dataKey="cheapestPrice"
-              type="linear"
-              fill="var(--color-cheapestPrice)"
-              fillOpacity={0.4}
-              stroke="var(--color-cheapestPrice)"
-              strokeWidth={1}
-              connectNulls={false}
-            />
-            {selectedShops.map((shop) => {
-              const key = seriesKey(shop.id);
+              onClick={() => {
+                if (lastPointerTypeRef.current === "touch") {
+                  setIsShopMenuOpen((prev) => !prev);
+                }
+              }}
+            >
+              Supermercados
+              {selectedShops.length > 0 ? (
+                <Badge variant="secondary" className="ml-1">
+                  {selectedShops.length}
+                </Badge>
+              ) : null}
+              <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[150px]">
+            <DropdownMenuLabel>Supermercados</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {shops.map((shop) => {
+              const hasData =
+                (shopHistories.get(shop.id)?.length ?? 0) > 0;
               return (
-                <Line
-                  key={key}
-                  dataKey={key}
-                  type="linear"
-                  stroke={`var(--color-${key})`}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls={false}
-                />
+                <DropdownMenuCheckboxItem
+                  key={shop.id}
+                  checked={selectedShopIds.includes(shop.id)}
+                  onCheckedChange={(value) =>
+                    handleCheckedChange(value, shop.id)
+                  }
+                  disabled={!hasData}
+                >
+                  {shop.name}
+                </DropdownMenuCheckboxItem>
               );
             })}
-            {selectedShops.length > 0 ? (
-              <ChartLegend content={<ChartLegendContent />} />
-            ) : null}
-          </ComposedChart>
-        </ChartContainer>
-      </CardContent>
-      <CardFooter className="justify-center">
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <ChartContainer
+        config={chartConfig}
+        className="h-[260px] w-full aspect-auto sm:h-[300px] lg:h-[320px] xl:h-[340px]"
+      >
+        <ComposedChart
+          accessibilityLayer
+          data={filteredChartData}
+          margin={{
+            left: 12,
+            right: 12,
+            top: 10,
+          }}
+        >
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="date"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            tickFormatter={(value) => {
+              const date = new Date(value);
+              return date.toLocaleDateString("es-ES", {
+                month: "short",
+                day: "numeric",
+              });
+            }}
+          />
+          <YAxis
+            type="number"
+            domain={[lower5th(minPrice), maxPrice]}
+            hide
+          />
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                formatter={tooltipFormatter}
+                labelFormatter={(value) => {
+                  return new Date(String(value)).toLocaleDateString(
+                    "es-ES",
+                    {
+                      month: "short",
+                      day: "numeric",
+                    }
+                  );
+                }}
+              />
+            }
+          />
+          <Area
+            dataKey="cheapestPrice"
+            type="linear"
+            fill="var(--color-cheapestPrice)"
+            fillOpacity={0.4}
+            stroke="var(--color-cheapestPrice)"
+            strokeWidth={1}
+            connectNulls={false}
+          />
+          {selectedShops.map((shop) => {
+            const key = seriesKey(shop.id);
+            return (
+              <Line
+                key={key}
+                dataKey={key}
+                type="linear"
+                stroke={`var(--color-${key})`}
+                strokeWidth={2}
+                dot={false}
+                connectNulls={false}
+              />
+            );
+          })}
+          {selectedShops.length > 0 ? (
+            <ChartLegend content={<ChartLegendContent />} />
+          ) : null}
+        </ComposedChart>
+      </ChartContainer>
+      <div className="flex justify-center">
         <RadioGroup
           value={historyRange}
           onValueChange={(value) => setHistoryRange(value as HistoryRange)}
@@ -682,8 +680,8 @@ export function PricesChart({
             </Label>
           </div>
         </RadioGroup>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
 
