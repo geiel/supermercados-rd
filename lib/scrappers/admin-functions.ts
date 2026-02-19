@@ -28,6 +28,7 @@ const DEFAULT_BRAND_SEARCH_PAGE_SIZE = 200;
 const DEFAULT_BRAND_PAIR_LIMIT = 50;
 const DEFAULT_SIMILAR_PRODUCTS_PAIR_LIMIT = 15;
 const DEFAULT_SIMILAR_PRODUCTS_QUERY_LIMIT = 40;
+const BRANDED_UNVERIFIED_SHOP_IDS = new Set([2, 5]); // Nacional, PriceSmart
 
 export type ProductSource = "products" | "unverified_products";
 
@@ -474,6 +475,7 @@ export async function adminMergeProductBySource(
         where: eq(unverfiedProducts.id, childProductId),
         columns: {
           id: true,
+          brandId: true,
           shopId: true,
           url: true,
           api: true,
@@ -488,6 +490,13 @@ export async function adminMergeProductBySource(
         throw new Error(
           "Cannot merge unverified product without shopId and url."
         );
+      }
+
+      if (BRANDED_UNVERIFIED_SHOP_IDS.has(unverifiedProduct.shopId)) {
+        await tx
+          .update(products)
+          .set({ brandId: unverifiedProduct.brandId })
+          .where(eq(products.id, parentProductId));
       }
 
       await tx
@@ -690,7 +699,7 @@ async function promoteUnverifiedProductsByIds(
     };
   }
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const pendingProducts = await tx.query.unverfiedProducts.findMany({
       where: inArray(unverfiedProducts.id, normalizedIds),
       columns: {
@@ -706,12 +715,16 @@ async function promoteUnverifiedProductsByIds(
         possibleBrandId: true,
         baseUnit: true,
         baseUnitAmount: true,
+        shopId: true,
+        url: true,
+        api: true,
       },
     });
 
     let promoted = 0;
     let duplicates = 0;
     let removed = 0;
+    const shopPricesToRefresh: ShopPriceRow[] = [];
 
     for (const pendingProduct of pendingProducts) {
       const inserted = await tx
@@ -732,10 +745,46 @@ async function promoteUnverifiedProductsByIds(
         .onConflictDoNothing()
         .returning({ id: products.id });
 
-      if (inserted.length > 0) {
+      const targetProductId = inserted[0]?.id ?? null;
+
+      if (targetProductId) {
         promoted += 1;
       } else {
         duplicates += 1;
+      }
+
+      const sourceUrl = pendingProduct.url?.trim();
+      if (targetProductId && pendingProduct.shopId && sourceUrl) {
+        await tx
+          .insert(productsShopsPrices)
+          .values({
+            productId: targetProductId,
+            shopId: pendingProduct.shopId,
+            url: sourceUrl,
+            api: pendingProduct.api,
+          })
+          .onConflictDoNothing();
+
+        const shopPriceRow = await tx.query.productsShopsPrices.findFirst({
+          where: and(
+            eq(productsShopsPrices.productId, targetProductId),
+            eq(productsShopsPrices.shopId, pendingProduct.shopId)
+          ),
+          columns: {
+            productId: true,
+            shopId: true,
+            url: true,
+            api: true,
+            currentPrice: true,
+            regularPrice: true,
+            updateAt: true,
+            hidden: true,
+          },
+        });
+
+        if (shopPriceRow) {
+          shopPricesToRefresh.push(shopPriceRow);
+        }
       }
 
       await tx
@@ -745,13 +794,29 @@ async function promoteUnverifiedProductsByIds(
     }
 
     return {
-      requested: normalizedIds.length,
-      found: pendingProducts.length,
-      promoted,
-      duplicates,
-      removed,
+      summary: {
+        requested: normalizedIds.length,
+        found: pendingProducts.length,
+        promoted,
+        duplicates,
+        removed,
+      },
+      shopPricesToRefresh,
     };
   });
+
+  for (const shopPriceRow of result.shopPricesToRefresh) {
+    try {
+      await refreshShopPriceForMergedProduct(shopPriceRow);
+    } catch (error) {
+      console.error(
+        "[Promote] Failed to initialize promoted product shop price",
+        error
+      );
+    }
+  }
+
+  return result.summary;
 }
 
 export async function promoteSelectedUnverifiedProducts(productIds: number[]) {
