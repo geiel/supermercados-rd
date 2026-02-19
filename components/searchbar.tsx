@@ -5,7 +5,6 @@ import { AutoComplete } from "./autocomplete";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useDebouncedValue } from "@tanstack/react-pacer";
 
 type SearchBarProps = {
   open?: boolean;
@@ -15,7 +14,6 @@ type SearchBarProps = {
 
 export function SearchBar({ open, onOpenChange, autoFocus }: SearchBarProps) {
   const [value, setValue] = useState("");
-  const [debouncedValue] = useDebouncedValue(value, { wait: 300 });
   const router = useRouter();
   const params = useParams<{ value?: string }>();
   let searchValue = "";
@@ -26,12 +24,12 @@ export function SearchBar({ open, onOpenChange, autoFocus }: SearchBarProps) {
     );
   }
 
-  const shouldFetch = debouncedValue.length >= 2;
+  const shouldFetch = value.length >= 2;
   const { data } = useQuery({
-    queryKey: ["suggestions", debouncedValue],
+    queryKey: ["suggestions", value],
     enabled: shouldFetch,
     queryFn: async () => {
-      const response = await fetch(`/api/suggestions?value=${debouncedValue}`);
+      const response = await fetch(`/api/suggestions?value=${value}`);
 
       return z
         .array(z.object({
