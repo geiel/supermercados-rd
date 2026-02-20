@@ -9,8 +9,9 @@ type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { group_human_id } = await params;
+  const resolvedSearchParams = await searchParams;
 
   const group = await db.query.groups.findFirst({
     columns: { name: true, humanNameId: true },
@@ -25,6 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = group.name;
   const description = `Compara precios de ${group.name} en supermercados de República Dominicana. Encuentra las mejores ofertas y el precio más bajo.`;
+  const hasAnySearchParam = Object.keys(resolvedSearchParams).length > 0;
 
   return {
     title: `Comparar precios de ${title} en supermercados RD`,
@@ -43,6 +45,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: {
       canonical: `/grupos/${group.humanNameId}`,
     },
+    ...(hasAnySearchParam
+      ? {
+          robots: {
+            index: false,
+            follow: true,
+            googleBot: {
+              index: false,
+              follow: true,
+            },
+          },
+        }
+      : {}),
   };
 }
 

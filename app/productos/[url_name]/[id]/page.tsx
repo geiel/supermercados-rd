@@ -24,7 +24,7 @@ import { categoriesGroups, products, productsGroups, productsShopsPrices } from 
 import { getGroupBreadcrumbPaths, type GroupBreadcrumbItem } from "@/lib/group-breadcrumbs";
 import { formatPriceValue } from "@/lib/price-format";
 import { parseUnit } from "@/lib/unit-utils";
-import { sanitizeForTsQuery } from "@/lib/utils";
+import { sanitizeForTsQuery, toSlug } from "@/lib/utils";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import {
   ChartNoAxesColumnDecreasing,
@@ -35,10 +35,12 @@ import {
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { permanentRedirect } from "next/navigation";
 import { cacheTag, cacheLife } from "next/cache";
 
 type Props = {
   params: Promise<{ id: string; url_name: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 const MAX_ALLOWED_RELATED_PRODUCTS = 16;
@@ -97,14 +99,24 @@ const SUPERMARKET_ALTERNATIVE_TARGETS: SupermarketAlternativeTarget[] = [
   },
 ];
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id, url_name } = await params;
+function hasSearchParams(searchParams: {
+  [key: string]: string | string[] | undefined;
+}) {
+  return Object.keys(searchParams).length > 0;
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const resolvedSearchParams = await searchParams;
   const product = await getProductMetadata(Number(id));
 
   if (!product) {
     return { title: "Producto no encontrado" };
   }
 
+  const canonicalSlug = toSlug(product.name);
+  const canonicalPath = `/productos/${canonicalSlug || product.id}/${product.id}`;
+  const shouldNoIndex = hasSearchParams(resolvedSearchParams);
   const lowestPrice = product.shopCurrentPrices[0]?.currentPrice;
   const brandName = product.brand?.name;
   const title = `${product.name} ${product.unit} - Precio en RD | SupermercadosRD`;
@@ -119,7 +131,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "website",
-      url: `/productos/${url_name}/${id}`,
+      url: canonicalPath,
       images: product.image
         ? [{ url: product.image, alt: title }]
         : undefined,
@@ -131,18 +143,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: product.image ? [product.image] : undefined,
     },
     alternates: {
-      canonical: `/productos/${url_name}/${id}`,
+      canonical: canonicalPath,
     },
+    ...(shouldNoIndex
+      ? {
+          robots: {
+            index: false,
+            follow: true,
+            googleBot: {
+              index: false,
+              follow: true,
+            },
+          },
+        }
+      : {}),
   };
 }
 
 export default async function Page({ params }: Props) {
-  const { id } = await params;
+  const { id, url_name } = await params;
 
   const product = await getProductData(Number(id));
 
   if (!product) {
     return <div>Producto no encontrado.</div>;
+  }
+
+  const canonicalSlug = toSlug(product.name) || product.id.toString();
+  if (url_name !== canonicalSlug) {
+    permanentRedirect(`/productos/${canonicalSlug}/${product.id}`);
   }
 
   const groupIds = product.groupProduct.map((groupProduct) => groupProduct.groupId);
