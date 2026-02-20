@@ -115,7 +115,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   }
 
   const canonicalSlug = toSlug(product.name);
-  const canonicalPath = `/productos/${canonicalSlug || product.id}/${product.id}`;
+  const canonicalPath = `/productos/${canonicalSlug || id}/${id}`;
   const shouldNoIndex = hasSearchParams(resolvedSearchParams);
   const lowestPrice = product.shopCurrentPrices[0]?.currentPrice;
   const brandName = product.brand?.name;
