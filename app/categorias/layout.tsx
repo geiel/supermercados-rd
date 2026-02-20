@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import Link from "next/link";
+import { connection } from "next/server";
 
 import { cacheLife, cacheTag } from "next/cache";
 import {
@@ -26,11 +27,13 @@ async function getCachedLayoutCategories() {
 }
 
 async function CategoriesBreadcrumbSection() {
+  await connection();
   const categories = await getCachedLayoutCategories();
   return <CategoriesBreadcrumb categories={categories} />;
 }
 
 async function CategoriesSidebar() {
+  await connection();
   const categories = await getCachedLayoutCategories();
   if (categories.length === 0) {
     return null;
