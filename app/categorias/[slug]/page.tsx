@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { CategoryIcon } from "@/components/category-icon";
 import { CategoryTopProducts } from "@/components/category-top-products";
@@ -16,31 +17,47 @@ import {
 import { getGroupCategoryWithGroups } from "@/lib/group-categories";
 import { getCategoryTopProducts } from "@/lib/category-top-products";
 import { PackageSearch } from "lucide-react";
+import CategoryLoading from "./loading";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  await connection();
-  const { slug } = await params;
-  const data = await getGroupCategoryWithGroups(slug);
+function formatCategoryLabelFromSlug(slug: string) {
+  try {
+    const decodedSlug = decodeURIComponent(slug).replace(/-/g, " ").trim();
+    if (!decodedSlug) {
+      return "Categoría";
+    }
 
-  if (!data) {
-    return { title: "Categoría no encontrada" };
+    return decodedSlug.charAt(0).toUpperCase() + decodedSlug.slice(1);
+  } catch {
+    return "Categoría";
   }
+}
 
-  const title = `${data.category.name} | SupermercadosRD`;
-  const description = `Explora todas las categorías de ${data.category.name} y encuentra los grupos disponibles.`;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const categoryLabel = formatCategoryLabelFromSlug(slug);
+  const title = `${categoryLabel} | SupermercadosRD`;
+  const description = `Explora todas las categorías de ${categoryLabel} y encuentra los grupos disponibles.`;
 
   return {
     title,
     description,
-    alternates: { canonical: `/categorias/${data.category.humanNameId}` },
+    alternates: { canonical: `/categorias/${slug}` },
   };
 }
 
-export default async function Page({ params }: Props) {
+export default function Page({ params }: Props) {
+  return (
+    <Suspense fallback={<CategoryPageFallback />}>
+      <CategoryPageContent params={params} />
+    </Suspense>
+  );
+}
+
+async function CategoryPageContent({ params }: Props) {
   await connection();
   const { slug } = await params;
   const categoryData = await getGroupCategoryWithGroups(slug);
@@ -173,4 +190,8 @@ export default async function Page({ params }: Props) {
       ) : null}
     </>
   );
+}
+
+function CategoryPageFallback() {
+  return <CategoryLoading />;
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { cacheLife, cacheTag } from "next/cache";
+import { connection } from "next/server";
 import { ChevronRight, PackageSearch } from "lucide-react";
 
 import { CategoryIcon } from "@/components/category-icon";
@@ -29,6 +30,7 @@ export default function Page() {
 }
 
 async function CategoriesList() {
+  await connection();
   const categories = await getCachedCategories();
 
   if (categories.length === 0) {
