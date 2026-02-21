@@ -66,6 +66,8 @@ type GroupExplorerListProps = {
   initialOffset: number;
   childGroups: GroupExplorerChildGroup[];
   isComparable: boolean;
+  forceRelevanceSort?: boolean;
+  relevanceSearchText?: string;
 };
 
 export function GroupExplorerList({
@@ -75,6 +77,8 @@ export function GroupExplorerList({
   initialOffset,
   childGroups,
   isComparable,
+  forceRelevanceSort = false,
+  relevanceSearchText,
 }: GroupExplorerListProps) {
   const [products, setProducts] = useState<GroupExplorerProduct[]>(
     initialProducts
@@ -98,6 +102,8 @@ export function GroupExplorerList({
   const lastGroupKeyRef = useRef<string | null>(null);
   const lastFilterKeyRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
+  const shouldForceRelevanceSort =
+    forceRelevanceSort && (relevanceSearchText?.trim().length ?? 0) > 0;
 
   // Build a key that includes both group and filters
   const filterKey = useMemo(() => {
@@ -105,7 +111,9 @@ export function GroupExplorerList({
     const units = searchParams.get("units") || "";
     const minPrice = searchParams.get("min_price") || "";
     const maxPrice = searchParams.get("max_price") || "";
-    return `${shopIds}|${units}|${minPrice}|${maxPrice}`;
+    const explorePath = searchParams.get("explore_path") || "";
+    const exploreQuery = searchParams.get("explore_q") || "";
+    return `${shopIds}|${units}|${minPrice}|${maxPrice}|${explorePath}|${exploreQuery}`;
   }, [searchParams]);
 
   const groupKey = humanId;
@@ -150,9 +158,18 @@ export function GroupExplorerList({
     setOffset(initialOffset);
     setIsLoading(false);
     setErrorMessage(null);
-    setSort(GROUP_EXPLORER_DEFAULT_SORT);
+    setSort(
+      shouldForceRelevanceSort ? "relevance" : GROUP_EXPLORER_DEFAULT_SORT
+    );
     setIsSortOpen(false);
-  }, [groupKey, filterKey, initialOffset, initialProducts, total]);
+  }, [
+    groupKey,
+    filterKey,
+    initialOffset,
+    initialProducts,
+    shouldForceRelevanceSort,
+    total,
+  ]);
 
   // Track if we should reload due to filter changes
   const shouldReloadForFiltersRef = useRef(false);
@@ -206,11 +223,15 @@ export function GroupExplorerList({
     const units = searchParams.get("units");
     const minPrice = searchParams.get("min_price");
     const maxPrice = searchParams.get("max_price");
+    const explorePath = searchParams.get("explore_path");
+    const exploreQuery = searchParams.get("explore_q");
 
     if (shopIds) params.set("shop_ids", shopIds);
     if (units) params.set("units", units);
     if (minPrice) params.set("min_price", minPrice);
     if (maxPrice) params.set("max_price", maxPrice);
+    if (explorePath) params.set("explore_path", explorePath);
+    if (exploreQuery) params.set("explore_q", exploreQuery);
 
     return params;
   }, [searchParams]);
@@ -222,9 +243,10 @@ export function GroupExplorerList({
       targetSort: GroupExplorerSort
     ) => {
       const params = buildFilterParams();
+      const effectiveSort = shouldForceRelevanceSort ? "relevance" : targetSort;
       params.set("offset", String(targetOffset));
       params.set("limit", String(targetLimit));
-      params.set("sort", targetSort);
+      params.set("sort", effectiveSort);
 
       const response = await fetch(
         `/api/groups/${encodeURIComponent(humanId)}/products?${params.toString()}`,
@@ -237,7 +259,7 @@ export function GroupExplorerList({
 
       return (await response.json()) as GroupExplorerResponse;
     },
-    [humanId, buildFilterParams]
+    [buildFilterParams, humanId, shouldForceRelevanceSort]
   );
 
   const loadPage = useCallback(
@@ -305,6 +327,11 @@ export function GroupExplorerList({
 
   const handleSortChange = useCallback(
     (nextSort: GroupExplorerSort) => {
+      if (shouldForceRelevanceSort) {
+        setIsSortOpen(false);
+        return;
+      }
+
       if (nextSort === sort) {
         setIsSortOpen(false);
         return;
@@ -314,7 +341,7 @@ export function GroupExplorerList({
       setIsSortOpen(false);
       void loadFirstPage(nextSort);
     },
-    [loadFirstPage, sort]
+    [loadFirstPage, shouldForceRelevanceSort, sort]
   );
 
   const handleSelectChange = useCallback(

@@ -14,6 +14,7 @@ export type ExploreGroupResult = {
   isComparable: boolean;
   imageUrl: string | null;
   parentGroupName?: string | null;
+  sourcePath?: 1 | 2;
 };
 
 export type ExploreProduct = {

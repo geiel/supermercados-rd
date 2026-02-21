@@ -25,6 +25,29 @@ type GroupExplorerProps = {
     searchParams?: { [key: string]: string | string[] | undefined };
 };
 
+function parseExploreContextFromSearchParams(searchParams?: {
+  [key: string]: string | string[] | undefined;
+}) {
+  if (!searchParams) {
+    return { isPath2: false, searchText: null as string | null };
+  }
+
+  const explorePath =
+    typeof searchParams.explore_path === "string"
+      ? searchParams.explore_path
+      : null;
+  const exploreQuery =
+    typeof searchParams.explore_q === "string"
+      ? searchParams.explore_q.trim()
+      : "";
+
+  if (explorePath === "2" && exploreQuery.length > 0) {
+    return { isPath2: true, searchText: exploreQuery };
+  }
+
+  return { isPath2: false, searchText: null as string | null };
+}
+
 function parseFiltersFromSearchParams(searchParams?: { [key: string]: string | string[] | undefined }): Filters {
     if (!searchParams) return {};
 
@@ -63,12 +86,14 @@ function parseFiltersFromSearchParams(searchParams?: { [key: string]: string | s
 
 export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProps) {
     const filters = parseFiltersFromSearchParams(searchParams);
+    const exploreContext = parseExploreContextFromSearchParams(searchParams);
 
     const result = await getGroupProducts({
         humanId,
         offset: 0,
         limit: GROUP_EXPLORER_DESKTOP_PAGE_SIZE,
         filters,
+        searchText: exploreContext.searchText ?? undefined,
     });
 
     if (!result) {
@@ -135,6 +160,13 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
                                     groupId={child.id}
                                     groupName={child.name}
                                     groupHumanNameId={child.humanNameId}
+                                    href={
+                                      exploreContext.isPath2
+                                        ? `/grupos/${child.humanNameId}?explore_path=2&explore_q=${encodeURIComponent(
+                                            exploreContext.searchText ?? ""
+                                          )}`
+                                        : undefined
+                                    }
                                     isComparable={child.isComparable}
                                     groupImageUrl={child.imageUrl}
                                     addLabel="Lista"
@@ -160,6 +192,8 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
                     initialOffset={result.nextOffset}
                     childGroups={result.childGroups}
                     isComparable={result.group.isComparable}
+                    forceRelevanceSort={exploreContext.isPath2}
+                    relevanceSearchText={exploreContext.searchText ?? undefined}
                 />
                 </div>
             </div>

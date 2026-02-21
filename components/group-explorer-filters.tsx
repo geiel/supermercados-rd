@@ -3,12 +3,11 @@
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Filter, X } from "lucide-react";
+import { ChevronDown, Filter, X } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -762,11 +761,15 @@ function SubgroupsSection({
       const units = searchParams.get("units");
       const minPrice = searchParams.get("min_price");
       const maxPrice = searchParams.get("max_price");
+      const explorePath = searchParams.get("explore_path");
+      const exploreQuery = searchParams.get("explore_q");
 
       if (shopIds) params.set("shop_ids", shopIds);
       if (units) params.set("units", units);
       if (minPrice) params.set("min_price", minPrice);
       if (maxPrice) params.set("max_price", maxPrice);
+      if (explorePath) params.set("explore_path", explorePath);
+      if (exploreQuery) params.set("explore_q", exploreQuery);
 
       const query = params.toString();
       return query ? `/grupos/${humanNameId}?${query}` : `/grupos/${humanNameId}`;

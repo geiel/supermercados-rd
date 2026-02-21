@@ -22,6 +22,7 @@ type CategoryBadgeProps = {
   groupId: number;
   groupName: string;
   groupHumanNameId: string;
+  href?: string;
   groupImageUrl?: string | null;
   secondaryText?: string | null;
   showLabel?: boolean;
@@ -32,6 +33,7 @@ type CategoryBadgeProps = {
 export function CategoryBadge({
   groupName,
   groupHumanNameId,
+  href,
   groupImageUrl,
   secondaryText,
 }: CategoryBadgeProps) {
@@ -72,7 +74,7 @@ export function CategoryBadge({
   return (
     <div className="inline-flex items-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:shadow">
       <Link
-        href={`/grupos/${groupHumanNameId}`}
+        href={href ?? `/grupos/${groupHumanNameId}`}
         className="pl-3 pr-5 py-2.5 w-full min-w-0"
         prefetch={false}
       >

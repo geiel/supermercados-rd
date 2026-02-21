@@ -145,7 +145,7 @@ function getSimilarityVariants(searchText: string) {
 
 function mapGroupNodeToExploreResult(
   group: GroupNode,
-  options?: { parentGroupName?: string | null }
+  options?: { parentGroupName?: string | null; sourcePath?: 1 | 2 }
 ): ExploreGroupResult {
   return {
     name: group.name,
@@ -154,6 +154,7 @@ function mapGroupNodeToExploreResult(
     isComparable: group.isComparable,
     imageUrl: group.imageUrl,
     parentGroupName: options?.parentGroupName ?? null,
+    sourcePath: options?.sourcePath,
   };
 }
 
@@ -479,7 +480,9 @@ async function getTopTreeGroupsFromProducts(
     })
     .slice(0, limit);
 
-  return topByCount.map(({ row }) => mapGroupNodeToExploreResult(row));
+  return topByCount.map(({ row }) =>
+    mapGroupNodeToExploreResult(row, { sourcePath: 2 })
+  );
 }
 
 export async function getExploreParentGroups(
@@ -497,11 +500,14 @@ export async function getExploreParentGroups(
         .map((group) =>
           mapGroupNodeToExploreResult(group, {
             parentGroupName: highSimilarityGroup.name,
+            sourcePath: 1,
           })
         );
     }
 
-    return [mapGroupNodeToExploreResult(highSimilarityGroup)].slice(0, limit);
+    return [
+      mapGroupNodeToExploreResult(highSimilarityGroup, { sourcePath: 1 }),
+    ].slice(0, limit);
   }
 
   const allMatchedProducts = await searchProductIds(searchText);

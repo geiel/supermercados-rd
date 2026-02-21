@@ -36,7 +36,7 @@ export default async function Page({ params }: Props) {
 
   return (
     <>
-      <CategorySearch groupResults={groupResults} />
+      <CategorySearch groupResults={groupResults} searchText={rawSearchValue} />
       <div className="px-2 md:px-0">
         <div className="flex items-baseline gap-2">
           <TypographyH3>Productos</TypographyH3>

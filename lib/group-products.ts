@@ -29,6 +29,7 @@ type GetGroupProductsOptions = {
   limit: number;
   sort?: GroupExplorerSort;
   filters?: GroupExplorerFilters;
+  searchText?: string;
 };
 
 type GroupRow = {
@@ -48,6 +49,7 @@ export async function getGroupProducts({
   limit,
   sort = GROUP_EXPLORER_DEFAULT_SORT,
   filters = {},
+  searchText,
 }: GetGroupProductsOptions): Promise<GroupExplorerResponse | null> {
   const { shopIds, units, minPrice, maxPrice } = filters;
 
@@ -193,6 +195,14 @@ export async function getGroupProducts({
 
   const pBrand = alias(productsBrands, "possible_brand");
   const relevanceRank = sql<number>`coalesce(${products.rank}, 0)`;
+  const normalizedSearchText = searchText?.trim() ?? "";
+  const similarityRank =
+    normalizedSearchText.length > 0
+      ? sql<number>`similarity(
+          unaccent(lower(${products.name})),
+          unaccent(lower(${normalizedSearchText}))
+        )`
+      : null;
 
   // For best_value sorting, we need to handle it differently based on measurement type
   // We'll use SQL for non-best_value sorts, and JS sorting for best_value
@@ -207,6 +217,14 @@ export async function getGroupProducts({
         // Default to lowest_price order in SQL, then re-sort in JS
         return [asc(minCurrentPrice), asc(products.id)];
       case "relevance":
+        if (similarityRank) {
+          return [
+            desc(similarityRank),
+            desc(relevanceRank),
+            asc(minCurrentPrice),
+            asc(products.id),
+          ];
+        }
         return [desc(relevanceRank), asc(minCurrentPrice), asc(products.id)];
       case "lowest_price":
       default:
