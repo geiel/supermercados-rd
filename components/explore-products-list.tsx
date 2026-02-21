@@ -40,9 +40,6 @@ type ExploreProductsListProps = {
   initialOffset: number;
   query: {
     value: string;
-    shop_ids?: string;
-    only_shop_products?: string;
-    unit_filter?: string;
   };
 };
 
@@ -64,15 +61,8 @@ export function ExploreProductsList({
   const hasAdjustedForMobileRef = useRef(false);
 
   const queryKeyParts = useMemo(
-    () =>
-      [
-        "explore-products",
-        query.value,
-        query.shop_ids ?? "",
-        query.only_shop_products ?? "",
-        query.unit_filter ?? "",
-      ] as const,
-    [query.only_shop_products, query.shop_ids, query.unit_filter, query.value]
+    () => ["explore-products", query.value] as const,
+    [query.value]
   );
 
   const initialPage = useMemo(() => {
@@ -117,9 +107,6 @@ export function ExploreProductsList({
           value: query.value,
           offset: pageParam.offset,
           prefetch_ids: pageParam.prefetchIds,
-          shop_ids: query.shop_ids,
-          only_shop_products: query.only_shop_products,
-          unit_filter: query.unit_filter,
         }),
       });
 

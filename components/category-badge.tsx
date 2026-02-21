@@ -23,6 +23,7 @@ type CategoryBadgeProps = {
   groupName: string;
   groupHumanNameId: string;
   groupImageUrl?: string | null;
+  secondaryText?: string | null;
   showLabel?: boolean;
   isComparable?: boolean;
   addLabel?: string;
@@ -32,6 +33,7 @@ export function CategoryBadge({
   groupName,
   groupHumanNameId,
   groupImageUrl,
+  secondaryText,
 }: CategoryBadgeProps) {
   const [loadedImageSrc, setLoadedImageSrc] = useState<string | null>(null);
   const [erroredImageSrc, setErroredImageSrc] = useState<string | null>(null);
@@ -103,7 +105,14 @@ export function CategoryBadge({
               {groupImageUrl && !isAvatarImageError ? "" : groupInitials}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate">{groupName}</span>
+          <span className="min-w-0">
+            <span className="block truncate leading-tight">{groupName}</span>
+            {secondaryText ? (
+              <span className="block truncate text-xs text-muted-foreground leading-tight">
+                {secondaryText}
+              </span>
+            ) : null}
+          </span>
         </span>
       </Link>
     </div>

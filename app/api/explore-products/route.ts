@@ -4,19 +4,11 @@ import { NextResponse } from "next/server";
 import { getExploreProducts } from "@/lib/explore-products";
 
 import { getUser } from "@/lib/supabase";
-import { getShopsIds } from "@/lib/utils";
-import {
-  normalizeUnitFiltersForSearch,
-  parseUnitFilterParam,
-} from "@/utils/unit-filter";
 
 type ExploreProductsRequest = {
   value?: string;
   offset?: number;
   prefetch_ids?: number[];
-  shop_ids?: string;
-  only_shop_products?: boolean | string;
-  unit_filter?: string;
 };
 
 export async function POST(request: Request) {
@@ -50,17 +42,6 @@ export async function POST(request: Request) {
         .filter((id) => Number.isFinite(id) && id > 0)
     : [];
 
-  const shopIds = getShopsIds(
-    typeof body.shop_ids === "string" ? body.shop_ids : undefined
-  );
-  const onlyShopProducts =
-    body.only_shop_products === true || body.only_shop_products === "true";
-  const unitFilters = normalizeUnitFiltersForSearch(
-    parseUnitFilterParam(
-      typeof body.unit_filter === "string" ? body.unit_filter : undefined
-    )
-  );
-
   try {
     const user = await getUser();
     const canSeeHiddenProducts =
@@ -70,10 +51,7 @@ export async function POST(request: Request) {
       value: rawValue,
       offset,
       prefetchIds,
-      shopIds,
       includeHiddenProducts: canSeeHiddenProducts,
-      onlyShopProducts,
-      unitFilters,
     });
 
     return NextResponse.json(result);

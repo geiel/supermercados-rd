@@ -5,18 +5,9 @@ import { ExploreProductsList } from "@/components/explore-products-list";
 import { TypographyH3 } from "@/components/typography-h3";
 import { getExploreProducts } from "@/lib/explore-products";
 import { getUser } from "@/lib/supabase";
-import { getShopsIds } from "@/lib/utils";
-import {
-  normalizeUnitFiltersForSearch,
-  parseUnitFilterParam,
-} from "@/utils/unit-filter";
+
 type Props = {
   params: Promise<{ value: string }>;
-  searchParams: Promise<{
-    shop_ids: string | undefined;
-    only_shop_products: string | undefined;
-    unit_filter: string | undefined;
-  }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -26,19 +17,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function Page({ params, searchParams }: Props) {
+export default async function Page({ params }: Props) {
   const { value } = await params;
-  const { shop_ids, only_shop_products, unit_filter } = await searchParams;
-
-  const shopsIds = getShopsIds(shop_ids);
 
   const user = await getUser();
   const canSeeHiddenProducts =
     user?.email?.toLowerCase() === "geielpeguero@gmail.com";
-
-  const unitFilters = normalizeUnitFiltersForSearch(
-    parseUnitFilterParam(unit_filter)
-  );
 
   const rawSearchValue = decodeURIComponent(value).trim();
 
@@ -47,10 +31,7 @@ export default async function Page({ params, searchParams }: Props) {
       value: rawSearchValue,
       offset: 0,
       prefetchIds: [],
-      shopIds: shopsIds,
       includeHiddenProducts: canSeeHiddenProducts,
-      onlyShopProducts: only_shop_products === "true",
-      unitFilters,
     });
 
   return (
@@ -70,9 +51,6 @@ export default async function Page({ params, searchParams }: Props) {
         initialOffset={nextOffset}
         query={{
           value: rawSearchValue,
-          shop_ids,
-          only_shop_products,
-          unit_filter,
         }}
       />
     </>
