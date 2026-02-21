@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, PackageSearch } from "lucide-react";
 
 import { AddToListButton } from "@/components/add-to-list-button";
@@ -94,6 +94,8 @@ export function GroupExplorerList({
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedMoreRef = useRef(false);
@@ -102,8 +104,11 @@ export function GroupExplorerList({
   const lastGroupKeyRef = useRef<string | null>(null);
   const lastFilterKeyRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
+  const searchParamsExplorePath = searchParams.get("explore_path");
+  const searchParamsExploreQuery = searchParams.get("explore_q")?.trim() ?? "";
   const shouldForceRelevanceSort =
-    forceRelevanceSort && (relevanceSearchText?.trim().length ?? 0) > 0;
+    (searchParamsExplorePath === "2" && searchParamsExploreQuery.length > 0) ||
+    (forceRelevanceSort && (relevanceSearchText?.trim().length ?? 0) > 0);
 
   // Build a key that includes both group and filters
   const filterKey = useMemo(() => {
@@ -217,7 +222,8 @@ export function GroupExplorerList({
     setProducts((current) => mergeProducts(current, incoming));
   }, []);
 
-  const buildFilterParams = useCallback(() => {
+  const buildFilterParams = useCallback((options?: { includeExploreContext?: boolean }) => {
+    const includeExploreContext = options?.includeExploreContext !== false;
     const params = new URLSearchParams();
     const shopIds = searchParams.get("shop_ids");
     const units = searchParams.get("units");
@@ -230,8 +236,8 @@ export function GroupExplorerList({
     if (units) params.set("units", units);
     if (minPrice) params.set("min_price", minPrice);
     if (maxPrice) params.set("max_price", maxPrice);
-    if (explorePath) params.set("explore_path", explorePath);
-    if (exploreQuery) params.set("explore_q", exploreQuery);
+    if (includeExploreContext && explorePath) params.set("explore_path", explorePath);
+    if (includeExploreContext && exploreQuery) params.set("explore_q", exploreQuery);
 
     return params;
   }, [searchParams]);
@@ -240,9 +246,10 @@ export function GroupExplorerList({
     async (
       targetOffset: number,
       targetLimit: number,
-      targetSort: GroupExplorerSort
+      targetSort: GroupExplorerSort,
+      options?: { includeExploreContext?: boolean }
     ) => {
-      const params = buildFilterParams();
+      const params = buildFilterParams(options);
       const effectiveSort = shouldForceRelevanceSort ? "relevance" : targetSort;
       params.set("offset", String(targetOffset));
       params.set("limit", String(targetLimit));
@@ -266,15 +273,19 @@ export function GroupExplorerList({
     async (
       targetOffset: number,
       targetLimit: number,
-      targetSort: GroupExplorerSort
+      targetSort: GroupExplorerSort,
+      options?: { includeExploreContext?: boolean }
     ) => {
-      return loadPageWithFilters(targetOffset, targetLimit, targetSort);
+      return loadPageWithFilters(targetOffset, targetLimit, targetSort, options);
     },
     [loadPageWithFilters]
   );
 
   const loadFirstPage = useCallback(
-    async (targetSort: GroupExplorerSort) => {
+    async (
+      targetSort: GroupExplorerSort,
+      options?: { includeExploreContext?: boolean }
+    ) => {
       const requestId = requestIdRef.current + 1;
       requestIdRef.current = requestId;
       isLoadingRef.current = true;
@@ -289,7 +300,7 @@ export function GroupExplorerList({
       hasAdjustedForMobileRef.current = false;
 
       try {
-        const data = await loadPageWithFilters(0, pageSize, targetSort);
+        const data = await loadPageWithFilters(0, pageSize, targetSort, options);
 
         if (requestId !== requestIdRef.current) {
           return;
@@ -328,6 +339,15 @@ export function GroupExplorerList({
   const handleSortChange = useCallback(
     (nextSort: GroupExplorerSort) => {
       if (shouldForceRelevanceSort) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("explore_q");
+        params.delete("explore_path");
+        const query = params.toString();
+
+        router.push(query ? `${pathname}?${query}` : pathname, {
+          scroll: false,
+        });
+        setSort(nextSort);
         setIsSortOpen(false);
         return;
       }
@@ -341,7 +361,14 @@ export function GroupExplorerList({
       setIsSortOpen(false);
       void loadFirstPage(nextSort);
     },
-    [loadFirstPage, shouldForceRelevanceSort, sort]
+    [
+      loadFirstPage,
+      pathname,
+      router,
+      searchParams,
+      shouldForceRelevanceSort,
+      sort,
+    ]
   );
 
   const handleSelectChange = useCallback(
