@@ -37,6 +37,8 @@ export async function GET(request: Request, { params }: RouteParams) {
   const offsetParam = searchParams.get("offset");
   const limitParam = searchParams.get("limit");
   const sortParam = searchParams.get("sort");
+  const explorePathParam = searchParams.get("explore_path");
+  const exploreQueryParam = searchParams.get("explore_q");
   const { group_human_id } = await params;
 
   // Parse filter params
@@ -52,9 +54,13 @@ export async function GET(request: Request, { params }: RouteParams) {
   const limit = Number.isFinite(limitRaw)
     ? Math.min(Math.max(1, limitRaw), GROUP_EXPLORER_MAX_LIMIT)
     : GROUP_EXPLORER_DESKTOP_PAGE_SIZE;
-  const sort = isGroupExplorerSort(sortParam)
-    ? sortParam
-    : GROUP_EXPLORER_DEFAULT_SORT;
+  const exploreQuery = exploreQueryParam?.trim() ?? "";
+  const isExplorePath2 = explorePathParam === "2" && exploreQuery.length > 0;
+  const sort = isExplorePath2
+    ? "relevance"
+    : isGroupExplorerSort(sortParam)
+      ? sortParam
+      : GROUP_EXPLORER_DEFAULT_SORT;
 
   // Build filters object
   const filters: GroupExplorerFilters = {};
@@ -86,6 +92,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       limit,
       sort,
       filters,
+      searchText: isExplorePath2 ? exploreQuery : undefined,
     });
 
     if (!result) {

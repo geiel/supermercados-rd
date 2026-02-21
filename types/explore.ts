@@ -13,6 +13,8 @@ export type ExploreGroupResult = {
   groupId: number;
   isComparable: boolean;
   imageUrl: string | null;
+  parentGroupName?: string | null;
+  sourcePath?: 1 | 2;
 };
 
 export type ExploreProduct = {

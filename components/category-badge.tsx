@@ -22,7 +22,9 @@ type CategoryBadgeProps = {
   groupId: number;
   groupName: string;
   groupHumanNameId: string;
+  href?: string;
   groupImageUrl?: string | null;
+  secondaryText?: string | null;
   showLabel?: boolean;
   isComparable?: boolean;
   addLabel?: string;
@@ -31,7 +33,9 @@ type CategoryBadgeProps = {
 export function CategoryBadge({
   groupName,
   groupHumanNameId,
+  href,
   groupImageUrl,
+  secondaryText,
 }: CategoryBadgeProps) {
   const [loadedImageSrc, setLoadedImageSrc] = useState<string | null>(null);
   const [erroredImageSrc, setErroredImageSrc] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export function CategoryBadge({
   return (
     <div className="inline-flex items-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-900 transition hover:border-slate-400 hover:shadow">
       <Link
-        href={`/grupos/${groupHumanNameId}`}
+        href={href ?? `/grupos/${groupHumanNameId}`}
         className="pl-3 pr-5 py-2.5 w-full min-w-0"
         prefetch={false}
       >
@@ -103,7 +107,14 @@ export function CategoryBadge({
               {groupImageUrl && !isAvatarImageError ? "" : groupInitials}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate">{groupName}</span>
+          <span className="min-w-0">
+            <span className="block truncate leading-tight">{groupName}</span>
+            {secondaryText ? (
+              <span className="block truncate text-xs text-muted-foreground leading-tight">
+                {secondaryText}
+              </span>
+            ) : null}
+          </span>
         </span>
       </Link>
     </div>

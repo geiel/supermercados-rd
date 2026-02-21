@@ -41,10 +41,7 @@ type ExploreProductsQuery = {
   prefetchIds?: number[];
   displayCount?: number;
   prefetchCount?: number;
-  shopIds?: number[];
   includeHiddenProducts?: boolean;
-  onlyShopProducts?: boolean;
-  unitFilters?: string[];
 };
 
 async function updateShopPrices(shopPrices: ProductShopPrice[]) {
@@ -130,15 +127,13 @@ function getLowestCurrentPrice(shopPrices: ProductShopPrice[]) {
 
 async function fetchProductsByIds(
   ids: number[],
-  shopIds: number[],
   includeHiddenProducts: boolean
 ) {
   if (ids.length === 0) {
     return [];
   }
 
-  const shouldFilterShopCurrentPrices =
-    shopIds.length > 0 || !includeHiddenProducts;
+  const shouldFilterShopCurrentPrices = !includeHiddenProducts;
 
   const products = await db.query.products.findMany({
     columns: {
@@ -152,17 +147,11 @@ async function fetchProductsByIds(
     with: {
       shopCurrentPrices: shouldFilterShopCurrentPrices
         ? {
-            where: (shopPrice, { and, eq, inArray, isNull, or }) => {
+            where: (shopPrice, { eq, isNull, or }) => {
               const visibleCondition = or(
                 isNull(shopPrice.hidden),
                 eq(shopPrice.hidden, false)
               );
-
-              if (shopIds.length > 0) {
-                return includeHiddenProducts
-                  ? inArray(shopPrice.shopId, shopIds)
-                  : and(inArray(shopPrice.shopId, shopIds), visibleCondition);
-              }
 
               return visibleCondition;
             },
@@ -222,16 +211,12 @@ export async function getExploreProducts({
   prefetchIds = [],
   displayCount = EXPLORE_SYNC_COUNT,
   prefetchCount = EXPLORE_PREFETCH_COUNT,
-  shopIds = [],
   includeHiddenProducts = false,
-  onlyShopProducts = false,
-  unitFilters = [],
 }: ExploreProductsQuery): Promise<ExploreProductsResponse> {
   const rawSearchValue = value.trim();
 
   const prefetchedProducts = await fetchProductsByIds(
     prefetchIds,
-    shopIds,
     includeHiddenProducts
   );
   const prefetchNeeded = Math.min(displayCount, prefetchedProducts.length);
@@ -243,10 +228,8 @@ export async function getExploreProducts({
     fetchCount,
     offset,
     true,
-    shopIds,
-    includeHiddenProducts,
-    onlyShopProducts,
-    unitFilters
+    undefined,
+    includeHiddenProducts
   );
 
   let total = productsAndTotal.total;
@@ -285,8 +268,6 @@ export async function getExploreProducts({
     });
   }
 
-  const productIds = displayProducts.map((product) => product.id);
-
   const shops = await db.query.shops.findMany({
     columns: {
       id: true,
@@ -296,8 +277,15 @@ export async function getExploreProducts({
   const shopLogos = new Map(shops.map((shop) => [shop.id, shop.logo]));
 
   const nextOffset = offset + productsAndTotal.products.length;
-
-  const groupResults = await getExploreParentGroups(productIds, 10);
+  const groupResults =
+    offset === 0
+      ? await (async () => {
+          return getExploreParentGroups(
+            rawSearchValue,
+            10
+          );
+        })()
+      : [];
 
   const products = displayProducts.map((product) =>
     toExploreProduct(product, shopLogos, getLowestCurrentPrice(product.shopCurrentPrices))

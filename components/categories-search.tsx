@@ -9,8 +9,10 @@ import type { ExploreGroupResult } from "@/types/explore";
 
 export function CategorySearch({
   groupResults,
+  searchText,
 }: {
   groupResults: ExploreGroupResult[];
+  searchText: string;
 }) {
     const [showAllMobile, setShowAllMobile] = useState(false);
     const mobileGroups = showAllMobile ? groupResults : groupResults.slice(0, 4);
@@ -33,6 +35,12 @@ export function CategorySearch({
               groupHumanNameId={group.humanId}
               isComparable={group.isComparable}
               groupImageUrl={group.imageUrl}
+              secondaryText={group.parentGroupName}
+              href={
+                group.sourcePath === 2
+                  ? `/grupos/${group.humanId}?explore_path=2&explore_q=${encodeURIComponent(searchText)}`
+                  : undefined
+              }
             />
           ))}
           <SuggestCategoryDrawer>
@@ -50,6 +58,12 @@ export function CategorySearch({
               groupHumanNameId={group.humanId}
               isComparable={group.isComparable}
               groupImageUrl={group.imageUrl}
+              secondaryText={group.parentGroupName}
+              href={
+                group.sourcePath === 2
+                  ? `/grupos/${group.humanId}?explore_path=2&explore_q=${encodeURIComponent(searchText)}`
+                  : undefined
+              }
             />
           ))}
           {!showAllMobile && groupResults.length > 4 ? (

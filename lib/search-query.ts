@@ -18,6 +18,8 @@ const SEARCH_UNIT_TEXT_RANK_FACTOR = 0.6;
 const SEARCH_UNIT_TEXT_RANK_MIN = 0.015;
 const SEARCH_UNIT_TEXT_SIM_MIN = 0.2;
 
+const GROUP_SEARCH_MIN_SIMILARITY = 0.3;
+
 export function removeAccents(str: string) {
   return str
     .normalize("NFD")
@@ -47,6 +49,7 @@ export async function searchProducts(
   }
 
   const tsQueryV2 = buildTsQueryV2(removeAccents(normalizedSearchValue));
+
   const searchUnitAmountEntries = searchUnitTarget
     ? Object.entries(searchUnitTarget.amountsByUnit).filter(
         ([, amount]) => Number.isFinite(amount) && amount > 0
@@ -341,6 +344,69 @@ export async function searchProducts(
   return {
     products: orderedProducts,
     total: rows.length > 0 ? Number(rows[0].total_count) : 0,
+  };
+}
+
+export async function searchProductIds(value: string, includeHiddenProducts = false) {
+  const searchUnitTarget = extractSearchUnitTarget(value);
+  const searchTextForMatching =
+    searchUnitTarget?.cleanedSearchText.length
+      ? searchUnitTarget.cleanedSearchText
+      : value;
+  const normalizedSearchValue = sanitizeForTsQuery(searchTextForMatching);
+  if (!normalizedSearchValue) {
+    return { productIds: [], total: 0 };
+  }
+
+  const tsQueryV2 = buildTsQueryV2(removeAccents(normalizedSearchValue));
+
+  const query = sql`
+    WITH matches AS (
+      SELECT
+        ${products.id} AS id,
+        similarity(
+          unaccent(lower(${products.name})),
+          unaccent(lower(${normalizedSearchValue}))
+        ) AS sim_score,
+        CASE
+          WHEN unaccent(lower(${products.name})) LIKE unaccent(lower(${normalizedSearchValue})) || '%'
+          THEN 1
+          ELSE 0
+        END AS is_prefix
+      FROM ${products}
+      WHERE
+        (
+          name_unaccent_es @@ to_tsquery('spanish', unaccent(lower(${tsQueryV2})))
+          OR name_unaccent_en @@ to_tsquery('english', unaccent(lower(${tsQueryV2})))
+          OR unaccent(lower(${products.name})) % unaccent(lower(${normalizedSearchValue}))
+        )
+        AND COALESCE(${products.deleted}, FALSE) = FALSE
+    )
+    SELECT DISTINCT matches.id AS id, matches.sim_score AS sim_score
+    FROM matches
+    WHERE
+      (
+        matches.is_prefix = 1
+        OR matches.sim_score >= ${GROUP_SEARCH_MIN_SIMILARITY}
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM ${productsShopsPrices}
+        WHERE ${productsShopsPrices.productId} = matches.id
+        ${
+          includeHiddenProducts
+            ? sql``
+            : sql`AND (${productsShopsPrices.hidden} IS NULL OR ${productsShopsPrices.hidden} = FALSE)`
+        }
+      )
+    ORDER BY matches.sim_score DESC, matches.id ASC
+  `;
+
+  const selectedRows = await db.execute<{ id: number; sim_score: number }>(query);
+
+  return {
+    productIds: selectedRows.map((row) => row.id),
+    total: selectedRows.length,
   };
 }
 
