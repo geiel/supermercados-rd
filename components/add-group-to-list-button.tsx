@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Check, Plus } from "lucide-react";
+import { Heart, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -30,7 +30,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAddToList } from "@/hooks/use-add-to-list";
 
 const DEFAULT_LIST_NAME = "Lista de compras";
-const CHECKED_COLOR = "#ce1126";
 
 type AddGroupToListButtonProps = {
   groupId: number;
@@ -154,18 +153,20 @@ export function AddGroupToListButton({ groupId, groupName, variant = "default" }
   const isMutating = isCreatingList;
   const isIconVariant = variant === "icon";
 
+  const heartIcon = isInAnyList
+    ? <Heart className="size-4 fill-purple-600 text-purple-600" />
+    : <Heart className="size-4" />;
+
   const buttonContent = isIconVariant ? (
-    isInAnyList ? <Check className="size-4" /> : <Plus className="size-4" />
+    heartIcon
   ) : (
     <>
-      {isInAnyList ? <Check className="size-4" /> : <Plus className="size-4" />}
+      {heartIcon}
       Lista
     </>
   );
 
-  const buttonStyle = isInAnyList
-    ? { backgroundColor: CHECKED_COLOR, borderColor: CHECKED_COLOR, color: "white" }
-    : { backgroundColor: "black", color: "white" };
+  const buttonStyle = variant === "default" ? { backgroundColor: "black", color: "white" } : undefined;
 
   const buttonClassName = isIconVariant
     ? "shrink-0 size-8 rounded-full p-0 bg-white/90 hover:bg-white shadow-sm"

@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { HeaderSearchSlot } from "@/components/header-search-slot";
 import { Button } from "@/components/ui/button";
-import { LogOut, NotepadText, User } from "lucide-react";
+import { Heart, LogOut, User } from "lucide-react";
 import { LogOutUser } from "@/lib/authentication";
 import { LoginDialog } from "@/components/login-dialog";
 import Link from "next/link";
@@ -148,7 +148,7 @@ export default function RootLayout({
 
                   <Button variant="outline" size="icon-lg" asChild>
                     <Link href="/lists">
-                        <NotepadText />
+                      <Heart />
                     </Link>
                   </Button>
                   <Suspense fallback={<Button size="icon-lg"><Spinner /></Button>}>

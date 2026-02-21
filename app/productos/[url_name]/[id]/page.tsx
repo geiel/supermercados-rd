@@ -261,7 +261,12 @@ export default async function Page({ params }: Props) {
     (relatedProduct) => !supermarketAlternativeProductIds.has(relatedProduct.id)
   );
   const shopLogoById = new Map(shops.map((shop) => [shop.id, shop.logo]));
-  const shopNameById = new Map(shops.map((shop) => [shop.id, shop.name]));
+  const shopLogoByIdSerializable = Object.fromEntries(
+    shops.map((shop) => [shop.id, shop.logo])
+  );
+  const shopNameByIdSerializable = Object.fromEntries(
+    shops.map((shop) => [shop.id, shop.name])
+  );
   const visibleShopPrices = product.shopCurrentPrices.filter(
     (shopPrice) => shopPrice.currentPrice !== null && !shopPrice.hidden
   );
@@ -448,8 +453,8 @@ export default async function Page({ params }: Props) {
             <div className="font-bold text-2xl">Alternativas del supermercado</div>
             <SupermarketAlternatives
               products={supermarketAlternatives}
-              shopLogoById={shopLogoById}
-              shopNameById={shopNameById}
+              shopLogoById={shopLogoByIdSerializable}
+              shopNameById={shopNameByIdSerializable}
             />
           </section>
         ) : null}
