@@ -73,7 +73,7 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
 
     if (!result) {
         return (
-            <div className="container mx-auto px-2 pb-2">
+            <div className="container mx-auto py-4 px-4">
                 <Empty>
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
@@ -101,7 +101,7 @@ export async function GroupExplorer({ humanId, searchParams }: GroupExplorerProp
     ]);
 
     return (
-        <div className="container mx-auto px-2 pb-2 space-y-4">
+        <div className="container mx-auto py-4 px-4 space-y-4">
             <GroupBreadcrumbs
                 paths={breadcrumbs.length > 0 ? [breadcrumbs] : []}
                 compactMobileMode="last"

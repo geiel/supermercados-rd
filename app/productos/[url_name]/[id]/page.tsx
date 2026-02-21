@@ -261,10 +261,16 @@ export default async function Page({ params }: Props) {
     (relatedProduct) => !supermarketAlternativeProductIds.has(relatedProduct.id)
   );
   const shopLogoById = new Map(shops.map((shop) => [shop.id, shop.logo]));
-  const shopNameById = new Map(shops.map((shop) => [shop.id, shop.name]));
+  const shopLogoByIdSerializable = Object.fromEntries(
+    shops.map((shop) => [shop.id, shop.logo])
+  );
+  const shopNameByIdSerializable = Object.fromEntries(
+    shops.map((shop) => [shop.id, shop.name])
+  );
   const visibleShopPrices = product.shopCurrentPrices.filter(
     (shopPrice) => shopPrice.currentPrice !== null && !shopPrice.hidden
   );
+  const hasRelatedProducts = relatedProducts.length > 0;
 
   const badgeType = getPriceBadgeType(product);
 
@@ -305,7 +311,7 @@ export default async function Page({ params }: Props) {
           __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <div className="grid grid-cols-1 xl:grid-cols-2 xl:gap-10 py-4 px-4 md:px-10">
+      <div className="container mx-auto grid grid-cols-1 xl:grid-cols-2 xl:gap-10 py-4 px-4">
       <section>
         <div className="flex flex-col gap-2 sticky top-0">
           <GroupBreadcrumbs
@@ -421,12 +427,14 @@ export default async function Page({ params }: Props) {
                   producto.
                 </EmptyDescription>
               </EmptyHeader>
-              <ScrollToSection
-                targetId="productos-relacionados"
-                className={buttonVariants({ size: "sm" })}
-              >
-                Ver productos relacionados
-              </ScrollToSection>
+              {hasRelatedProducts ? (
+                <ScrollToSection
+                  targetId="productos-relacionados"
+                  className={buttonVariants({ size: "sm" })}
+                >
+                  Ver productos relacionados
+                </ScrollToSection>
+              ) : null}
             </Empty>
           )}
 
@@ -445,23 +453,28 @@ export default async function Page({ params }: Props) {
             <div className="font-bold text-2xl">Alternativas del supermercado</div>
             <SupermarketAlternatives
               products={supermarketAlternatives}
-              shopLogoById={shopLogoById}
-              shopNameById={shopNameById}
+              shopLogoById={shopLogoByIdSerializable}
+              shopNameById={shopNameByIdSerializable}
             />
           </section>
         ) : null}
 
-        <section id="productos-relacionados" className="flex flex-col gap-2 scroll-mt-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="font-bold text-2xl">Productos relacionados</div>
-            {relatedProductsGroupLink ? (
-              <Button variant="link" size="sm" asChild className="h-auto p-0">
-                <Link href={relatedProductsGroupLink.href}>Ver todas</Link>
-              </Button>
-            ) : null}
-          </div>
-          <RelatedProducts relatedProducts={relatedProducts} />
-        </section>
+        {hasRelatedProducts ? (
+          <section
+            id="productos-relacionados"
+            className="flex flex-col gap-2 scroll-mt-4"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold text-2xl">Productos relacionados</div>
+              {relatedProductsGroupLink ? (
+                <Button variant="link" size="sm" asChild className="h-auto p-0">
+                  <Link href={relatedProductsGroupLink.href}>Ver todas</Link>
+                </Button>
+              ) : null}
+            </div>
+            <RelatedProducts relatedProducts={relatedProducts} />
+          </section>
+        ) : null}
 
         <section
           id="historial-precios"

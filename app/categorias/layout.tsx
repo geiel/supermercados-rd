@@ -58,7 +58,7 @@ function CategoriesBreadcrumbFallback() {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="container mx-auto space-y-6 px-2 pb-6 pt-4">
+    <div className="container mx-auto space-y-6 py-4 px-4">
       <Suspense fallback={<CategoriesBreadcrumbFallback />}>
         <CategoriesBreadcrumbSection />
       </Suspense>

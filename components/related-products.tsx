@@ -14,10 +14,10 @@ export function RelatedProducts({
       itemWidth="136px"
       itemWidthSm="144px"
       itemWidthMd="152px"
-      itemWidthLg="164px"
-      itemWidthXl="176px"
-      gutter="8px"
-      peek="24%"
+      itemWidthLg="178px"
+      itemWidthXl="188px"
+      gutter="12px"
+      peek="34%"
     >
       <div className="flex space-x-2 p-2">
         {relatedProducts.map((relatedProduct) => (
