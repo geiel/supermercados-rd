@@ -1,3 +1,9 @@
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+
 ## Coding Instructions
 - `params` and `searchParams` are **Promises**, always resolve them using `await`.
 - Use `repositionInputs={false}` in the Drawer if his content have any input that needs a keyboard example `<Drawer open={isOpen} onOpenChange={setIsOpen} repositionInputs={false}>`

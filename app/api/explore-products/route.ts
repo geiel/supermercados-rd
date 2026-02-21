@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 
 import { getExploreProducts } from "@/lib/explore-products";
 
-export const maxDuration = 50;
 import { getUser } from "@/lib/supabase";
 import { getShopsIds } from "@/lib/utils";
 import {

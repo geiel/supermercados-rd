@@ -101,6 +101,7 @@ const base: Array<Synonym> = [
     { synonyms: ["fillet", "filete"], query: ["fillet:*", "filet:*"]},
     { synonyms: ["ribeye", "rib eye"], query: ["ribeye", "rib & eye"] },
     { synonyms: ["stick", "palito", "dedito", "string", "barrita"], query: ["stick:*", "palito", "dedito", "string:*", "barrita"], id: "palito" },
+    { synonyms: ["mikado", "varilla", "varillas"], query: ["mikado", "varill:*"], id: "varilla" },
     { synonyms: ["grisini", "grissini", "palito de pan", "palitos de pan"], query: ["grisini", "grissini"], complex: ["palito", "pan"]},
     { synonyms: ["crumb", "cumb"], query: ["crumb", "cumb"], id: "crumb"},
     { synonyms: ["empanizar", "empanizado"], query: ["empaniza:*", "breadcrumb"], complex: ["pan", "crumb"]},

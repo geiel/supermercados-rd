@@ -9,7 +9,6 @@ import {
 } from "@/db/schema";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
-export const runtime = "nodejs";
 export const alt = "Lista de compras compartida";
 export const size = {
     width: 1200,
