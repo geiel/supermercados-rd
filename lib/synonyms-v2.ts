@@ -146,7 +146,7 @@ const base: Array<Synonym> = [
     { synonyms: ["soy", "soya", "china"], query: ["soy", "soya", "china"], id: "soya"},
     { synonyms: ["avocado", "aguacate"], query: ["avocado:*", "aguacate:*"]},
     { synonyms: ["oil", "aceite"], query: ["oil:*", "aceite:*"], id: "aceite"},
-    { synonyms: ["cider", "sidra"], query: ["sider", "sidra"]},
+    { synonyms: ["cider", "sidra", "sider"], query: ["sider", "sidra", "cider"]},
     { synonyms: ["walnut", "nuez", "nues", "nut"], query: ["wanut:*", "nuez:*", "nues:*", "nut"]},
     { synonyms: ["cherry", "cereza", "ceresa", "cherrie"], query: ["cherry", "cherries", "cerez:*", "ceres:*"]},
     { synonyms: ["grape", "uva", "grappe"], query: ["grape:*", "uva:*", "grappe"]},

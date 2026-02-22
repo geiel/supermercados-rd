@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TypographyH3 } from "@/components/typography-h3";
 import { Button } from "@/components/ui/button";
 import ScrollPeek from "@/components/ui/scroll-peek";
+import { PRODUCT_SCROLL_PEEK_PROPS } from "@/components/ui/product-scroll-config";
 import { getHomePageCategories } from "@/lib/home-page-categories";
 import { HomePageCategoryProductCard } from "./home-page-category-product-card";
 
@@ -33,11 +34,8 @@ export async function HomePageCategoriesSection() {
                 <Link href={`/category/${category.id}`}>Ver todas</Link>
               </Button>
             </div>
-            <ScrollPeek
-              itemWidth="min(max(35vw, 110px), 218px)"
-              itemWidthMd="224px"
-            >
-              <div className="flex space-x-2 p-2 relative">
+            <ScrollPeek {...PRODUCT_SCROLL_PEEK_PROPS}>
+              <div className="relative flex gap-1.5 p-2 md:gap-2">
                 {category.products.map((product) => (
                   <HomePageCategoryProductCard
                     key={product.productId}

@@ -40,14 +40,14 @@ export function HomePageCategoryProductCard({ product }: Props) {
         className="flex flex-col gap-2"
         prefetch={false}
       >
-        <div className="relative w-full max-w-[180px] aspect-square mx-auto">
+        <div className="relative w-full max-w-[168px] aspect-square mx-auto">
           {product.image ? (
             <ProductImage
               src={product.image}
               productId={product.productId}
               fill
               alt={product.name + product.unit}
-              sizes="(min-width: 1024px) 180px, 32vw"
+              sizes="(min-width: 1024px) 168px, 30vw"
               style={{
                 objectFit: "contain",
               }}
