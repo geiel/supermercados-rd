@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/searchbar";
 import { SearchBarSkeleton } from "@/components/searchbar-skeleton";
 import { Metadata } from "next";
+import { PRODUCT_SCROLL_PEEK_PROPS } from "@/components/ui/product-scroll-config";
 
 export const metadata: Metadata = {
   title: "SupermercadosRD - Comparador de precios de supermercados en RD",
@@ -125,10 +126,9 @@ async function TodaysDealsSection() {
             </Button>
           </div>
           <ScrollPeek
-            itemWidth="min(max(35vw, 110px), 218px)"
-            itemWidthMd="224px"
+            {...PRODUCT_SCROLL_PEEK_PROPS}
           >
-            <div className="flex space-x-2 p-2 relative">
+            <div className="relative flex gap-1.5 p-2 md:gap-2">
               {todaysDeals.map(deal => (
                 <FrontPageDealCard key={deal.productId} deal={deal} />
               ))}
@@ -144,19 +144,16 @@ function TodaysDealsSkeleton() {
     <section>
       <div className="space-y-4">
         <TypographyH3>Ofertas De Hoy</TypographyH3>
-        <ScrollPeek
-          itemWidth="clamp(160px, 50vw, 210px)"
-          itemWidthMd="clamp(110px, 11vw, 150px)"
-        >
-          <div className="flex w-max space-x-2 p-2">
-            {Array.from({ length: 18 }).map((_, index) => (
-              <Skeleton key={index} className="h-72" />
+        <ScrollPeek {...PRODUCT_SCROLL_PEEK_PROPS}>
+          <div className="relative flex gap-1.5 p-2 md:gap-2">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <ProductRailCardSkeleton key={index} />
             ))}
           </div>
         </ScrollPeek>
       </div>
     </section>
-  )
+  );
 }
 
 function HomePageCategoriesSectionSkeleton() {
@@ -168,25 +165,31 @@ function HomePageCategoriesSectionSkeleton() {
           <Skeleton className="h-5 w-16" />
         </div>
         <ScrollPeek
-          itemWidth="min(max(35vw, 110px), 218px)"
-          itemWidthMd="224px"
+          {...PRODUCT_SCROLL_PEEK_PROPS}
         >
-          <div className="flex space-x-2 p-2 relative">
+          <div className="relative flex gap-1.5 p-2 md:gap-2">
             {Array.from({ length: 10 }).map((_, index) => (
-              <div key={index} className="flex flex-col gap-2 min-w-0">
-                <Skeleton className="w-full max-w-[180px] aspect-square mx-auto" />
-                <div className="px-2 flex flex-col gap-2">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-4 w-14" />
-                </div>
-              </div>
+              <ProductRailCardSkeleton key={index} />
             ))}
           </div>
         </ScrollPeek>
       </div>
     </section>
+  );
+}
+
+function ProductRailCardSkeleton() {
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <Skeleton className="w-full max-w-[168px] aspect-square mx-auto" />
+      <div className="px-2 flex flex-col gap-1">
+        <Skeleton className="h-4 w-14" />
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-6 w-20" />
+        <Skeleton className="h-4 w-14" />
+        <Skeleton className="h-4 w-16 mt-2" />
+      </div>
+    </div>
   );
 }

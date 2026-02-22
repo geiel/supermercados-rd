@@ -65,14 +65,14 @@ export function RelatedProductCard({ product }: RelatedProductCardProps) {
         className="flex flex-col gap-2"
         prefetch={false}
       >
-        <div className="h-[130px] w-[130px] relative mx-auto">
+        <div className="relative w-full max-w-[168px] aspect-square mx-auto">
           {product.image ? (
             <ProductImage
               src={product.image}
               productId={product.id}
               fill
               alt={product.name + product.unit}
-              sizes="130px"
+              sizes="(min-width: 1024px) 168px, 30vw"
               style={{
                 objectFit: "contain",
               }}
@@ -80,23 +80,25 @@ export function RelatedProductCard({ product }: RelatedProductCardProps) {
             />
           ) : null}
         </div>
-        <Unit unit={product.unit} />
-        <div>
-          <ProductBrand
-            brand={product.brand}
-            possibleBrand={product.possibleBrand}
-            type="related"
-          />
-          {product.name}
-        </div>
-        <div>
-          <Price value={cheapest.currentPrice} className="font-bold text-lg" />
-          <PricePerUnit
-            unit={product.unit}
-            price={Number(cheapest.currentPrice)}
-            categoryId={product.categoryId}
-            productName={product.name}
-          />
+        <div className="px-2 flex flex-col gap-1">
+          <Unit unit={product.unit} />
+          <div>
+            <ProductBrand
+              brand={product.brand}
+              possibleBrand={product.possibleBrand}
+              type="related"
+            />
+            <span className="line-clamp-2">{product.name}</span>
+          </div>
+          <div>
+            <Price value={cheapest.currentPrice} className="font-bold text-lg" />
+            <PricePerUnit
+              unit={product.unit}
+              price={Number(cheapest.currentPrice)}
+              categoryId={product.categoryId}
+              productName={product.name}
+            />
+          </div>
         </div>
       </Link>
     </div>

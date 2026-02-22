@@ -45,14 +45,14 @@ export function FrontPageDealCard({ deal }: FrontPageDealCardProps) {
         className="flex flex-col gap-2"
         prefetch={false}
       >
-        <div className="relative w-full max-w-[180px] aspect-square mx-auto">
+        <div className="relative w-full max-w-[168px] aspect-square mx-auto">
           {deal.image ? (
             <ProductImage
               src={deal.image}
               productId={deal.productId}
               fill
               alt={deal.name + deal.unit}
-              sizes="(min-width: 1024px) 180px, 32vw"
+              sizes="(min-width: 1024px) 168px, 30vw"
               style={{
                 objectFit: "contain",
               }}

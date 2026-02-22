@@ -38,7 +38,7 @@ export function CategoryTopProductCard({ product }: CategoryTopProductCardProps)
     Number(dropPercentage) > 0;
 
   return (
-    <div className="relative flex flex-col gap-3 pb-2">
+    <div className="relative flex flex-col gap-2 pb-2">
       {shouldShowDeal ? (
         <div className="absolute top-0 left-0 z-10">
           <OfferBadge dropPercentage={dropPercentage} />
@@ -52,14 +52,14 @@ export function CategoryTopProductCard({ product }: CategoryTopProductCardProps)
         className="flex flex-col gap-2"
         prefetch={false}
       >
-        <div className="h-[140px] w-[140px] md:h-[190px] md:w-[190px] relative mx-auto">
+        <div className="relative w-full max-w-[168px] aspect-square mx-auto">
           {product.image ? (
             <ProductImage
               src={product.image}
               productId={product.id}
               fill
               alt={product.name + product.unit}
-              sizes="(max-width: 768px) 140px, 190px"
+              sizes="(min-width: 1024px) 168px, 30vw"
               style={{
                 objectFit: "contain",
               }}

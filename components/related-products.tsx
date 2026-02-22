@@ -3,6 +3,7 @@ import {
   type RelatedProductCardProduct,
 } from "./related-product-card";
 import ScrollPeek from "./ui/scroll-peek";
+import { RELATED_PRODUCTS_SCROLL_PEEK_PROPS } from "./ui/product-scroll-config";
 
 export function RelatedProducts({
   relatedProducts,
@@ -10,16 +11,8 @@ export function RelatedProducts({
   relatedProducts: RelatedProductCardProduct[];
 }) {
   return (
-    <ScrollPeek
-      itemWidth="136px"
-      itemWidthSm="144px"
-      itemWidthMd="152px"
-      itemWidthLg="178px"
-      itemWidthXl="188px"
-      gutter="12px"
-      peek="34%"
-    >
-      <div className="flex space-x-2 p-2">
+    <ScrollPeek {...RELATED_PRODUCTS_SCROLL_PEEK_PROPS}>
+      <div className="flex gap-1.5 p-2 md:gap-2">
         {relatedProducts.map((relatedProduct) => (
           <RelatedProductCard key={relatedProduct.id} product={relatedProduct} />
         ))}
